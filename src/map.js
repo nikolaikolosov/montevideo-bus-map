@@ -15,6 +15,20 @@ import {
 let map;
 
 /**
+ * Calculates parallel line spacing based on zoom level.
+ * @param {number} zoom
+ * @returns {number}
+ */
+function getRouteSpacingForZoom(zoom) {
+    // At low zoom, disable offsets entirely to prevent loops/artifacts
+    if (zoom <= 13) return 0;
+    // At medium zoom, use a tight spacing
+    if (zoom <= 14) return 2;
+    // High zoom — full spacing
+    return CONFIG.ROUTE_SPACING;
+}
+
+/**
  * Calculates a dynamic style (radius, weight, opacity) based on zoom level.
  * @param {number} zoom
  * @param {boolean} isTouch
@@ -54,21 +68,34 @@ function getStopStyleForZoom(zoom, isTouch) {
 }
 
 /**
- * Updates all currently visible stop layers to reflect the current zoom.
+ * Updates all currently visible stop layers and route offsets to reflect the current zoom.
  */
-function updateStopsRadius() {
+function updateMapStyles() {
     if (!map) return;
     const zoom = map.getZoom();
     const touch = isCoarsePointer();
-    const style = getStopStyleForZoom(zoom, touch);
 
-    // Update global stops
+    // 1. Update stops
+    const stopStyle = getStopStyleForZoom(zoom, touch);
     if (appState.globalStopsLayer) {
-        appState.globalStopsLayer.setStyle(style);
+        appState.globalStopsLayer.setStyle(stopStyle);
     }
-    // Update route-specific stops
     if (appState.currentStopsLayer) {
-        appState.currentStopsLayer.setStyle(style);
+        appState.currentStopsLayer.setStyle(stopStyle);
+    }
+
+    // 2. Update route parallel offsets
+    if (appState.currentRouteLayer && appState.currentLineToIndex) {
+        const spacing = getRouteSpacingForZoom(zoom);
+        const total = appState.currentTotalLines;
+        appState.currentRouteLayer.eachLayer((layer) => {
+            if (layer.setOffset) {
+                const lineId = layer.feature.properties.DESC_LINEA;
+                const idx = appState.currentLineToIndex.get(lineId) || 0;
+                const offset = (idx - (total - 1) / 2) * spacing;
+                layer.setOffset(offset);
+            }
+        });
     }
 }
 
@@ -107,8 +134,8 @@ export function initMap() {
     map.createPane('stopsPane');
     map.getPane('stopsPane').style.zIndex = 450;
 
-    // Listen for zoom changes to scale markers
-    map.on('zoomend', updateStopsRadius);
+    // Listen for zoom changes to scale markers and route offsets
+    map.on('zoomend', updateMapStyles);
 
     return map;
 }
@@ -368,16 +395,19 @@ function renderRouteLines(features, lineCount) {
     const distinctLines = [...new Set(features.map((f) => f.properties.DESC_LINEA))].sort((a, b) =>
         a.localeCompare(b, undefined, { numeric: true })
     );
-    const lineToIndex = new Map(distinctLines.map((id, idx) => [id, idx]));
-    const totalLines = distinctLines.length;
+    
+    // Save indexing to state for dynamic zoom-based updates
+    appState.currentLineToIndex = new Map(distinctLines.map((id, idx) => [id, idx]));
+    appState.currentTotalLines = distinctLines.length;
+
+    const spacing = getRouteSpacingForZoom(map.getZoom());
 
     appState.currentRouteLayer = L.geoJSON(
         { type: 'FeatureCollection', features },
         {
             style: (feature) => {
-                const idx = lineToIndex.get(feature.properties.DESC_LINEA) || 0;
-                // Offset calculation to center the cluster of lines on the street
-                const offset = (idx - (totalLines - 1) / 2) * CONFIG.ROUTE_SPACING;
+                const idx = appState.currentLineToIndex.get(feature.properties.DESC_LINEA) || 0;
+                const offset = (idx - (appState.currentTotalLines - 1) / 2) * spacing;
 
                 return {
                     color: getLineColor(feature.properties.DESC_LINEA),
@@ -385,8 +415,8 @@ function renderRouteLines(features, lineCount) {
                     opacity: CONFIG.ROUTE_OPACITY,
                     lineCap: 'round',
                     lineJoin: 'round',
-                    smoothFactor: 0, // Disable simplification to prevent PolylineOffset artifacts
-                    offset: offset, // Property used by Leaflet.PolylineOffset plugin
+                    smoothFactor: 0,
+                    offset: offset,
                 };
             },
             onEachFeature: (feature, layer) => {
