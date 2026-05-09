@@ -57,22 +57,61 @@ export const cleanCoordinates = (coords) => {
 export const truncateLineDownstream = (coords, sourceLonLat) => {
     if (!coords || coords.length === 0) return coords;
     if (typeof coords[0] === 'number') return coords;
+
+    // LineString: array of positions [ [lon, lat], ... ]
     if (typeof coords[0][0] === 'number') {
         let minIdx = 0;
-        let minDist = Infinity;
+        let minDistSq = Infinity;
         for (let i = 0; i < coords.length; i++) {
             const dx = coords[i][0] - sourceLonLat[0];
             const dy = coords[i][1] - sourceLonLat[1];
-            const distSq = dx * dx + dy * dy;
-            if (distSq < minDist) {
-                minDist = distSq;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < minDistSq) {
+                minDistSq = d2;
                 minIdx = i;
             }
         }
-        return coords.slice(minIdx);
+        const sliced = coords.slice(minIdx);
+        if (sliced.length > 0) {
+            // Force the first point to be exactly the stop location
+            sliced[0] = [sourceLonLat[0], sourceLonLat[1]];
+        }
+        return sliced;
     }
-    return coords
-        .map((line) => truncateLineDownstream(line, sourceLonLat))
+
+    // MultiLineString: array of lines
+    // Find which segment is actually closest to the stop to avoid jumping
+    let bestLineIdx = -1;
+    let absoluteMinDistSq = Infinity;
+
+    const lineInfos = coords.map((line, idx) => {
+        let minIdx = 0;
+        let minDistSq = Infinity;
+        for (let i = 0; i < line.length; i++) {
+            const dx = line[i][0] - sourceLonLat[0];
+            const dy = line[i][1] - sourceLonLat[1];
+            const d2 = dx * dx + dy * dy;
+            if (d2 < minDistSq) {
+                minDistSq = d2;
+                minIdx = i;
+            }
+        }
+        if (minDistSq < absoluteMinDistSq) {
+            absoluteMinDistSq = minDistSq;
+            bestLineIdx = idx;
+        }
+        return { line, minIdx };
+    });
+
+    return lineInfos
+        .map(({ line, minIdx }, idx) => {
+            const sliced = line.slice(minIdx);
+            // Only snap the very first point of the closest segment to the stop
+            if (idx === bestLineIdx && sliced.length > 0) {
+                sliced[0] = [sourceLonLat[0], sourceLonLat[1]];
+            }
+            return sliced;
+        })
         .filter((line) => line.length > 1);
 };
 
