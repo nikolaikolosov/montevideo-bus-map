@@ -2,13 +2,13 @@ import { CONFIG } from './config.js';
 import { escapeHTML, cleanCoordinates, truncateLineDownstream, isCoarsePointer } from './utils.js';
 import { appState, resetLayers } from './state.js';
 import {
-    lineColorsMap,
     uniqueStopsData,
     stopLinesMap,
     stopVariantsMap,
     getFilteredRouteFeatures,
     getFilteredStopFeatures,
     buildVariantOrdinalMap,
+    getLineColor,
 } from './data.js';
 
 /** @type {L.Map} */
@@ -222,7 +222,7 @@ function buildLabelGroups(features) {
     features.forEach((feature) => {
         const coords = feature.geometry.coordinates;
         const linea = feature.properties.DESC_LINEA;
-        const color = lineColorsMap.get(linea) || 'var(--route-color)';
+        const color = getLineColor(linea);
 
         if (feature.geometry.type === 'LineString') {
             if (coords.length > 0) {
@@ -290,7 +290,7 @@ function renderRouteLines(features, lineCount) {
         { type: 'FeatureCollection', features },
         {
             style: (feature) => ({
-                color: lineColorsMap.get(feature.properties.DESC_LINEA) || 'var(--route-color)',
+                color: getLineColor(feature.properties.DESC_LINEA),
                 weight,
                 opacity: CONFIG.ROUTE_OPACITY,
                 lineCap: 'round',

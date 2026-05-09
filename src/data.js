@@ -24,8 +24,30 @@ export const stopsByVariant = new Map();
 /** Map<stopCode, GeoJSON Feature[]> - all stop features per code */
 export const stopsByCode = new Map();
 
-/** Map<lineId, hsl color string> */
-export const lineColorsMap = new Map();
+/**
+ * Returns a deterministic HSL color for any line ID.
+ *
+ * Uses a djb2-style hash of the line ID string so that:
+ *  - The same line ALWAYS gets the same color, in every context.
+ *  - Adding or removing other lines never shifts any existing line's color.
+ *  - Lines not present in routes data (e.g. from stops only) also get a stable color.
+ *
+ * Golden-ratio multiplication spreads the hue space evenly even for
+ * numerically adjacent line IDs ("1", "2", "3" … don't cluster together).
+ *
+ * @param {string} lineId
+ * @returns {string} CSS hsl() color
+ */
+export function getLineColor(lineId) {
+    // djb2 hash — fast, low-collision, deterministic
+    let hash = 5381;
+    for (let i = 0; i < lineId.length; i++) {
+        hash = ((hash << 5) + hash + lineId.charCodeAt(i)) & 0x7fffffff;
+    }
+    // Spread hue evenly with golden ratio
+    const hue = (hash * CONFIG.GOLDEN_RATIO * 360) % 360;
+    return `hsl(${hue.toFixed(1)}, 85%, 60%)`;
+}
 
 /** Unique deduplicated stop features (one per physical stop) */
 export const uniqueStopsData = [];
@@ -40,7 +62,7 @@ export const uniqueStopsData = [];
 export function buildIndexes(routesData, stopsData) {
     _indexRoutes(routesData);
     _indexStops(stopsData);
-    _assignLineColors();
+    // Note: colors no longer need pre-computation—see getLineColor().
 }
 
 function _indexRoutes(routesData) {
@@ -95,13 +117,7 @@ function _indexStops(stopsData) {
     });
 }
 
-function _assignLineColors() {
-    const sortedLines = getSortedLines();
-    sortedLines.forEach((linea, index) => {
-        const hue = ((index * CONFIG.GOLDEN_RATIO) % 1) * 360;
-        lineColorsMap.set(linea, `hsl(${hue}, 85%, 60%)`);
-    });
-}
+
 
 /**
  * Returns all unique line IDs, sorted numerically.
