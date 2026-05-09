@@ -189,13 +189,22 @@ export function renderGlobalStops(onShowRoutes) {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
                     ...style,
-                    fillColor: 'var(--stop-color)',
+                    fillColor: '#000000',
                     color: '#ffffff',
                     opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
+                if (!touch) {
+                    layer.on('mouseover', function () {
+                        this.setStyle({ fillColor: '#ffffff' });
+                        this.bringToFront();
+                    });
+                    layer.on('mouseout', function () {
+                        this.setStyle({ fillColor: '#000000' });
+                    });
+                }
             },
         }
     ).addTo(map);
@@ -379,13 +388,22 @@ function renderStops(features, onShowRoutes) {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
                     ...style,
-                    fillColor: 'var(--stop-color)',
+                    fillColor: '#000000',
                     color: '#ffffff',
                     opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
+                if (!touch) {
+                    layer.on('mouseover', function () {
+                        this.setStyle({ fillColor: '#ffffff' });
+                        this.bringToFront();
+                    });
+                    layer.on('mouseout', function () {
+                        this.setStyle({ fillColor: '#000000' });
+                    });
+                }
             },
         }
     ).addTo(map);
