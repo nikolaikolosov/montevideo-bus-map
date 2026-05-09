@@ -119,8 +119,7 @@ export function createStopPopup(feature, onShowRoutes) {
 export function renderGlobalStops(onShowRoutes) {
     clearLayers();
     const touch = isCoarsePointer();
-    const radius = touch ? CONFIG.STOP_GLOBAL_RADIUS_TOUCH : CONFIG.STOP_GLOBAL_RADIUS;
-    const hoverRadius = touch ? CONFIG.STOP_HOVER_RADIUS_TOUCH : CONFIG.STOP_HOVER_RADIUS;
+    const radius = touch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS;
 
     appState.globalStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: uniqueStopsData },
@@ -128,23 +127,18 @@ export function renderGlobalStops(onShowRoutes) {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
                     radius,
-                    fillColor: '#94a3b8',
-                    color: 'transparent',
-                    weight: 0,
-                    opacity: 0.6,
-                    fillOpacity: 0.6,
+                    fillColor: 'var(--stop-color)',
+                    color: '#ffffff',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.9,
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
-                // hover only applies on non-touch; on touch devices skip it
                 if (!touch) {
                     layer.on('mouseover', function () {
-                        this.setStyle({
-                            fillColor: '#ffffff',
-                            radius: hoverRadius,
-                            fillOpacity: 1,
-                        });
+                        this.setStyle({ fillColor: '#ffffff', radius: radius + 2 });
                         this.bringToFront();
                     });
                     layer.on('mouseout', function () {
