@@ -20,11 +20,9 @@ let map;
  * @returns {number}
  */
 function getRouteSpacingForZoom(zoom) {
-    // At low zoom, disable offsets entirely to prevent loops/artifacts
-    if (zoom <= 13) return 0;
-    // At medium zoom, use a tight spacing
-    if (zoom <= 14) return 2;
-    // High zoom — full spacing
+    // Be very conservative: only enable parallel lines when zoomed in enough
+    // to see streets clearly. Low zoom with offsets always creates loops.
+    if (zoom < 15) return 0;
     return CONFIG.ROUTE_SPACING;
 }
 
@@ -414,7 +412,7 @@ function renderRouteLines(features, lineCount) {
                     weight,
                     opacity: CONFIG.ROUTE_OPACITY,
                     lineCap: 'round',
-                    lineJoin: 'round',
+                    lineJoin: 'bevel', // 'bevel' is much more stable for offsets than 'round' or 'miter'
                     smoothFactor: 0,
                     offset: offset,
                 };

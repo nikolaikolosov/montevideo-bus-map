@@ -40,10 +40,14 @@ export const cleanCoordinates = (coords) => {
     // LineString: array of positions
     if (typeof coords[0][0] === 'number') {
         const filtered = coords.filter((c) => !isBadCoord(c));
-        // Remove consecutive duplicates which cause issues with PolylineOffset
+        // Remove consecutive duplicates or extremely close points (within ~1 meter)
+        // which cause "loops" and artifacts with PolylineOffset.
+        const threshold = 0.00001; // ~1 meter in degrees
         return filtered.filter((c, i) => {
             if (i === 0) return true;
-            return c[0] !== filtered[i - 1][0] || c[1] !== filtered[i - 1][1];
+            const dx = Math.abs(c[0] - filtered[i - 1][0]);
+            const dy = Math.abs(c[1] - filtered[i - 1][1]);
+            return dx > threshold || dy > threshold;
         });
     }
     // MultiLineString: array of lines
