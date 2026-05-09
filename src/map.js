@@ -60,8 +60,8 @@ function getStopStyleForZoom(zoom, isTouch) {
     }
     // Zoom 15+ (Detailed View) — full size
     return {
-        radius: isTouch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS,
-        weight: 1,
+        radius: isTouch ? 12 : 8, // Larger at high zoom to encompass parallel lines
+        weight: 1.5,
         fillOpacity: 0.9,
     };
 }
@@ -87,14 +87,19 @@ function updateMapStyles() {
     if (appState.currentRouteLayer && appState.currentLineToIndex) {
         const spacing = getRouteSpacingForZoom(zoom);
         const total = appState.currentTotalLines;
-        appState.currentRouteLayer.eachLayer((layer) => {
-            if (layer.setOffset) {
-                const lineId = layer.feature.properties.DESC_LINEA;
+
+        const applyOffset = (l) => {
+            if (l.setOffset && l.feature) {
+                const lineId = l.feature.properties.DESC_LINEA;
                 const idx = appState.currentLineToIndex.get(lineId) || 0;
                 const offset = (idx - (total - 1) / 2) * spacing;
-                layer.setOffset(offset);
+                l.setOffset(offset);
+            } else if (l.eachLayer) {
+                l.eachLayer(applyOffset);
             }
-        });
+        };
+
+        appState.currentRouteLayer.eachLayer(applyOffset);
     }
 }
 
@@ -452,8 +457,8 @@ function renderRouteLines(features, lineCount) {
                     weight,
                     opacity: CONFIG.ROUTE_OPACITY,
                     lineCap: 'round',
-                    lineJoin: 'bevel', // 'bevel' is much more stable for offsets than 'round' or 'miter'
-                    smoothFactor: 0,
+                    lineJoin: 'bevel',
+                    smoothFactor: 1, // Restored default simplification to prevent high-zoom jitter loops
                     offset: offset,
                 };
             },
