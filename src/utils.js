@@ -95,6 +95,22 @@ export const debounce = (fn, delay) => {
  * @param {object} props - feature.properties
  * @returns {boolean}
  */
+/**
+ * Returns true on touch / coarse-pointer devices (phones, tablets).
+ * Uses the CSS pointer media query — more reliable than ontouchstart.
+ * Result is cached after first call.
+ * @returns {boolean}
+ */
+export const isCoarsePointer = (() => {
+    let result = null;
+    return () => {
+        if (result === null) {
+            result = window.matchMedia('(pointer: coarse)').matches;
+        }
+        return result;
+    };
+})();
+
 export const isBadStop = (props) =>
     props.CALLE === CONFIG.BAD_STOP_STREET &&
     props.ESQUINA === CONFIG.BAD_STOP_CORNER;

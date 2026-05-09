@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { escapeHTML, cleanCoordinates, truncateLineDownstream } from './utils.js';
+import { escapeHTML, cleanCoordinates, truncateLineDownstream, isCoarsePointer } from './utils.js';
 import { appState, resetLayers } from './state.js';
 import {
     lineColorsMap,
@@ -23,9 +23,15 @@ let map;
  * @returns {L.Map}
  */
 export function initMap() {
+    const touch = isCoarsePointer();
+
     map = L.map('map', {
         zoomControl: false,
         preferCanvas: true,  // canvas renderer — better performance for many markers
+        // On touch devices, increase the pixel tolerance so a finger tap slightly
+        // off-centre still registers as a hit on a stop marker.
+        clickTolerance: touch ? CONFIG.CLICK_TOLERANCE_TOUCH : 3,
+        tapTolerance:   touch ? CONFIG.TAP_TOLERANCE_TOUCH   : 15,
     }).setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
 
     L.control.zoom({ position: 'topright' }).addTo(map);
@@ -112,13 +118,16 @@ export function createStopPopup(feature, onShowRoutes) {
  */
 export function renderGlobalStops(onShowRoutes) {
     clearLayers();
+    const touch = isCoarsePointer();
+    const radius = touch ? CONFIG.STOP_GLOBAL_RADIUS_TOUCH : CONFIG.STOP_GLOBAL_RADIUS;
+    const hoverRadius = touch ? CONFIG.STOP_HOVER_RADIUS_TOUCH : CONFIG.STOP_HOVER_RADIUS;
 
     appState.globalStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: uniqueStopsData },
         {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
-                    radius: CONFIG.STOP_GLOBAL_RADIUS,
+                    radius,
                     fillColor: '#94a3b8',
                     color: 'transparent',
                     weight: 0,
@@ -128,17 +137,20 @@ export function renderGlobalStops(onShowRoutes) {
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
-                layer.on('mouseover', function () {
-                    this.setStyle({
-                        fillColor: '#ffffff',
-                        radius: CONFIG.STOP_HOVER_RADIUS,
-                        fillOpacity: 1,
+                // hover only applies on non-touch; on touch devices skip it
+                if (!touch) {
+                    layer.on('mouseover', function () {
+                        this.setStyle({
+                            fillColor: '#ffffff',
+                            radius: hoverRadius,
+                            fillOpacity: 1,
+                        });
+                        this.bringToFront();
                     });
-                    this.bringToFront();
-                });
-                layer.on('mouseout', function () {
-                    appState.globalStopsLayer.resetStyle(this);
-                });
+                    layer.on('mouseout', function () {
+                        appState.globalStopsLayer.resetStyle(this);
+                    });
+                }
             },
         }
     ).addTo(map);
@@ -313,12 +325,15 @@ function renderRouteLines(features, lineCount) {
  * @param {Function} onShowRoutes - popup callback
  */
 function renderStops(features, onShowRoutes) {
+    const touch = isCoarsePointer();
+    const radius = touch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS;
+
     appState.currentStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features },
         {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
-                    radius: CONFIG.STOP_ROUTE_RADIUS,
+                    radius,
                     fillColor: 'var(--stop-color)',
                     color: '#ffffff',
                     weight: 1,

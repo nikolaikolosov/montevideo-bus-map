@@ -19,6 +19,17 @@ export const CONFIG = {
     SELECT_CHANGE_DEBOUNCE_MS: 150,
     BAD_STOP_STREET: 'AV DR JUAN ANDRES CACHON',
     BAD_STOP_CORNER: 'AV JULIO MARIA SOSA',
+
+    // Touch / coarse-pointer overrides
+    // clickTolerance: how many px away from a feature a touch can land and still register
+    // Leaflet default is 3; we use a much larger value on mobile.
+    CLICK_TOLERANCE_TOUCH: 20,
+    TAP_TOLERANCE_TOUCH: 30,
+    // Visual radii for touch — slightly larger so stops are more discoverable,
+    // while staying visually clean (not the full 44px — that would clutter the map).
+    STOP_GLOBAL_RADIUS_TOUCH: 6,    // global view  (desktop: 3)
+    STOP_ROUTE_RADIUS_TOUCH: 9,     // route view   (desktop: 5)
+    STOP_HOVER_RADIUS_TOUCH: 9,     // hover target  (desktop: 5)
     DATA_URLS: {
         ROUTES: 'routes.json',
         STOPS: 'stops.json',
