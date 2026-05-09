@@ -15,18 +15,42 @@ import {
 let map;
 
 /**
- * Calculates a dynamic radius based on zoom level.
+ * Calculates a dynamic style (radius, weight, opacity) based on zoom level.
  * @param {number} zoom
  * @param {boolean} isTouch
- * @returns {number}
+ * @returns {object} Leaflet style object
  */
-function getStopRadiusForZoom(zoom, isTouch) {
-    // At low zoom (city level), keep them tiny to avoid overlapping
-    if (zoom <= 12) return isTouch ? 1.5 : 1;
-    // Medium zoom (neighbourhood level)
-    if (zoom <= 14) return isTouch ? 4 : 2.5;
-    // High zoom (street level) — use standard configured sizes
-    return isTouch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS;
+function getStopStyleForZoom(zoom, isTouch) {
+    // Zoom 12 and below (City View) — make them tiny dots
+    if (zoom <= 12) {
+        return {
+            radius: isTouch ? 1 : 0.75,
+            weight: 0,
+            fillOpacity: 0.35,
+        };
+    }
+    // Zoom 13 (Districts)
+    if (zoom <= 13) {
+        return {
+            radius: isTouch ? 2.5 : 1.5,
+            weight: 0.5,
+            fillOpacity: 0.5,
+        };
+    }
+    // Zoom 14 (Neighbourhoods)
+    if (zoom <= 14) {
+        return {
+            radius: isTouch ? 5 : 3,
+            weight: 1,
+            fillOpacity: 0.7,
+        };
+    }
+    // Zoom 15+ (Detailed View) — full size
+    return {
+        radius: isTouch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS,
+        weight: 1,
+        fillOpacity: 0.9,
+    };
 }
 
 /**
@@ -36,15 +60,15 @@ function updateStopsRadius() {
     if (!map) return;
     const zoom = map.getZoom();
     const touch = isCoarsePointer();
-    const radius = getStopRadiusForZoom(zoom, touch);
+    const style = getStopStyleForZoom(zoom, touch);
 
     // Update global stops
     if (appState.globalStopsLayer) {
-        appState.globalStopsLayer.setStyle({ radius });
+        appState.globalStopsLayer.setStyle(style);
     }
     // Update route-specific stops
     if (appState.currentStopsLayer) {
-        appState.currentStopsLayer.setStyle({ radius });
+        appState.currentStopsLayer.setStyle(style);
     }
 }
 
@@ -157,26 +181,24 @@ export function createStopPopup(feature, onShowRoutes) {
 export function renderGlobalStops(onShowRoutes) {
     clearLayers();
     const touch = isCoarsePointer();
-    const radius = getStopRadiusForZoom(map.getZoom(), touch);
+    const style = getStopStyleForZoom(map.getZoom(), touch);
 
     appState.globalStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: uniqueStopsData },
         {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
-                    radius,
+                    ...style,
                     fillColor: 'var(--stop-color)',
                     color: '#ffffff',
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.9,
+                    opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
                 if (!touch) {
                     layer.on('mouseover', function () {
-                        this.setStyle({ fillColor: '#ffffff', radius: radius + 2 });
+                        this.setStyle({ fillColor: '#ffffff', radius: style.radius + 2, fillOpacity: 1 });
                         this.bringToFront();
                     });
                     layer.on('mouseout', function () {
@@ -358,19 +380,17 @@ function renderRouteLines(features, lineCount) {
  */
 function renderStops(features, onShowRoutes) {
     const touch = isCoarsePointer();
-    const radius = getStopRadiusForZoom(map.getZoom(), touch);
+    const style = getStopStyleForZoom(map.getZoom(), touch);
 
     appState.currentStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features },
         {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
-                    radius,
+                    ...style,
                     fillColor: 'var(--stop-color)',
                     color: '#ffffff',
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.9,
+                    opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
