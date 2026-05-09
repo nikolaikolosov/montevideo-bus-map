@@ -385,6 +385,7 @@ function renderRouteLines(features, lineCount) {
                     opacity: CONFIG.ROUTE_OPACITY,
                     lineCap: 'round',
                     lineJoin: 'round',
+                    smoothFactor: 0, // Disable simplification to prevent PolylineOffset artifacts
                     offset: offset, // Property used by Leaflet.PolylineOffset plugin
                 };
             },

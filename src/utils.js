@@ -39,7 +39,12 @@ export const cleanCoordinates = (coords) => {
     if (typeof coords[0] === 'number') return coords;
     // LineString: array of positions
     if (typeof coords[0][0] === 'number') {
-        return coords.filter((c) => !isBadCoord(c));
+        const filtered = coords.filter((c) => !isBadCoord(c));
+        // Remove consecutive duplicates which cause issues with PolylineOffset
+        return filtered.filter((c, i) => {
+            if (i === 0) return true;
+            return c[0] !== filtered[i - 1][0] || c[1] !== filtered[i - 1][1];
+        });
     }
     // MultiLineString: array of lines
     return coords
