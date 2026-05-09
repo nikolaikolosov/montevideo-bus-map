@@ -411,7 +411,7 @@ function renderRouteLabels(labelGroups) {
         const labelsHtml = group.labels
             .map(
                 (l) =>
-                    `<div class="route-label-icon route-label-item" style="border-color:${l.color};color:${l.color}">${l.linea}</div>`
+                    `<div class="route-label-icon route-label-item" style="border-color:${escapeHTML(l.color)};color:${escapeHTML(l.color)}">${escapeHTML(l.linea)}</div>`
             )
             .join('');
 
