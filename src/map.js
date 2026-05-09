@@ -364,16 +364,30 @@ function renderRouteLabels(labelGroups) {
 function renderRouteLines(features, lineCount) {
     const weight = lineCount === 1 ? CONFIG.ROUTE_WEIGHT_SINGLE : CONFIG.ROUTE_WEIGHT_MULTI;
 
+    // To stack lines parallel, we assign each line ID an offset index
+    const distinctLines = [...new Set(features.map((f) => f.properties.DESC_LINEA))].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true })
+    );
+    const lineToIndex = new Map(distinctLines.map((id, idx) => [id, idx]));
+    const totalLines = distinctLines.length;
+
     appState.currentRouteLayer = L.geoJSON(
         { type: 'FeatureCollection', features },
         {
-            style: (feature) => ({
-                color: getLineColor(feature.properties.DESC_LINEA),
-                weight,
-                opacity: CONFIG.ROUTE_OPACITY,
-                lineCap: 'round',
-                lineJoin: 'round',
-            }),
+            style: (feature) => {
+                const idx = lineToIndex.get(feature.properties.DESC_LINEA) || 0;
+                // Offset calculation to center the cluster of lines on the street
+                const offset = (idx - (totalLines - 1) / 2) * CONFIG.ROUTE_SPACING;
+
+                return {
+                    color: getLineColor(feature.properties.DESC_LINEA),
+                    weight,
+                    opacity: CONFIG.ROUTE_OPACITY,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    offset: offset, // Property used by Leaflet.PolylineOffset plugin
+                };
+            },
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(`
                     <div class="popup-content">
