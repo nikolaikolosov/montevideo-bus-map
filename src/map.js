@@ -279,6 +279,9 @@ function snapToStops(coords, variantId) {
     const variantStops = stopsByVariant.get(variantId);
     if (!variantStops || variantStops.length === 0) return coords;
 
+    const thresholdDeg = 0.0002; // ~20 meters. Only snap if the line is already close.
+    const thresholdSq = thresholdDeg * thresholdDeg;
+
     // Handle LineString
     if (typeof coords[0][0] === 'number') {
         variantStops.forEach((stop) => {
@@ -294,7 +297,10 @@ function snapToStops(coords, variantId) {
                     minIdx = i;
                 }
             }
-            if (minIdx !== -1) coords[minIdx] = [slon, slat];
+            // Only snap if within threshold to avoid creating sharp "kinks"
+            if (minIdx !== -1 && minDistSq < thresholdSq) {
+                coords[minIdx] = [slon, slat];
+            }
         });
         return coords;
     }
@@ -457,8 +463,8 @@ function renderRouteLines(features, lineCount) {
                     weight,
                     opacity: CONFIG.ROUTE_OPACITY,
                     lineCap: 'round',
-                    lineJoin: 'bevel',
-                    smoothFactor: 1, // Restored default simplification to prevent high-zoom jitter loops
+                    lineJoin: 'round', // 'round' handles messy high-density data better than 'bevel'
+                    smoothFactor: 2, // Aggressive simplification to prevent loops in dense areas
                     offset: offset,
                 };
             },
