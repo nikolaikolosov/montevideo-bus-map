@@ -264,6 +264,40 @@ export function renderGlobalStops(onShowRoutes) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Snaps route coordinates to the exact positions of all stops in the variant.
+ * @param {Array} coords
+ * @param {string} variantId
+ * @returns {Array}
+ */
+function snapToStops(coords, variantId) {
+    const variantStops = stopsByVariant.get(variantId);
+    if (!variantStops || variantStops.length === 0) return coords;
+
+    // Handle LineString
+    if (typeof coords[0][0] === 'number') {
+        variantStops.forEach((stop) => {
+            const [slon, slat] = stop.geometry.coordinates;
+            let minIdx = -1;
+            let minDistSq = Infinity;
+            for (let i = 0; i < coords.length; i++) {
+                const dx = coords[i][0] - slon;
+                const dy = coords[i][1] - slat;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < minDistSq) {
+                    minDistSq = d2;
+                    minIdx = i;
+                }
+            }
+            if (minIdx !== -1) coords[minIdx] = [slon, slat];
+        });
+        return coords;
+    }
+
+    // Handle MultiLineString
+    return coords.map((line) => snapToStops(line, variantId));
+}
+
+/**
  * Clones and cleans a route feature's geometry.
  * Uses shallow clone + geometry-only cloning instead of structuredClone
  * for better performance on large GeoJSON datasets.
@@ -275,9 +309,14 @@ export function renderGlobalStops(onShowRoutes) {
 function prepareRouteFeature(f, sourceLonLat) {
     if (!f.geometry?.coordinates) return null;
 
-    // Shallow-clone the feature; deep-clone only the coordinates array
+    // Deep-clone coordinates to avoid mutating the original data
     let coords = JSON.parse(JSON.stringify(f.geometry.coordinates));
     coords = cleanCoordinates(coords);
+
+    // Hard-bind the geometry to the actual stop coordinates
+    const variantId = f.properties.COD_VARIAN;
+    coords = snapToStops(coords, variantId);
+
     if (sourceLonLat) {
         coords = truncateLineDownstream(coords, sourceLonLat);
     }
