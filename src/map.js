@@ -171,6 +171,38 @@ export function createStopPopup(feature, onShowRoutes) {
 }
 
 // ---------------------------------------------------------------------------
+// Stop interaction listeners
+// ---------------------------------------------------------------------------
+
+/**
+ * Wires up hover and click events for stop markers.
+ * @param {L.Layer} layer
+ */
+function setupStopListeners(layer) {
+    layer.on('mouseover', function () {
+        this.setStyle({ fillColor: '#ffffff' });
+        this.bringToFront();
+    });
+
+    layer.on('mouseout', function () {
+        // Only turn black if it's not the currently selected stop
+        if (appState.selectedStopLayer !== this) {
+            this.setStyle({ fillColor: '#000000' });
+        }
+    });
+
+    layer.on('click', function () {
+        // Reset previous selected stop
+        if (appState.selectedStopLayer && appState.selectedStopLayer !== this) {
+            appState.selectedStopLayer.setStyle({ fillColor: '#000000' });
+        }
+        // Set new selected stop
+        this.setStyle({ fillColor: '#ffffff' });
+        appState.selectedStopLayer = this;
+    });
+}
+
+// ---------------------------------------------------------------------------
 // Global stops view
 // ---------------------------------------------------------------------------
 
@@ -196,15 +228,7 @@ export function renderGlobalStops(onShowRoutes) {
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
-                if (!touch) {
-                    layer.on('mouseover', function () {
-                        this.setStyle({ fillColor: '#ffffff' });
-                        this.bringToFront();
-                    });
-                    layer.on('mouseout', function () {
-                        this.setStyle({ fillColor: '#000000' });
-                    });
-                }
+                setupStopListeners(layer);
             },
         }
     ).addTo(map);
@@ -395,15 +419,7 @@ function renderStops(features, onShowRoutes) {
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
-                if (!touch) {
-                    layer.on('mouseover', function () {
-                        this.setStyle({ fillColor: '#ffffff' });
-                        this.bringToFront();
-                    });
-                    layer.on('mouseout', function () {
-                        this.setStyle({ fillColor: '#000000' });
-                    });
-                }
+                setupStopListeners(layer);
             },
         }
     ).addTo(map);

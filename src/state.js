@@ -14,6 +14,8 @@ export const appState = {
     globalStopsLayer: null,
     /** @type {L.LayerGroup|null} */
     routeLabelsLayer: null,
+    /** @type {L.Layer|null} Currently selected/clicked stop marker */
+    selectedStopLayer: null,
 };
 
 /**
@@ -25,4 +27,5 @@ export function resetLayers() {
     appState.currentStopsLayer = null;
     appState.globalStopsLayer = null;
     appState.routeLabelsLayer = null;
+    appState.selectedStopLayer = null;
 }
