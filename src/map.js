@@ -21,28 +21,28 @@ let map;
  * @returns {object} Leaflet style object
  */
 function getStopStyleForZoom(zoom, isTouch) {
-    // Zoom 12 and below (City View) — make them tiny dots
+    // Zoom 12 and below (City View) — small but clearly visible dots
     if (zoom <= 12) {
         return {
-            radius: isTouch ? 1 : 0.75,
-            weight: 0,
-            fillOpacity: 0.35,
+            radius: isTouch ? 2 : 1.2,
+            weight: 0.5,
+            fillOpacity: 0.6,
         };
     }
     // Zoom 13 (Districts)
     if (zoom <= 13) {
         return {
-            radius: isTouch ? 2.5 : 1.5,
-            weight: 0.5,
-            fillOpacity: 0.5,
+            radius: isTouch ? 3.5 : 2,
+            weight: 0.8,
+            fillOpacity: 0.7,
         };
     }
     // Zoom 14 (Neighbourhoods)
     if (zoom <= 14) {
         return {
-            radius: isTouch ? 5 : 3,
+            radius: isTouch ? 6 : 4,
             weight: 1,
-            fillOpacity: 0.7,
+            fillOpacity: 0.8,
         };
     }
     // Zoom 15+ (Detailed View) — full size
@@ -196,15 +196,6 @@ export function renderGlobalStops(onShowRoutes) {
                 }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
-                if (!touch) {
-                    layer.on('mouseover', function () {
-                        this.setStyle({ fillColor: '#ffffff', radius: style.radius + 2, fillOpacity: 1 });
-                        this.bringToFront();
-                    });
-                    layer.on('mouseout', function () {
-                        appState.globalStopsLayer.resetStyle(this);
-                    });
-                }
             },
         }
     ).addTo(map);
