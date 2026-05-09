@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explorador interactivo de rutas de ómnibus de Montevideo">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🚌</text></svg>"
+        type="image/svg+xml">
+    <title>Mapa de los bondis de Montevideo</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- App styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loader" role="status" aria-live="polite" aria-label="Cargando datos del sistema">
+        <div class="spinner"></div>
+        <p>Cargando datos del sistema...</p>
+    </div>
+
+    <!-- Error Overlay (hidden until a load failure occurs) -->
+    <div id="error-container" style="display:none" aria-hidden="true" role="alert">
+        <h2>⚠️ Error al cargar</h2>
+        <p id="error-message">No se pudieron cargar los datos del sistema.</p>
+        <button type="button" class="btn" onclick="location.reload()"
+            aria-label="Reintentar carga de datos">Reintentar</button>
+    </div>
+
+    <!-- UI Panel -->
+    <div id="ui-panel">
+        <h1>Montevideo Transit</h1>
+        <p class="subtitle">Explorador interactivo de rutas</p>
+
+        <div class="control-group">
+            <label for="routeSelect">Seleccionar Línea</label>
+            <select id="routeSelect" aria-label="Seleccionar línea de ómnibus">
+                <option value="" disabled selected>Elige una línea...</option>
+                <!-- Options populated by JS -->
+            </select>
+        </div>
+
+        <div id="routeInfo" class="route-info" aria-live="polite">
+            <div class="stat-row">
+                <span class="stat-label">Variantes de ruta</span>
+                <span id="statVariants" class="stat-value">-</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total de paradas</span>
+                <span id="statStops" class="stat-value">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="map" role="application" aria-label="Mapa interactivo de rutas de ómnibus"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- App — ES module, loads data via fetch() -->
+    <script type="module" src="src/app.js"></script>
+
+</body>
+
+</html>
