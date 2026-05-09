@@ -14,6 +14,41 @@ import {
 /** @type {L.Map} */
 let map;
 
+/**
+ * Calculates a dynamic radius based on zoom level.
+ * @param {number} zoom
+ * @param {boolean} isTouch
+ * @returns {number}
+ */
+function getStopRadiusForZoom(zoom, isTouch) {
+    // At low zoom (city level), keep them tiny to avoid overlapping
+    if (zoom <= 12) return isTouch ? 1.5 : 1;
+    // Medium zoom (neighbourhood level)
+    if (zoom <= 14) return isTouch ? 4 : 2.5;
+    // High zoom (street level) — use standard configured sizes
+    return isTouch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS;
+}
+
+/**
+ * Updates all currently visible stop layers to reflect the current zoom.
+ */
+function updateStopsRadius() {
+    if (!map) return;
+    const zoom = map.getZoom();
+    const touch = isCoarsePointer();
+    const radius = getStopRadiusForZoom(zoom, touch);
+
+    // Update global stops
+    if (appState.globalStopsLayer) {
+        appState.globalStopsLayer.setStyle({ radius });
+    }
+    // Update route-specific stops
+    if (appState.currentStopsLayer) {
+        appState.currentStopsLayer.setStyle({ radius });
+    }
+}
+
+
 // ---------------------------------------------------------------------------
 // Map initialisation
 // ---------------------------------------------------------------------------
@@ -47,6 +82,9 @@ export function initMap() {
     // Dedicated pane for stops — always renders above route lines
     map.createPane('stopsPane');
     map.getPane('stopsPane').style.zIndex = 450;
+
+    // Listen for zoom changes to scale markers
+    map.on('zoomend', updateStopsRadius);
 
     return map;
 }
@@ -119,7 +157,7 @@ export function createStopPopup(feature, onShowRoutes) {
 export function renderGlobalStops(onShowRoutes) {
     clearLayers();
     const touch = isCoarsePointer();
-    const radius = touch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS;
+    const radius = getStopRadiusForZoom(map.getZoom(), touch);
 
     appState.globalStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: uniqueStopsData },
@@ -320,7 +358,7 @@ function renderRouteLines(features, lineCount) {
  */
 function renderStops(features, onShowRoutes) {
     const touch = isCoarsePointer();
-    const radius = touch ? CONFIG.STOP_ROUTE_RADIUS_TOUCH : CONFIG.STOP_ROUTE_RADIUS;
+    const radius = getStopRadiusForZoom(map.getZoom(), touch);
 
     appState.currentStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features },
