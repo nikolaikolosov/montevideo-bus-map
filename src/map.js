@@ -5,6 +5,7 @@ import {
     uniqueStopsData,
     stopLinesMap,
     stopVariantsMap,
+    stopsByVariant,
     getFilteredRouteFeatures,
     getFilteredStopFeatures,
     buildVariantOrdinalMap,
