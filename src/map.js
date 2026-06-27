@@ -28,6 +28,27 @@ function getRouteSpacingForZoom(zoom) {
 }
 
 /**
+ * Per-line parallel offset (px) for a line at index `idx` within a bundle of
+ * `total` distinct lines at the given zoom.
+ *
+ * The spacing is capped so the whole bundle never spreads wider than
+ * ROUTE_MAX_OFFSET_SPREAD px. Without this cap, a stop with ~20 lines fans the
+ * outer lines out by ±30px, which the PolylineOffset plugin renders as loops at
+ * every corner. Capping keeps the geometry tight enough to stay loop-free.
+ *
+ * @param {number} idx
+ * @param {number} total
+ * @param {number} zoom
+ * @returns {number}
+ */
+function getLineOffset(idx, total, zoom) {
+    const base = getRouteSpacingForZoom(zoom);
+    if (base === 0 || total <= 1) return 0;
+    const spacing = Math.min(base, CONFIG.ROUTE_MAX_OFFSET_SPREAD / (total - 1));
+    return (idx - (total - 1) / 2) * spacing;
+}
+
+/**
  * Calculates a dynamic style (radius, weight, opacity) based on zoom level.
  * @param {number} zoom
  * @param {boolean} isTouch
@@ -85,15 +106,13 @@ function updateMapStyles() {
 
     // 2. Update route parallel offsets
     if (appState.currentRouteLayer && appState.currentLineToIndex) {
-        const spacing = getRouteSpacingForZoom(zoom);
         const total = appState.currentTotalLines;
 
         const applyOffset = (l) => {
             if (l.setOffset && l.feature) {
                 const lineId = l.feature.properties.DESC_LINEA;
                 const idx = appState.currentLineToIndex.get(lineId) || 0;
-                const offset = (idx - (total - 1) / 2) * spacing;
-                l.setOffset(offset);
+                l.setOffset(getLineOffset(idx, total, zoom));
             } else if (l.eachLayer) {
                 l.eachLayer(applyOffset);
             }
@@ -449,14 +468,17 @@ function renderRouteLines(features, lineCount) {
     appState.currentLineToIndex = new Map(distinctLines.map((id, idx) => [id, idx]));
     appState.currentTotalLines = distinctLines.length;
 
-    const spacing = getRouteSpacingForZoom(map.getZoom());
+    // Dense bundles get more simplification: fewer corners ⇒ fewer offset loops.
+    const smoothFactor = distinctLines.length >= CONFIG.ROUTE_DENSE_THRESHOLD
+        ? CONFIG.ROUTE_SMOOTH_FACTOR_DENSE
+        : CONFIG.ROUTE_SMOOTH_FACTOR;
+    const zoom = map.getZoom();
 
     appState.currentRouteLayer = L.geoJSON(
         { type: 'FeatureCollection', features },
         {
             style: (feature) => {
                 const idx = appState.currentLineToIndex.get(feature.properties.DESC_LINEA) || 0;
-                const offset = (idx - (appState.currentTotalLines - 1) / 2) * spacing;
 
                 return {
                     color: getLineColor(feature.properties.DESC_LINEA),
@@ -464,8 +486,8 @@ function renderRouteLines(features, lineCount) {
                     opacity: CONFIG.ROUTE_OPACITY,
                     lineCap: 'round',
                     lineJoin: 'round', // 'round' handles messy high-density data better than 'bevel'
-                    smoothFactor: 2, // Aggressive simplification to prevent loops in dense areas
-                    offset: offset,
+                    smoothFactor,
+                    offset: getLineOffset(idx, appState.currentTotalLines, zoom),
                 };
             },
             onEachFeature: (feature, layer) => {

@@ -9,6 +9,17 @@ export const CONFIG = {
     ROUTE_OPACITY: 0.8,
     ROUTE_HOVER_WEIGHT: 6,
     ROUTE_SPACING: 3,
+    // Cap the total px spread of a parallel-line bundle. With many lines through
+    // one stop, an uncapped spread (spacing × lines) fans the outer lines out so
+    // far that the PolylineOffset plugin curls them into loops at every bend.
+    // Capping the spread keeps offsets small enough to avoid loops; dense bundles
+    // simply overlap (you can't visually separate 20+ lines a few px apart anyway).
+    ROUTE_MAX_OFFSET_SPREAD: 14,
+    // smoothFactor (DP simplification tolerance). Denser bundles get more
+    // simplification: fewer/longer segments means fewer corners for offsets to loop on.
+    ROUTE_SMOOTH_FACTOR: 2,
+    ROUTE_SMOOTH_FACTOR_DENSE: 4,
+    ROUTE_DENSE_THRESHOLD: 6, // lines count at/above which a bundle is "dense"
     STOP_GLOBAL_RADIUS: 3,
     STOP_ROUTE_RADIUS: 5,
     STOP_HOVER_RADIUS: 5,
