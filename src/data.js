@@ -1,5 +1,4 @@
 import { CONFIG } from './config.js';
-import { isBadStop } from './utils.js';
 
 /**
  * Pre-built lookup indexes for O(1) access to routes and stops by key.
@@ -87,8 +86,6 @@ function _indexStops(stopsData) {
     const seenStops = new Set();
 
     stopsData.features.forEach((f) => {
-        if (isBadStop(f.properties)) return;
-
         const cod = f.properties.COD_UBIC_P;
         const linea = f.properties.DESC_LINEA;
         const variantId = f.properties.COD_VARIAN;

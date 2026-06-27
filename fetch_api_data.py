@@ -1,6 +1,5 @@
 """Fetch Montevideo bus routes and stops from the official API and write the
-GeoJSON datasets (routes.js / routes.json / stops.js / stops.json) consumed by
-the web app.
+GeoJSON datasets (routes.json / stops.json) consumed by the web app.
 
 IMPORTANT: the api.montevideo.gub.uy gateway only accepts connections from
 inside Uruguay's network, so this script must run from a host with Uruguayan
@@ -317,17 +316,13 @@ def build_stops_features(stop_occurrences, stops_meta, street_lookup):
 
 
 # --- Output -------------------------------------------------------------------
-def save(features, basename, var_name):
+def save(features, basename):
     collection = {"type": "FeatureCollection", "features": features}
-    js_path = f"{basename}.js"
     json_path = f"{basename}.json"
 
-    log(f"Writing {js_path} and {json_path} ({len(features)} features)...")
-    payload = json.dumps(collection, ensure_ascii=False)
-    with open(js_path, "w", encoding="utf-8") as f:
-        f.write(f"const {var_name} = {payload};\n")
+    log(f"Writing {json_path} ({len(features)} features)...")
     with open(json_path, "w", encoding="utf-8") as f:
-        f.write(payload)
+        json.dump(collection, f, ensure_ascii=False)
 
 
 def main():
@@ -362,8 +357,8 @@ def main():
     routes_features.sort(key=lambda f: (f["properties"]["DESC_LINEA"], str(f["properties"]["COD_VARIAN"])))
     stops_features.sort(key=lambda f: (str(f["properties"]["COD_VARIAN"]), f["properties"]["ORDINAL"]))
 
-    save(routes_features, "routes", "routesData")
-    save(stops_features, "stops", "stopsData")
+    save(routes_features, "routes")
+    save(stops_features, "stops")
     log("Done.")
 
 

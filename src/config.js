@@ -1,6 +1,4 @@
 export const CONFIG = {
-    BAD_STOP_COORDS: [-56.169029, -34.918964],
-    BAD_STOP_REMOVE_RADIUS_DEG: 0.003, // ~300 meters
     LABEL_CLUSTER_THRESHOLD_DEG: 0.0005, // ~50 meters
     GOLDEN_RATIO: 0.618033988749895,
     MAP_CENTER: [-34.88, -56.16],
@@ -18,8 +16,6 @@ export const CONFIG = {
     FIT_BOUNDS_PADDING: [50, 50],
     FIT_BOUNDS_MAX_ZOOM: 15,
     SELECT_CHANGE_DEBOUNCE_MS: 150,
-    BAD_STOP_STREET: 'AV DR JUAN ANDRES CACHON',
-    BAD_STOP_CORNER: 'AV JULIO MARIA SOSA',
 
     // Touch / coarse-pointer overrides
     // clickTolerance: how many px away from a feature a touch can land and still register

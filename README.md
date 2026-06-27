@@ -10,9 +10,9 @@ Un mapa de los ómnibus de Montevideo. Creado con Google Antigravity y datos pub
 
 ## Updating the data
 
-The map renders four generated files: `routes.js` / `routes.json` and
-`stops.js` / `stops.json`. These are produced by `fetch_api_data.py` from the
-official API (`https://api.montevideo.gub.uy/`).
+The map renders two generated files: `routes.json` and `stops.json`. These are
+produced by `fetch_api_data.py` from the official API
+(`https://api.montevideo.gub.uy/`).
 
 > **Network requirement:** the API gateway only accepts connections from inside
 > Uruguay's network. GitHub-hosted Actions runners (in the US/EU) **cannot**

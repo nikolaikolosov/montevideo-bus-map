@@ -41,7 +41,7 @@ PYTHON="${PYTHON:-python3}"
 log "Fetching latest bus data..."
 "$PYTHON" fetch_api_data.py
 
-git add routes.js routes.json stops.js stops.json
+git add routes.json stops.json
 
 if git diff --staged --quiet; then
     log "No changes to commit."

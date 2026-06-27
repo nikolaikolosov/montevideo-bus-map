@@ -1,5 +1,3 @@
-import { CONFIG } from './config.js';
-
 /**
  * Escapes a string to prevent XSS when injecting into innerHTML.
  * @param {*} str
@@ -15,19 +13,9 @@ export const escapeHTML = (str) =>
     }[match]));
 
 /**
- * Returns true if the coordinate is near the known bad phantom stop.
- * @param {number[]} c - [lon, lat]
- * @returns {boolean}
- */
-const isBadCoord = (c) => {
-    const [bx, by] = CONFIG.BAD_STOP_COORDS;
-    const dx = c[0] - bx;
-    const dy = c[1] - by;
-    return Math.sqrt(dx * dx + dy * dy) < CONFIG.BAD_STOP_REMOVE_RADIUS_DEG;
-};
-
-/**
- * Recursively removes phantom stop coordinates from a GeoJSON coordinate array.
+ * Removes consecutive duplicate / near-duplicate points (within ~1 meter) from a
+ * GeoJSON coordinate array. Such points cause "loops" and rendering artifacts
+ * with the PolylineOffset plugin.
  * Works with LineString (array of positions) and MultiLineString (array of lines).
  * Does NOT mutate the original; returns a new array.
  * @param {Array} coords
@@ -39,14 +27,11 @@ export const cleanCoordinates = (coords) => {
     if (typeof coords[0] === 'number') return coords;
     // LineString: array of positions
     if (typeof coords[0][0] === 'number') {
-        const filtered = coords.filter((c) => !isBadCoord(c));
-        // Remove consecutive duplicates or extremely close points (within ~1 meter)
-        // which cause "loops" and artifacts with PolylineOffset.
         const threshold = 0.00001; // ~1 meter in degrees
-        return filtered.filter((c, i) => {
+        return coords.filter((c, i) => {
             if (i === 0) return true;
-            const dx = Math.abs(c[0] - filtered[i - 1][0]);
-            const dy = Math.abs(c[1] - filtered[i - 1][1]);
+            const dx = Math.abs(c[0] - coords[i - 1][0]);
+            const dy = Math.abs(c[1] - coords[i - 1][1]);
             return dx > threshold || dy > threshold;
         });
     }
@@ -139,11 +124,6 @@ export const debounce = (fn, delay) => {
 };
 
 /**
- * Returns true if the stop feature represents the known bad phantom stop.
- * @param {object} props - feature.properties
- * @returns {boolean}
- */
-/**
  * Returns true on touch / coarse-pointer devices (phones, tablets).
  * Uses the CSS pointer media query — more reliable than ontouchstart.
  * Result is cached after first call.
@@ -158,7 +138,3 @@ export const isCoarsePointer = (() => {
         return result;
     };
 })();
-
-export const isBadStop = (props) =>
-    props.CALLE === CONFIG.BAD_STOP_STREET &&
-    props.ESQUINA === CONFIG.BAD_STOP_CORNER;
