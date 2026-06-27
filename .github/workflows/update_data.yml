@@ -30,12 +30,12 @@ jobs:
 
       - name: Fetch and Process API Data
         env:
-          # Define standard environment variables that the user can map to their secrets
-          API_CLIENT_ID: ${{ secrets.API_CLIENT_ID }}
-          API_CLIENT_SECRET: ${{ secrets.API_CLIENT_SECRET }}
-          API_AUTH_URL: ${{ secrets.API_AUTH_URL || 'https://api.montevideo.gub.uy/auth/token' }}
-          API_ROUTES_URL: ${{ secrets.API_ROUTES_URL }}
-          API_STOPS_URL: ${{ secrets.API_STOPS_URL }}
+          # Define standard environment variables that the user can map to their secrets or variables
+          API_CLIENT_ID: ${{ secrets.API_CLIENT_ID || vars.API_CLIENT_ID }}
+          API_CLIENT_SECRET: ${{ secrets.API_CLIENT_SECRET || vars.API_CLIENT_SECRET }}
+          API_AUTH_URL: ${{ vars.API_AUTH_URL || secrets.API_AUTH_URL || 'https://api.montevideo.gub.uy/auth/token' }}
+          API_ROUTES_URL: ${{ vars.API_ROUTES_URL || secrets.API_ROUTES_URL }}
+          API_STOPS_URL: ${{ vars.API_STOPS_URL || secrets.API_STOPS_URL }}
         run: |
           python fetch_api_data.py
 
