@@ -19,13 +19,28 @@ def get_access_token():
         return None
 
     payload = {'grant_type': 'client_credentials'}
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    
     try:
-        # Trying both Basic Auth and Body just in case
-        payload['client_id'] = CLIENT_ID
-        payload['client_secret'] = CLIENT_SECRET
-        response = requests.post(AUTH_URL, auth=(CLIENT_ID, CLIENT_SECRET), data=payload, timeout=10)
+        # Usamos solo Basic Auth, no repetimos las credenciales en el payload
+        # porque Keycloak y WSO2 pueden rechazar la petición con 400/403.
+        response = requests.post(AUTH_URL, auth=(CLIENT_ID, CLIENT_SECRET), data=payload, headers=headers, timeout=10)
+        
+        # Si falla el Basic Auth, intentamos pasarlo por el body como fallback
+        if response.status_code in [400, 401, 403]:
+            print(f"Basic Auth falló con {response.status_code}. Respuesta: {response.text}")
+            print("Intentando autenticación vía payload (body)...")
+            payload['client_id'] = CLIENT_ID
+            payload['client_secret'] = CLIENT_SECRET
+            response = requests.post(AUTH_URL, data=payload, headers=headers, timeout=10)
+            
         response.raise_for_status()
         return response.json().get('access_token')
+    except requests.exceptions.HTTPError as e:
+        print(f"Error authenticating: {e}")
+        if e.response is not None:
+            print(f"Detalle del error de auth: {e.response.text}")
+        return None
     except Exception as e:
         print(f"Error authenticating: {e}")
         return None
@@ -131,6 +146,11 @@ def fetch_data(url, token, is_zip=False):
         response = requests.get(url, headers=headers, timeout=60)
         response.raise_for_status()
         return response.content if is_zip else response.json()
+    except requests.exceptions.HTTPError as e:
+        print(f"Error fetching data from {url}: {e}")
+        if e.response is not None:
+            print(f"Detalle del error de GET: {e.response.text}")
+        return None
     except Exception as e:
         print(f"Error fetching data from {url}: {e}")
         return None
