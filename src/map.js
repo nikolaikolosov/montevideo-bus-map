@@ -95,12 +95,13 @@ function updateMapStyles() {
     const zoom = map.getZoom();
     const touch = isCoarsePointer();
 
-    // 1. Update stops
+    // 1. Update stops (guard setStyle: a terminal-only layer may be a plain
+    // LayerGroup holding just the highlight marker, which has no setStyle).
     const stopStyle = getStopStyleForZoom(zoom, touch);
-    if (appState.globalStopsLayer) {
+    if (appState.globalStopsLayer?.setStyle) {
         appState.globalStopsLayer.setStyle(stopStyle);
     }
-    if (appState.currentStopsLayer) {
+    if (appState.currentStopsLayer?.setStyle) {
         appState.currentStopsLayer.setStyle(stopStyle);
     }
 
@@ -387,6 +388,51 @@ function snapToStops(coords, variantId) {
 }
 
 /**
+ * Trims a route's geometry to the segment between its first and last passenger
+ * stop, dropping the non-revenue "deadhead" tails where the bus drives to/from
+ * the depot after the last stop (or before the first) without picking up riders.
+ *
+ * @param {Array} coords - LineString coordinate array
+ * @param {string} variantId
+ * @returns {Array}
+ */
+function trimToStops(coords, variantId) {
+    const variantStops = stopsByVariant.get(variantId);
+    if (!variantStops || variantStops.length < 2) return coords;
+    // Only meaningful for a flat LineString.
+    if (typeof coords[0]?.[0] !== 'number') return coords;
+
+    // First / last passenger stops by ORDINAL.
+    let first = variantStops[0];
+    let last = variantStops[0];
+    for (const s of variantStops) {
+        if (s.properties.ORDINAL < first.properties.ORDINAL) first = s;
+        if (s.properties.ORDINAL > last.properties.ORDINAL) last = s;
+    }
+
+    const nearestIdx = (pt) => {
+        let minIdx = 0;
+        let minDistSq = Infinity;
+        for (let i = 0; i < coords.length; i++) {
+            const dx = coords[i][0] - pt[0];
+            const dy = coords[i][1] - pt[1];
+            const d2 = dx * dx + dy * dy;
+            if (d2 < minDistSq) {
+                minDistSq = d2;
+                minIdx = i;
+            }
+        }
+        return minIdx;
+    };
+
+    let startIdx = nearestIdx(first.geometry.coordinates);
+    let endIdx = nearestIdx(last.geometry.coordinates);
+    if (startIdx > endIdx) [startIdx, endIdx] = [endIdx, startIdx];
+
+    return coords.slice(startIdx, endIdx + 1);
+}
+
+/**
  * Clones and cleans a route feature's geometry.
  * Uses shallow clone + geometry-only cloning instead of structuredClone
  * for better performance on large GeoJSON datasets.
@@ -406,7 +452,13 @@ function prepareRouteFeature(f, sourceLonLat) {
     const variantId = f.properties.COD_VARIAN;
     coords = snapToStops(coords, variantId);
 
+    // Drop the non-revenue deadhead tails (to/from the depot).
+    coords = trimToStops(coords, variantId);
+
     if (sourceLonLat) {
+        // Show only the part the rider can still travel: from the clicked stop
+        // downstream to the last stop. At a terminal there is nothing downstream
+        // (coords collapses to <2 points) and the variant is dropped below.
         coords = truncateLineDownstream(coords, sourceLonLat);
     }
     if (!coords || coords.length <= 1) return null;
@@ -645,7 +697,15 @@ export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null
         .map((f) => prepareRouteFeature(f, sourceLonLat))
         .filter(Boolean);
 
-    if (cleanedRouteFeatures.length === 0) return { variantCount: 0, stopCount: 0 };
+    if (cleanedRouteFeatures.length === 0) {
+        // No revenue route downstream (e.g. the clicked stop is a terminal).
+        // Keep just the clicked stop visible instead of blanking the map.
+        if (sourceFeature) {
+            appState.currentStopsLayer = L.layerGroup().addTo(map);
+            renderHighlightStop(sourceFeature);
+        }
+        return { variantCount: 0, stopCount: 0 };
+    }
 
     // --- Filter stop features ---
     const stopFeatures = getFilteredStopFeatures(lineIds, variantsArr, variantOrdinalMap);
