@@ -1,6 +1,8 @@
 import { CONFIG } from './config.js';
 import { escapeHTML, cleanCoordinates, truncateLineDownstream, isCoarsePointer } from './utils.js';
 import { appState, resetLayers } from './state.js';
+import { buildSections } from './bundling.js';
+import { OffsetPolyline } from './offsetline.js';
 import {
     uniqueStopsData,
     stopLinesMap,
@@ -16,35 +18,26 @@ import {
 let map;
 
 /**
- * Calculates parallel line spacing based on zoom level.
- * @param {number} zoom
- * @returns {number}
- */
-function getRouteSpacingForZoom(zoom) {
-    // Only enable parallel offsets when zoomed in enough that the pixel geometry
-    // is large relative to the offset — below this, offsets curl into loops.
-    if (zoom < CONFIG.ROUTE_OFFSET_MIN_ZOOM) return 0;
-    return CONFIG.ROUTE_SPACING;
-}
-
-/**
- * Per-line parallel offset (px) for a line at index `idx` within a bundle of
- * `total` distinct lines at the given zoom.
+ * Per-line parallel offset (px) for slot `idx` within a bundle of `total`
+ * distinct lines sharing a corridor at the given zoom.
  *
- * The spacing is capped so the whole bundle never spreads wider than
- * ROUTE_MAX_OFFSET_SPREAD px. Without this cap, a stop with ~20 lines fans the
- * outer lines out by ±30px, which the PolylineOffset plugin renders as loops at
- * every corner. Capping keeps the geometry tight enough to stay loop-free.
+ * Below ROUTE_OFFSET_MIN_ZOOM all lines collapse onto the street centreline.
+ * At the minimum zoom the lines touch (spacing == stroke weight); further in,
+ * a small gap opens between them. The spacing is also capped so a corridor
+ * with many lines never spreads wider than ROUTE_MAX_SPREAD_PX and stays
+ * readable against the street grid.
  *
  * @param {number} idx
  * @param {number} total
  * @param {number} zoom
+ * @param {number} weight - base stroke weight (px)
  * @returns {number}
  */
-function getLineOffset(idx, total, zoom) {
-    const base = getRouteSpacingForZoom(zoom);
-    if (base === 0 || total <= 1) return 0;
-    const spacing = Math.min(base, CONFIG.ROUTE_MAX_OFFSET_SPREAD / (total - 1));
+function getLineOffset(idx, total, zoom, weight) {
+    if (total <= 1 || zoom < CONFIG.ROUTE_OFFSET_MIN_ZOOM) return 0;
+    let spacing =
+        zoom === CONFIG.ROUTE_OFFSET_MIN_ZOOM ? weight : weight + CONFIG.ROUTE_BUNDLE_GAP_PX;
+    spacing = Math.min(spacing, CONFIG.ROUTE_MAX_SPREAD_PX / (total - 1));
     return (idx - (total - 1) / 2) * spacing;
 }
 
@@ -106,20 +99,13 @@ function updateMapStyles() {
     }
 
     // 2. Update route parallel offsets
-    if (appState.currentRouteLayer && appState.currentLineToIndex) {
-        const total = appState.currentTotalLines;
-
-        const applyOffset = (l) => {
-            if (l.setOffset && l.feature) {
-                const lineId = l.feature.properties.DESC_LINEA;
-                const idx = appState.currentLineToIndex.get(lineId) || 0;
-                l.setOffset(getLineOffset(idx, total, zoom));
-            } else if (l.eachLayer) {
-                l.eachLayer(applyOffset);
+    if (appState.currentRouteLayer) {
+        appState.currentRouteLayer.eachLayer((l) => {
+            if (l.setOffsetPx && l._bundleSlot) {
+                const { idx, total, weight } = l._bundleSlot;
+                l.setOffsetPx(getLineOffset(idx, total, zoom, weight));
             }
-        };
-
-        appState.currentRouteLayer.eachLayer(applyOffset);
+        });
     }
 }
 
@@ -160,6 +146,9 @@ export function initMap() {
 
     // Listen for zoom changes to scale markers and route offsets
     map.on('zoomend', updateMapStyles);
+
+    // Console/debug hook (pairs with window.__mvdShowStopRoutes in app.js)
+    window.__mvdMap = map;
 
     return map;
 }
@@ -348,46 +337,6 @@ export function renderGlobalStops(onShowRoutes) {
 // ---------------------------------------------------------------------------
 
 /**
- * Snaps route coordinates to the exact positions of all stops in the variant.
- * @param {Array} coords
- * @param {string} variantId
- * @returns {Array}
- */
-function snapToStops(coords, variantId) {
-    const variantStops = stopsByVariant.get(variantId);
-    if (!variantStops || variantStops.length === 0) return coords;
-
-    const thresholdDeg = 0.0002; // ~20 meters. Only snap if the line is already close.
-    const thresholdSq = thresholdDeg * thresholdDeg;
-
-    // Handle LineString
-    if (typeof coords[0][0] === 'number') {
-        variantStops.forEach((stop) => {
-            const [slon, slat] = stop.geometry.coordinates;
-            let minIdx = -1;
-            let minDistSq = Infinity;
-            for (let i = 0; i < coords.length; i++) {
-                const dx = coords[i][0] - slon;
-                const dy = coords[i][1] - slat;
-                const d2 = dx * dx + dy * dy;
-                if (d2 < minDistSq) {
-                    minDistSq = d2;
-                    minIdx = i;
-                }
-            }
-            // Only snap if within threshold to avoid creating sharp "kinks"
-            if (minIdx !== -1 && minDistSq < thresholdSq) {
-                coords[minIdx] = [slon, slat];
-            }
-        });
-        return coords;
-    }
-
-    // Handle MultiLineString
-    return coords.map((line) => snapToStops(line, variantId));
-}
-
-/**
  * Trims a route's geometry to the segment between its first and last passenger
  * stop, dropping the non-revenue "deadhead" tails where the bus drives to/from
  * the depot after the last stop (or before the first) without picking up riders.
@@ -448,12 +397,10 @@ function prepareRouteFeature(f, sourceLonLat) {
     let coords = JSON.parse(JSON.stringify(f.geometry.coordinates));
     coords = cleanCoordinates(coords);
 
-    // Hard-bind the geometry to the actual stop coordinates
-    const variantId = f.properties.COD_VARIAN;
-    coords = snapToStops(coords, variantId);
-
     // Drop the non-revenue deadhead tails (to/from the depot).
-    coords = trimToStops(coords, variantId);
+    // (No per-variant snapping to stops here: bundling.js unifies the traces
+    // of all variants into shared street geometry afterwards.)
+    coords = trimToStops(coords, f.properties.COD_VARIAN);
 
     if (sourceLonLat) {
         // Show only the part the rider can still travel: from the clicked stop
@@ -562,57 +509,77 @@ function renderRouteLabels(labelGroups) {
 // ---------------------------------------------------------------------------
 
 /**
- * Renders the filtered route lines on the map.
+ * Renders the filtered route lines on the map as bundled corridors.
+ *
+ * Instead of drawing every variant's own trace (which overlap and cross,
+ * because each variant is digitised independently), the features are first
+ * unified into shared street corridors (see bundling.js). Each corridor is
+ * drawn once per line with a parallel pixel offset: lines stay parallel, never
+ * cross within a corridor, and a line appears once per street regardless of
+ * how many of its variants use it.
+ *
  * @param {object[]} features - cleaned GeoJSON Feature[]
- * @param {number} lineCount - total number of distinct lines (affects stroke weight)
  */
-function renderRouteLines(features, lineCount) {
-    const weight = lineCount === 1 ? CONFIG.ROUTE_WEIGHT_SINGLE : CONFIG.ROUTE_WEIGHT_MULTI;
+function renderRouteLines(features) {
+    const sections = buildSections(features);
 
-    // To stack lines parallel, we assign each line ID an offset index
-    const distinctLines = [...new Set(features.map((f) => f.properties.DESC_LINEA))].sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true })
-    );
-    
-    // Save indexing to state for dynamic zoom-based updates
-    appState.currentLineToIndex = new Map(distinctLines.map((id, idx) => [id, idx]));
-    appState.currentTotalLines = distinctLines.length;
+    const distinctLines = new Set();
+    sections.forEach((s) => s.lines.forEach((l) => distinctLines.add(l)));
+    const weight =
+        distinctLines.size === 1 ? CONFIG.ROUTE_WEIGHT_SINGLE : CONFIG.ROUTE_WEIGHT_MULTI;
 
     const zoom = map.getZoom();
 
-    appState.currentRouteLayer = L.geoJSON(
-        { type: 'FeatureCollection', features },
-        {
-            style: (feature) => {
-                const idx = appState.currentLineToIndex.get(feature.properties.DESC_LINEA) || 0;
-
-                return {
-                    color: getLineColor(feature.properties.DESC_LINEA),
-                    weight,
-                    opacity: CONFIG.ROUTE_OPACITY,
-                    lineCap: 'round',
-                    lineJoin: 'round', // 'round' handles messy high-density data better than 'bevel'
-                    smoothFactor: CONFIG.ROUTE_SMOOTH_FACTOR,
-                    offset: getLineOffset(idx, appState.currentTotalLines, zoom),
-                };
-            },
-            onEachFeature: (feature, layer) => {
-                layer.bindPopup(`
-                    <div class="popup-content">
-                        <h3>Línea ${escapeHTML(feature.properties.DESC_LINEA)}</h3>
-                        <p>Variante: ${escapeHTML(feature.properties.DESC_VARIA || 'N/A')}</p>
-                    </div>
-                `);
-                layer.on('mouseover', function () {
-                    this.setStyle({ weight: CONFIG.ROUTE_HOVER_WEIGHT, opacity: 1 });
-                    this.bringToFront();
-                });
-                layer.on('mouseout', function () {
-                    appState.currentRouteLayer?.resetStyle(this);
-                });
-            },
+    /** All rendered segments per line — lets hover highlight the whole line. */
+    const layersByLine = new Map();
+    const setLineHighlight = (lineId, on) => {
+        for (const l of layersByLine.get(lineId) ?? []) {
+            if (on) {
+                l.setStyle({ weight: CONFIG.ROUTE_HOVER_WEIGHT, opacity: 1 });
+                l.bringToFront();
+            } else {
+                l.setStyle({ weight: l._bundleSlot.weight, opacity: CONFIG.ROUTE_OPACITY });
+            }
         }
-    ).addTo(map);
+    };
+
+    appState.currentRouteLayer = L.featureGroup().addTo(map);
+
+    for (const sec of sections) {
+        const latlngs = sec.coords.map(([lon, lat]) => [lat, lon]);
+        const total = sec.lines.length;
+
+        sec.lines.forEach((lineId, idx) => {
+            const variants = [...(sec.variantsByLine.get(lineId) ?? [])].sort();
+            const variantsRow = variants.length
+                ? `<p>Variante${variants.length > 1 ? 's' : ''}: ${escapeHTML(variants.join(', '))}</p>`
+                : '';
+
+            const layer = new OffsetPolyline(latlngs, {
+                color: getLineColor(lineId),
+                weight,
+                opacity: CONFIG.ROUTE_OPACITY,
+                lineCap: 'round',
+                lineJoin: 'round',
+                smoothFactor: CONFIG.ROUTE_SMOOTH_FACTOR,
+                offsetPx: getLineOffset(idx, total, zoom, weight),
+            });
+            layer._bundleSlot = { idx, total, weight };
+
+            layer.bindPopup(`
+                <div class="popup-content">
+                    <h3>Línea ${escapeHTML(lineId)}</h3>
+                    ${variantsRow}
+                </div>
+            `);
+            layer.on('mouseover', () => setLineHighlight(lineId, true));
+            layer.on('mouseout', () => setLineHighlight(lineId, false));
+
+            if (!layersByLine.has(lineId)) layersByLine.set(lineId, []);
+            layersByLine.get(lineId).push(layer);
+            layer.addTo(appState.currentRouteLayer);
+        });
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -713,7 +680,7 @@ export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null
     // --- Render ---
     const labelGroups = buildLabelGroups(cleanedRouteFeatures);
     renderRouteLabels(labelGroups);
-    renderRouteLines(cleanedRouteFeatures, lineIds.length);
+    renderRouteLines(cleanedRouteFeatures);
     renderStops(stopFeatures, onShowRoutes);
 
     if (sourceFeature) {
@@ -721,7 +688,7 @@ export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null
     }
 
     // --- Fit bounds ---
-    if (!sourceFeature && appState.currentRouteLayer) {
+    if (!sourceFeature && appState.currentRouteLayer?.getLayers().length) {
         map.fitBounds(appState.currentRouteLayer.getBounds(), {
             padding: CONFIG.FIT_BOUNDS_PADDING,
             maxZoom: CONFIG.FIT_BOUNDS_MAX_ZOOM,

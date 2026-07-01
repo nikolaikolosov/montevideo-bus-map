@@ -16,12 +16,6 @@ export const appState = {
     routeLabelsLayer: null,
     /** @type {L.Layer|null} Currently selected/clicked stop marker */
     selectedStopLayer: null,
-
-    // Helper state for dynamic parallel line offsets
-    /** @type {Map<string, number>|null} */
-    currentLineToIndex: null,
-    /** @type {number} */
-    currentTotalLines: 0,
 };
 
 /**
@@ -34,6 +28,4 @@ export function resetLayers() {
     appState.globalStopsLayer = null;
     appState.routeLabelsLayer = null;
     appState.selectedStopLayer = null;
-    appState.currentLineToIndex = null;
-    appState.currentTotalLines = 0;
 }

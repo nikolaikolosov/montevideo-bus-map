@@ -13,7 +13,13 @@
 
 import { CONFIG } from './config.js';
 import { debounce, isCoarsePointer } from './utils.js';
-import { buildIndexes, getSortedLines } from './data.js';
+import {
+    buildIndexes,
+    getSortedLines,
+    stopsByCode,
+    stopLinesMap,
+    stopVariantsMap,
+} from './data.js';
 import { initMap, renderGlobalStops, renderRoutes, locateUser } from './map.js';
 import { hideLoader, showError, populateRouteSelect, updateStatsPanel } from './ui.js';
 
@@ -96,6 +102,24 @@ function handleShowAllStops() {
     renderGlobalStops(handleShowRoutes);
     updateStatsPanel({ show: false });
 }
+
+/**
+ * Console/debug hook: triggers "Ver rutas" for a stop by its code, exactly as
+ * clicking the button in the stop's popup would. Used for scripted visual
+ * verification; harmless in production.
+ * @param {number} stopCode - COD_UBIC_P
+ * @returns {boolean} true if the stop exists and routes were rendered
+ */
+window.__mvdShowStopRoutes = (stopCode) => {
+    const stopFeatures = stopsByCode.get(stopCode);
+    if (!stopFeatures?.length) return false;
+    const linesArr = Array.from(stopLinesMap.get(stopCode) ?? []).sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+    );
+    const variantsArr = Array.from(stopVariantsMap.get(stopCode) ?? []);
+    handleShowRoutes(linesArr, variantsArr, stopFeatures[0]);
+    return true;
+};
 
 // ---------------------------------------------------------------------------
 // Initialisation

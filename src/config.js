@@ -5,22 +5,27 @@ export const CONFIG = {
     MAP_ZOOM: 12,
     MAX_ZOOM: 19,
     ROUTE_WEIGHT_SINGLE: 4,
-    ROUTE_WEIGHT_MULTI: 2,
-    ROUTE_OPACITY: 0.8,
-    ROUTE_HOVER_WEIGHT: 6,
-    // Parallel-line offset between routes sharing a street. Deliberately tiny:
-    // the leaflet-polylineoffset plugin curls lines into loops at sharp turns /
-    // U-turns, and the loop size grows with the offset. A 1px offset gives a hint
-    // of separation while keeping any residual loop sub-pixel. Only applied at
-    // zoom >= ROUTE_OFFSET_MIN_ZOOM, where the pixel geometry is large enough that
-    // ordinary bends don't loop at all.
-    ROUTE_SPACING: 1,
-    // Cap the total px spread of a bundle at 2px, so the outermost line is never
-    // offset more than ±1px however many lines share the stop. This keeps any
-    // residual loop at a U-turn sub-pixel (within the line's own stroke width).
-    ROUTE_MAX_OFFSET_SPREAD: 2,
-    ROUTE_OFFSET_MIN_ZOOM: 16,
-    ROUTE_SMOOTH_FACTOR: 2,
+    ROUTE_WEIGHT_MULTI: 2.5,
+    ROUTE_OPACITY: 0.9,
+    ROUTE_HOVER_WEIGHT: 5,
+    // --- Route bundling (see bundling.js) ---
+    // Vertices of different variants closer than this collapse into one shared
+    // "street node" (~13 m). Must stay well below half the typical distance
+    // between parallel streets (~85 m blocks in Montevideo) so distinct streets
+    // never merge, yet above the ~1–5 m jitter between variant traces.
+    BUNDLE_TOLERANCE_DEG: 0.00013,
+    // Corridor polylines are simplified (Douglas–Peucker) with this tolerance
+    // (~4 m) to iron out the ±2–3 m jitter of averaged street nodes.
+    BUNDLE_SIMPLIFY_EPS_DEG: 0.00004,
+    // Gap (px) between parallel lines of a bundle at high zoom.
+    ROUTE_BUNDLE_GAP_PX: 1,
+    // Cap on the total width (px) of a bundle: with many lines the per-line
+    // spacing shrinks so the outermost offsets stay small enough that the
+    // PolylineOffset plugin doesn't curl corners into loops.
+    ROUTE_MAX_SPREAD_PX: 36,
+    // Below this zoom all lines of a bundle collapse onto the street centreline.
+    ROUTE_OFFSET_MIN_ZOOM: 15,
+    ROUTE_SMOOTH_FACTOR: 1,
     STOP_GLOBAL_RADIUS: 3,
     STOP_ROUTE_RADIUS: 5,
     STOP_HOVER_RADIUS: 5,
