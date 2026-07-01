@@ -8,18 +8,19 @@ export const CONFIG = {
     ROUTE_WEIGHT_MULTI: 2,
     ROUTE_OPACITY: 0.8,
     ROUTE_HOVER_WEIGHT: 6,
-    ROUTE_SPACING: 3,
-    // Cap the total px spread of a parallel-line bundle. With many lines through
-    // one stop, an uncapped spread (spacing × lines) fans the outer lines out so
-    // far that the PolylineOffset plugin curls them into loops at every bend.
-    // Capping the spread keeps offsets small enough to avoid loops; dense bundles
-    // simply overlap (you can't visually separate 20+ lines a few px apart anyway).
-    ROUTE_MAX_OFFSET_SPREAD: 14,
-    // smoothFactor (DP simplification tolerance). Denser bundles get more
-    // simplification: fewer/longer segments means fewer corners for offsets to loop on.
+    // Parallel-line offset between routes sharing a street. Deliberately tiny:
+    // the leaflet-polylineoffset plugin curls lines into loops at sharp turns /
+    // U-turns, and the loop size grows with the offset. A 1px offset gives a hint
+    // of separation while keeping any residual loop sub-pixel. Only applied at
+    // zoom >= ROUTE_OFFSET_MIN_ZOOM, where the pixel geometry is large enough that
+    // ordinary bends don't loop at all.
+    ROUTE_SPACING: 1,
+    // Cap the total px spread of a bundle at 2px, so the outermost line is never
+    // offset more than ±1px however many lines share the stop. This keeps any
+    // residual loop at a U-turn sub-pixel (within the line's own stroke width).
+    ROUTE_MAX_OFFSET_SPREAD: 2,
+    ROUTE_OFFSET_MIN_ZOOM: 16,
     ROUTE_SMOOTH_FACTOR: 2,
-    ROUTE_SMOOTH_FACTOR_DENSE: 4,
-    ROUTE_DENSE_THRESHOLD: 6, // lines count at/above which a bundle is "dense"
     STOP_GLOBAL_RADIUS: 3,
     STOP_ROUTE_RADIUS: 5,
     STOP_HOVER_RADIUS: 5,

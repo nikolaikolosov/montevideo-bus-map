@@ -21,9 +21,9 @@ let map;
  * @returns {number}
  */
 function getRouteSpacingForZoom(zoom) {
-    // Be very conservative: only enable parallel lines when zoomed in enough
-    // to see streets clearly. Low zoom with offsets always creates loops.
-    if (zoom < 15) return 0;
+    // Only enable parallel offsets when zoomed in enough that the pixel geometry
+    // is large relative to the offset — below this, offsets curl into loops.
+    if (zoom < CONFIG.ROUTE_OFFSET_MIN_ZOOM) return 0;
     return CONFIG.ROUTE_SPACING;
 }
 
@@ -526,10 +526,6 @@ function renderRouteLines(features, lineCount) {
     appState.currentLineToIndex = new Map(distinctLines.map((id, idx) => [id, idx]));
     appState.currentTotalLines = distinctLines.length;
 
-    // Dense bundles get more simplification: fewer corners ⇒ fewer offset loops.
-    const smoothFactor = distinctLines.length >= CONFIG.ROUTE_DENSE_THRESHOLD
-        ? CONFIG.ROUTE_SMOOTH_FACTOR_DENSE
-        : CONFIG.ROUTE_SMOOTH_FACTOR;
     const zoom = map.getZoom();
 
     appState.currentRouteLayer = L.geoJSON(
@@ -544,7 +540,7 @@ function renderRouteLines(features, lineCount) {
                     opacity: CONFIG.ROUTE_OPACITY,
                     lineCap: 'round',
                     lineJoin: 'round', // 'round' handles messy high-density data better than 'bevel'
-                    smoothFactor,
+                    smoothFactor: CONFIG.ROUTE_SMOOTH_FACTOR,
                     offset: getLineOffset(idx, appState.currentTotalLines, zoom),
                 };
             },
