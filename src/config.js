@@ -26,6 +26,8 @@ export const CONFIG = {
     HIGHLIGHT_STOP_SIZE: 20,
     FIT_BOUNDS_PADDING: [50, 50],
     FIT_BOUNDS_MAX_ZOOM: 15,
+    // Auto-geolocation (mobile only): how far to zoom in when centring on the user.
+    GEOLOCATION_MAX_ZOOM: 16,
     SELECT_CHANGE_DEBOUNCE_MS: 150,
 
     // Touch / coarse-pointer overrides

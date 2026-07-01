@@ -164,6 +164,64 @@ export function initMap() {
 }
 
 // ---------------------------------------------------------------------------
+// Geolocation
+// ---------------------------------------------------------------------------
+
+/** @type {L.LayerGroup|null} "You are here" marker + accuracy circle. */
+let userLocationLayer = null;
+
+/**
+ * Asks the browser for the user's position, centres the map on it and drops a
+ * "you are here" marker with an accuracy circle. Called on mobile at startup.
+ *
+ * Fails silently: if the user denies permission or the device has no
+ * geolocation, the default city view is kept and nothing is shown — we never
+ * surface the app's error overlay for this optional convenience.
+ */
+export function locateUser() {
+    if (!map) return;
+
+    map.once('locationfound', (e) => {
+        if (userLocationLayer) map.removeLayer(userLocationLayer);
+
+        const accent = '#3b82f6'; // --accent
+        userLocationLayer = L.layerGroup([
+            L.circle(e.latlng, {
+                radius: e.accuracy,
+                color: accent,
+                weight: 1,
+                opacity: 0.4,
+                fillColor: accent,
+                fillOpacity: 0.1,
+                interactive: false,
+            }),
+            L.marker(e.latlng, {
+                icon: L.divIcon({
+                    className: '',
+                    html: '<div class="user-location-marker"></div>',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8],
+                }),
+                interactive: false,
+                keyboard: false,
+                zIndexOffset: 2000,
+            }),
+        ]).addTo(map);
+    });
+
+    map.once('locationerror', (err) => {
+        console.warn('[geolocation] no se pudo obtener la ubicación:', err.message);
+    });
+
+    map.locate({
+        setView: true,
+        maxZoom: CONFIG.GEOLOCATION_MAX_ZOOM,
+        enableHighAccuracy: true,
+        timeout: 10000,
+    });
+}
+
+// ---------------------------------------------------------------------------
 // Layer lifecycle
 // ---------------------------------------------------------------------------
 

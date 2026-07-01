@@ -12,9 +12,9 @@
  */
 
 import { CONFIG } from './config.js';
-import { debounce } from './utils.js';
+import { debounce, isCoarsePointer } from './utils.js';
 import { buildIndexes, getSortedLines } from './data.js';
-import { initMap, renderGlobalStops, renderRoutes } from './map.js';
+import { initMap, renderGlobalStops, renderRoutes, locateUser } from './map.js';
 import { hideLoader, showError, populateRouteSelect, updateStatsPanel } from './ui.js';
 
 // ---------------------------------------------------------------------------
@@ -133,6 +133,10 @@ async function initApp() {
         // Default view — all stops
         select.value = 'ALL_STOPS';
         handleShowAllStops();
+
+        // On mobile, centre the map on the user's current location.
+        // (Asks for permission; silently keeps the city view if denied.)
+        if (isCoarsePointer()) locateUser();
 
         hideLoader();
     } catch (err) {
