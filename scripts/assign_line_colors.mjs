@@ -121,8 +121,29 @@ export function simulateCvd(rgb, kind) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Per-pair ΔE targets, scaled by the SMALLEST stop clique the pair shares.
+ * At a 2-line stop the rider compares exactly two routes side by side — they
+ * must be unmistakably different (user report: 17 vs 137, both reds, at stop
+ * 4563). Inside a 41-line clique the same demand is geometrically impossible,
+ * so the target relaxes with clique size down to the structural floor.
+ */
+export const DELTA_E_TARGETS = [
+    { maxClique: 2, target: 0.2 },
+    { maxClique: 5, target: 0.12 },
+    { maxClique: 10, target: 0.08 },
+    { maxClique: Infinity, target: 0.06 },
+];
+
+/** @param {number} size - clique (stop line-count) @returns {number} ΔE target */
+export const targetForCliqueSize = (size) =>
+    DELTA_E_TARGETS.find((b) => size <= b.maxClique).target;
+
+export const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+/**
  * @param {object} stopsJson - parsed stops.json (v2: `patterns` foreign member)
- * @returns {{ lines: string[], neighbors: Map<string, Set<string>>, stopLines: Map<number, Set<string>> }}
+ * @returns {{ lines: string[], neighbors: Map<string, Set<string>>,
+ *   stopLines: Map<number, Set<string>>, pairMinClique: Map<string, number> }}
  */
 export function buildConflictGraph(stopsJson) {
     const stopLines = new Map();
@@ -133,15 +154,22 @@ export function buildConflictGraph(stopsJson) {
         }
     }
     const neighbors = new Map();
+    const pairMinClique = new Map();
     for (const set of stopLines.values()) {
         const arr = [...set];
         for (const a of arr) {
             if (!neighbors.has(a)) neighbors.set(a, new Set());
             for (const b of arr) if (b !== a) neighbors.get(a).add(b);
         }
+        for (let i = 0; i < arr.length; i++) {
+            for (let j = i + 1; j < arr.length; j++) {
+                const k = pairKey(arr[i], arr[j]);
+                pairMinClique.set(k, Math.min(pairMinClique.get(k) ?? Infinity, set.size));
+            }
+        }
     }
     const lines = [...neighbors.keys()].sort();
-    return { lines, neighbors, stopLines };
+    return { lines, neighbors, stopLines, pairMinClique };
 }
 
 // ---------------------------------------------------------------------------
@@ -157,7 +185,7 @@ const RINGS = [
     { dark: { L: 0.78, C: 0.14 }, light: { L: 0.55, C: 0.13 } },
     { dark: { L: 0.87, C: 0.11 }, light: { L: 0.625, C: 0.11 } },
 ];
-const HUE_STEP = 4; // 90 hues × 3 rings = 270 raw candidates before pruning
+const HUE_STEP = 3; // 120 hues × 4 rings = 480 raw candidates before pruning
 const BG = { dark: hexToLinear('#0f172a'), light: hexToLinear('#f1f5f9') };
 const MIN_CONTRAST = 3; // WCAG non-text minimum vs the theme basemap proxy
 
@@ -261,11 +289,19 @@ export function assignColors(graph, existing = {}) {
             (a < b ? -1 : 1),
     );
 
+    // All scores are RATIOS ΔE/target, where the target scales with the
+    // smallest stop clique the pair shares (DELTA_E_TARGETS): a pair alone at
+    // a 2-line stop must be far more distinct than a pair inside a 41-line
+    // bundle. Maximizing the minimum ratio spends the color budget where the
+    // rider actually compares few routes side by side.
+    const targetFor = (a, b) =>
+        targetForCliqueSize(graph.pairMinClique.get(pairKey(a, b)) ?? Infinity);
+
     const scoreFor = (line, cand) => {
         let minNeighbor = Infinity;
         for (const n of graph.neighbors.get(line) ?? []) {
             const s = slotOf.get(n);
-            if (s) minNeighbor = Math.min(minNeighbor, slotDistance(cand, s));
+            if (s) minNeighbor = Math.min(minNeighbor, slotDistance(cand, s) / targetFor(line, n));
         }
         if (minNeighbor !== Infinity) return minNeighbor;
         // No colored neighbor yet: spread globally instead.
@@ -291,38 +327,38 @@ export function assignColors(graph, existing = {}) {
     }
 
     // Local improvement, movable lines only (never disturbs `existing`).
-    // Hill-climb on the GLOBAL objective: raise the minimum pairwise ΔE over
-    // all co-located pairs; tie-break by shrinking the number of pairs sitting
-    // near that minimum. Per-line greedy scores are deliberately not used here
-    // — improving one line locally can degrade a neighbor's worst pair.
+    // Hill-climb on the GLOBAL objective: raise the minimum ΔE/target RATIO
+    // over all co-located pairs; tie-break by shrinking the number of pairs
+    // sitting near that minimum. Per-line greedy scores are deliberately not
+    // used here — improving one line locally can degrade a neighbor's worst.
     const EPS = 1e-9;
-    const NEAR = 0.005;
+    const NEAR = 0.05; // ratio units (~5% of a met target)
     const movable = new Set(missing);
     const pairList = [];
     for (const [line, ns] of graph.neighbors) {
-        for (const n of ns) if (line < n) pairList.push([line, n]);
+        for (const n of ns) if (line < n) pairList.push([line, n, targetFor(line, n)]);
     }
 
     const evaluate = () => {
         let min = Infinity;
-        for (const [a, b] of pairList) {
-            const d = slotDistance(slotOf.get(a), slotOf.get(b));
+        for (const [a, b, t] of pairList) {
+            const d = slotDistance(slotOf.get(a), slotOf.get(b)) / t;
             if (d < min) min = d;
         }
         let ties = 0;
-        for (const [a, b] of pairList) {
-            if (slotDistance(slotOf.get(a), slotOf.get(b)) < min + NEAR) ties++;
+        for (const [a, b, t] of pairList) {
+            if (slotDistance(slotOf.get(a), slotOf.get(b)) / t < min + NEAR) ties++;
         }
         return { min, ties };
     };
     const better = (e1, e2) => e1.min > e2.min + EPS || (e1.min > e2.min - EPS && e1.ties < e2.ties);
 
     let current = evaluate();
-    for (let iter = 0; iter < 80; iter++) {
+    for (let iter = 0; iter < 160; iter++) {
         // Movable lines involved in pairs near the current minimum.
         const hot = new Set();
-        for (const [a, b] of pairList) {
-            if (slotDistance(slotOf.get(a), slotOf.get(b)) < current.min + NEAR) {
+        for (const [a, b, t] of pairList) {
+            if (slotDistance(slotOf.get(a), slotOf.get(b)) / t < current.min + NEAR) {
                 if (movable.has(a)) hot.add(a);
                 if (movable.has(b)) hot.add(b);
             }
@@ -401,6 +437,28 @@ export function worstInCliqueDeltaE(colors, stopLines, theme, cvd = null) {
     return worst;
 }
 
+/**
+ * Worst pairwise ΔE per DELTA_E_TARGETS bucket (pairs bucketed by the
+ * smallest stop clique they share).
+ * @returns {Map<number, { minDeltaE: number, pair: [string, string] }>} keyed by bucket maxClique
+ */
+export function worstPerBucket(colors, pairMinClique, theme) {
+    const lab = new Map();
+    for (const [line, pair] of Object.entries(colors)) {
+        lab.set(line, linearToOklab(hexToLinear(pair[theme])));
+    }
+    const out = new Map();
+    for (const [key, size] of pairMinClique) {
+        const [a, b] = key.split('|');
+        if (!lab.has(a) || !lab.has(b)) continue;
+        const bucket = DELTA_E_TARGETS.find((x) => size <= x.maxClique).maxClique;
+        const d = deltaE(lab.get(a), lab.get(b));
+        const cur = out.get(bucket);
+        if (!cur || d < cur.minDeltaE) out.set(bucket, { minDeltaE: d, pair: [a, b] });
+    }
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
@@ -457,6 +515,17 @@ if (isMain) {
     const fmt = (w) => (w ? `${w.minDeltaE.toFixed(4)} (stop ${w.stop}: ${w.pair.join(' vs ')})` : 'n/a');
     const norm = themes.map((t) => worstInCliqueDeltaE(colors, graph.stopLines, t));
     linesOut.push(`| min in-clique ΔE | ${fmt(norm[0])} | ${fmt(norm[1])} |`);
+    const bucketLabel = (max, i) => {
+        const prev = i === 0 ? 2 : DELTA_E_TARGETS[i - 1].maxClique + 1;
+        return max === Infinity ? `${prev}+ lines` : prev === max ? `${max} lines` : `${prev}–${max} lines`;
+    };
+    DELTA_E_TARGETS.forEach((b, i) => {
+        const w = themes.map((t) => worstPerBucket(colors, graph.pairMinClique, t).get(b.maxClique));
+        const f = (x) => (x ? `${x.minDeltaE.toFixed(4)} (${x.pair.join(' vs ')})` : 'n/a');
+        linesOut.push(
+            `| min ΔE, stops with ${bucketLabel(b.maxClique, i)} (target ${b.target}) | ${f(w[0])} | ${f(w[1])} |`,
+        );
+    });
     for (const cvd of ['deuteranopia', 'protanopia']) {
         const w = themes.map((t) => worstInCliqueDeltaE(colors, graph.stopLines, t, cvd));
         linesOut.push(`| min in-clique ΔE, ${cvd} (report-only) | ${fmt(w[0])} | ${fmt(w[1])} |`);
