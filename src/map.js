@@ -4,6 +4,7 @@ import { appState, resetLayers } from './state.js';
 import { buildSections, buildJoints } from './bundling.js';
 import { OffsetPolyline, OffsetJoint } from './offsetline.js';
 import { getTheme } from './theme.js';
+import { t, tPlural } from './i18n.js';
 import {
     uniqueStopsData,
     stopLinesMap,
@@ -165,6 +166,12 @@ export function getRenderState() {
  * the current view so route lines, stops and labels pick up theme colors.
  * Safe to call before initMap() (no-op).
  */
+/** Closes any open Leaflet popup (used on language switch: popup content
+ * regenerates in the new language on next open). */
+export function closeMapPopup() {
+    map?.closePopup();
+}
+
 export function applyMapTheme() {
     if (!map) return;
     if (baseTileLayer) baseTileLayer.setUrl(CONFIG.TILE_URLS[getTheme()]);
@@ -314,21 +321,16 @@ export function createStopPopup(feature, onShowRoutes) {
           )
         : [];
     const variantsArr = stopVariantsMap.has(cod) ? Array.from(stopVariantsMap.get(cod)) : [];
-    const linesLabel =
-        linesArr.length === 0
-            ? 'sin líneas'
-            : linesArr.length === 1
-              ? '1 línea'
-              : `${linesArr.length} líneas`;
+    const linesLabel = tPlural('popup.lines', linesArr.length);
 
     const div = document.createElement('div');
     div.className = 'popup-content';
     div.innerHTML = `
         <h3>${escapeHTML(CALLE)}</h3>
-        <p class="popup-sub">esq. ${escapeHTML(ESQUINA)} · Parada ${escapeHTML(cod)} · ${linesLabel}</p>
+        <p class="popup-sub">${t('popup.corner', { esquina: escapeHTML(ESQUINA) })} · ${t('popup.stop', { cod: escapeHTML(cod) })} · ${linesLabel}</p>
         <ul class="popup-lines" role="list"></ul>
         <button type="button" class="btn draw-lines-btn"
-            aria-label="Ver todas las rutas desde esta parada">Ver rutas (todas)</button>
+            aria-label="${t('popup.viewAllAria')}">${t('popup.viewAll')}</button>
     `;
 
     // One tappable chip per line: shows JUST that line downstream from here.
@@ -342,7 +344,7 @@ export function createStopPopup(feature, onShowRoutes) {
         const color = getLineColor(line);
         chip.style.borderColor = color;
         chip.style.color = color;
-        chip.setAttribute('aria-label', `Ver ruta ${line} desde esta parada`);
+        chip.setAttribute('aria-label', t('popup.chipAria', { id: line }));
         chip.addEventListener('click', () => {
             onShowRoutes([line], getStopLineVariants(cod, line), feature);
             map?.closePopup();
@@ -681,9 +683,6 @@ function renderRouteLines(features) {
 
         sec.lines.forEach((lineId, idx) => {
             const variants = [...(sec.variantsByLine.get(lineId) ?? [])].sort();
-            const variantsRow = variants.length
-                ? `<p>Variante${variants.length > 1 ? 's' : ''}: ${escapeHTML(variants.join(', '))}</p>`
-                : '';
 
             const layer = new OffsetPolyline(latlngs, {
                 color: getLineColor(lineId),
@@ -697,12 +696,21 @@ function renderRouteLines(features) {
             layer._bundleSlot = { idx, total, weight };
             layer._baseWeight = weight;
 
-            layer.bindPopup(`
+            // Content function: regenerated on every open, so a language
+            // switch is picked up without re-binding.
+            layer.bindPopup(() => {
+                const variantsRow = variants.length
+                    ? `<p>${tPlural('section.variants', variants.length, {
+                          list: escapeHTML(variants.join(', ')),
+                      })}</p>`
+                    : '';
+                return `
                 <div class="popup-content">
-                    <h3>Línea ${escapeHTML(lineId)}</h3>
+                    <h3>${t('section.title', { id: escapeHTML(lineId) })}</h3>
                     ${variantsRow}
                 </div>
-            `);
+            `;
+            });
             layer.on('mouseover', () => setLineHighlight(lineId, true));
             layer.on('mouseout', () => setLineHighlight(lineId, false));
 

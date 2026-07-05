@@ -1,15 +1,27 @@
 /** Shared fixtures for the render e2e suites. */
 
 /**
- * Opens the map with a pinned theme, external network stubbed out
- * (CARTO tiles + Google Fonts aborted → deterministic canvas, no flake),
+ * Opens the map with a pinned theme and language, external network stubbed
+ * out (CARTO tiles + Google Fonts aborted → deterministic canvas, no flake),
  * and waits until data + initial render are done.
  */
-export async function openMap(page, { theme = 'dark' } = {}) {
-    await page.addInitScript((t) => {
-        // Pin the theme regardless of wall-clock time (far-future expiry).
-        localStorage.setItem('mvd-theme-override', JSON.stringify({ theme: t, expiresAt: 9e15 }));
-    }, theme);
+export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
+    await page.addInitScript(
+        ([t, l]) => {
+            // Pin the theme regardless of wall-clock time (far-future expiry)
+            // and the language regardless of the runner's browser locale —
+            // otherwise an en-US CI runner would auto-detect English and
+            // shift every baseline. Init scripts re-run on reload, so a test
+            // that exercises language persistence passes lang: false to keep
+            // the user's stored choice untouched.
+            localStorage.setItem(
+                'mvd-theme-override',
+                JSON.stringify({ theme: t, expiresAt: 9e15 }),
+            );
+            if (l) localStorage.setItem('mvd-lang', l);
+        },
+        [theme, lang],
+    );
     await page.route('https://*.basemaps.cartocdn.com/**', (r) => r.abort());
     await page.route('https://fonts.googleapis.com/**', (r) => r.abort());
     await page.route('https://fonts.gstatic.com/**', (r) => r.abort());

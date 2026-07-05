@@ -27,8 +27,10 @@ import {
     locateUser,
     applyMapTheme,
     getRenderState,
+    closeMapPopup,
 } from './map.js';
 import { initTheme, getTheme, setThemeOverride, onThemeChange } from './theme.js';
+import { initLang, setLang, onLangChange, applyTranslations, t } from './i18n.js';
 import {
     hideLoader,
     showError,
@@ -37,6 +39,8 @@ import {
     renderDataFreshness,
     initThemeToggle,
     updateThemeToggle,
+    initLangSwitcher,
+    updateLangSwitcher,
 } from './ui.js';
 
 // ---------------------------------------------------------------------------
@@ -73,7 +77,7 @@ async function loadData() {
     ]);
 
     if (!routes.data?.features || !stops.data?.features) {
-        throw new Error('Los datos descargados tienen un formato inesperado.');
+        throw new Error(t('error.badFormat'));
     }
 
     // Data freshness: prefer the pipeline's generated_at stamp (v2 contract);
@@ -163,9 +167,36 @@ window.__mvdShowStopRoutes = (stopCode) => {
 // Initialisation
 // ---------------------------------------------------------------------------
 
+/** Kept for language switches: the freshness line re-renders localized. */
+let lastGeneratedAt = null;
+/** Guards language-switch re-population before the data is indexed. */
+let dataReady = false;
+
 async function initApp() {
     try {
-        // Theme first, so the loader/panel and the initial tiles are correct.
+        // Language first: the loader and panel must greet in the right one
+        // (persisted choice, else browser preference, else Spanish).
+        initLang();
+        applyTranslations();
+        updateLangSwitcher();
+        initLangSwitcher((lang) => setLang(lang));
+        onLangChange(() => {
+            applyTranslations();
+            updateLangSwitcher();
+            updateThemeToggle(getTheme());
+            renderDataFreshness(lastGeneratedAt);
+            if (dataReady) {
+                const select = document.getElementById('routeSelect');
+                const selected = select?.value;
+                populateRouteSelect(getSortedLines());
+                if (select && selected) select.value = selected;
+            }
+            // An open popup keeps its old-language DOM; popups regenerate
+            // their content on open, so just close it.
+            closeMapPopup();
+        });
+
+        // Theme next, so the loader/panel and the initial tiles are correct.
         // Follows sunrise/sunset in Montevideo; the toggle overrides until the
         // next natural boundary (see theme.js).
         initTheme();
@@ -181,8 +212,10 @@ async function initApp() {
 
         // Build O(1) lookup indexes (runs once, not on every interaction)
         buildIndexes(routesData, stopsData);
+        dataReady = true;
 
         // Show when the data was generated (manual-update workflow)
+        lastGeneratedAt = generatedAt;
         renderDataFreshness(generatedAt);
 
         // Initialise Leaflet map
@@ -218,9 +251,7 @@ async function initApp() {
     } catch (err) {
         console.error('[app] Initialisation failed:', err);
         const msg =
-            err.name === 'AbortError'
-                ? 'La descarga de datos superó el tiempo límite. Verifica tu conexión.'
-                : err.message || 'Error desconocido al cargar los datos.';
+            err.name === 'AbortError' ? t('error.timeout') : err.message || t('error.unknown');
         showError(msg);
     }
 }

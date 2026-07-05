@@ -4,6 +4,7 @@
  */
 
 import { CONFIG } from './config.js';
+import { t, getLang, LOCALE_TAGS } from './i18n.js';
 
 // ---------------------------------------------------------------------------
 // Loader & error states
@@ -54,7 +55,7 @@ export function updateThemeToggle(theme) {
     if (!btn) return;
     const switchesToLight = theme === 'dark';
     btn.textContent = switchesToLight ? '☀️' : '🌙';
-    const label = switchesToLight ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+    const label = switchesToLight ? t('theme.toLight') : t('theme.toDark');
     btn.setAttribute('aria-label', label);
     btn.title = label;
 }
@@ -66,6 +67,30 @@ export function updateThemeToggle(theme) {
 export function initThemeToggle(onToggle) {
     const btn = document.getElementById('themeToggle');
     if (btn) btn.addEventListener('click', onToggle);
+}
+
+// ---------------------------------------------------------------------------
+// Language switcher
+// ---------------------------------------------------------------------------
+
+/**
+ * Wires the ES | EN | RU segmented control.
+ * @param {(lang: string) => void} onSelect
+ */
+export function initLangSwitcher(onSelect) {
+    for (const btn of document.querySelectorAll('.lang-switcher .lang-btn')) {
+        btn.addEventListener('click', () => onSelect(btn.dataset.lang));
+    }
+}
+
+/** Reflects the active language on the segmented control. */
+export function updateLangSwitcher() {
+    const lang = getLang();
+    for (const btn of document.querySelectorAll('.lang-switcher .lang-btn')) {
+        const active = btn.dataset.lang === lang;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -89,13 +114,13 @@ export function renderDataFreshness(value) {
         return;
     }
 
-    const formatted = date.toLocaleDateString('es-UY', {
+    const formatted = date.toLocaleDateString(LOCALE_TAGS[getLang()], {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
     });
-    el.textContent = `Datos: ${formatted}`;
-    el.title = 'Fecha de la última actualización de rutas y paradas';
+    el.textContent = t('freshness.text', { date: formatted });
+    el.title = t('freshness.title');
 
     const ageDays = (Date.now() - date.getTime()) / 86_400_000;
     el.classList.toggle('stale', ageDays > CONFIG.FRESHNESS_WARN_DAYS);
@@ -113,15 +138,19 @@ export function renderDataFreshness(value) {
 export function populateRouteSelect(sortedLines) {
     const select = document.getElementById('routeSelect');
 
+    // Drop previously generated options (language switch repopulates), keep
+    // the placeholder (translated via data-i18n).
+    for (const opt of [...select.querySelectorAll('option:not([disabled])')]) opt.remove();
+
     const clearOpt = document.createElement('option');
     clearOpt.value = 'ALL_STOPS';
-    clearOpt.textContent = '📍 Ver todas las paradas';
+    clearOpt.textContent = t('panel.allStops');
     select.appendChild(clearOpt);
 
     sortedLines.forEach((linea) => {
         const opt = document.createElement('option');
         opt.value = linea;
-        opt.textContent = `Línea ${linea}`;
+        opt.textContent = t('panel.lineOption', { id: linea });
         select.appendChild(opt);
     });
 }

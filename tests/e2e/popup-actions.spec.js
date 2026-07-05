@@ -13,7 +13,9 @@ test('busy stop popup lists all its lines as chips', async ({ page }) => {
     const chips = page.locator('.popup-content .line-chip');
     await expect(chips).toHaveCount(34);
     await expect(page.locator('.popup-sub')).toContainText('34 líneas');
-    await expect(chips.first()).toHaveAccessibleName(/Ver ruta .+ desde esta parada/);
+    await expect(chips.first()).toHaveAccessibleName(
+        /Ver el recorrido de la línea .+ desde esta parada/,
+    );
 });
 
 test('chip click renders exactly that line downstream from the stop', async ({ page }) => {
@@ -36,7 +38,7 @@ test('chip click renders exactly that line downstream from the stop', async ({ p
     await expect(page.locator('#statVariants')).not.toHaveText('-');
 });
 
-test('"Ver rutas (todas)" renders the whole bundle', async ({ page }) => {
+test('"Ver todos los recorridos" renders the whole bundle', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
     await openStopPopup(page, BUSY_STOP);
     await page.locator('.popup-content .draw-lines-btn').click();

@@ -150,6 +150,51 @@ body {
     transform: scale(0.94);
 }
 
+/* Language switcher — ES | EN | RU segmented control (brainstorm-006) */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.lang-switcher {
+    display: flex;
+    background: var(--input-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 17px;
+    overflow: hidden;
+}
+
+.lang-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 8px 9px;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.lang-btn:hover {
+    background: var(--input-bg-hover);
+}
+
+.lang-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
+.lang-btn.active {
+    color: var(--text-main);
+    background: var(--input-bg-hover);
+}
+
 #ui-panel:hover {
     transform: translateY(-2px);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);

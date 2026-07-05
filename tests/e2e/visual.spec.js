@@ -64,11 +64,14 @@ const scenes = [
         stop: 3987,
         view: { center: [-34.9117, -56.1598], zoom: 16 },
     },
+    // i18n (brainstorm-006): pin the Cyrillic panel rendering — the hardest
+    // script for platform font fallbacks. Popup covered by unit/e2e tests.
+    { name: 'panel-ru-dark', theme: 'dark', lang: 'ru', popup: 4772 },
 ];
 
 for (const scene of scenes) {
     test(`scene: ${scene.name}`, async ({ page }) => {
-        await openMap(page, { theme: scene.theme });
+        await openMap(page, { theme: scene.theme, lang: scene.lang });
         if (scene.line) await renderLine(page, scene.line);
         if (scene.stop) await renderStopRoutes(page, scene.stop);
         if (scene.popup) await openStopPopup(page, scene.popup);

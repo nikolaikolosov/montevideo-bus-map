@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Explorador interactivo de rutas de ómnibus de Montevideo">
+    <meta name="description" content="Explorador interactivo de recorridos de ómnibus de Montevideo">
     <meta name="theme-color" content="#0f172a">
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🚌</text></svg>"
         type="image/svg+xml">
-    <title>Mapa de los bondis de Montevideo</title>
+    <title>Montevideo Transit — recorridos de ómnibus de Montevideo</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,43 +25,58 @@
 <body>
 
     <!-- Loading Overlay -->
-    <div id="loader" role="status" aria-live="polite" aria-label="Cargando datos del sistema">
+    <div id="loader" role="status" aria-live="polite" aria-label="Cargando datos del sistema"
+        data-i18n-aria="loader.aria">
         <div class="spinner"></div>
-        <p>Cargando datos del sistema...</p>
+        <p data-i18n="loader.text">Cargando datos del sistema…</p>
     </div>
 
     <!-- Error Overlay (hidden until a load failure occurs) -->
     <div id="error-container" style="display:none" aria-hidden="true" role="alert">
-        <h2>⚠️ Error al cargar</h2>
+        <h2 data-i18n="error.title">⚠️ Error al cargar</h2>
         <p id="error-message">No se pudieron cargar los datos del sistema.</p>
         <button type="button" class="btn" onclick="location.reload()"
-            aria-label="Reintentar carga de datos">Reintentar</button>
+            aria-label="Reintentá la carga de datos" data-i18n="error.retry"
+            data-i18n-aria="error.retryAria">Reintentá</button>
     </div>
 
     <!-- UI Panel -->
     <div id="ui-panel">
         <div class="panel-header">
             <h1>Montevideo Transit</h1>
-            <button type="button" id="themeToggle" class="theme-toggle"
-                aria-label="Cambiar a tema claro">☀️</button>
+            <div class="header-actions">
+                <div class="lang-switcher" role="group" aria-label="Cambiar idioma"
+                    data-i18n-aria="lang.groupAria">
+                    <button type="button" class="lang-btn" data-lang="es" lang="es"
+                        aria-label="Español">ES</button>
+                    <button type="button" class="lang-btn" data-lang="en" lang="en"
+                        aria-label="English">EN</button>
+                    <button type="button" class="lang-btn" data-lang="ru" lang="ru"
+                        aria-label="Русский">RU</button>
+                </div>
+                <button type="button" id="themeToggle" class="theme-toggle"
+                    aria-label="Cambiar a tema claro">☀️</button>
+            </div>
         </div>
-        <p class="subtitle">Explorador interactivo de rutas</p>
+        <p class="subtitle" data-i18n="app.subtitle">Explorador interactivo de recorridos</p>
 
         <div class="control-group">
-            <label for="routeSelect">Seleccionar Línea</label>
-            <select id="routeSelect" aria-label="Seleccionar línea de ómnibus">
-                <option value="" disabled selected>Elige una línea...</option>
+            <label for="routeSelect" data-i18n="panel.selectLabel">Línea</label>
+            <select id="routeSelect" aria-label="Elegí una línea de ómnibus"
+                data-i18n-aria="panel.selectAria">
+                <option value="" disabled selected data-i18n="panel.selectPlaceholder">Elegí una
+                    línea…</option>
                 <!-- Options populated by JS -->
             </select>
         </div>
 
         <div id="routeInfo" class="route-info" aria-live="polite">
             <div class="stat-row">
-                <span class="stat-label">Variantes de ruta</span>
+                <span class="stat-label" data-i18n="panel.statVariants">Variantes de recorrido</span>
                 <span id="statVariants" class="stat-value">-</span>
             </div>
             <div class="stat-row">
-                <span class="stat-label">Total de paradas</span>
+                <span class="stat-label" data-i18n="panel.statStops">Total de paradas</span>
                 <span id="statStops" class="stat-value">-</span>
             </div>
         </div>
@@ -69,7 +84,8 @@
         <p id="dataFreshness" class="data-freshness" hidden></p>
     </div>
 
-    <div id="map" role="application" aria-label="Mapa interactivo de rutas de ómnibus"></div>
+    <div id="map" role="application" aria-label="Mapa interactivo de recorridos de ómnibus"
+        data-i18n-aria="map.aria"></div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

@@ -23,7 +23,7 @@ describe('renderDataFreshness', () => {
         renderDataFreshness('2026-06-27T11:37:49-03:00');
         const el = document.getElementById('dataFreshness');
         expect(el.hidden).toBe(false);
-        expect(el.textContent).toContain('Datos:');
+        expect(el.textContent).toContain('Datos al');
         expect(el.textContent).toContain('2026');
         expect(el.classList.contains('stale')).toBe(false);
     });
