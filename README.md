@@ -2,11 +2,7 @@
 
 ## General information
 
-A map of Montevideo bus lines and stops. Created with Google Antigravity and publically available data from Montevideo City Hall. The map is available with MIT license.
-
-## La información general
-
-Un mapa de los ómnibus de Montevideo. Creado con Google Antigravity y datos publicamente disponibles de la Intendencia de Montevideo. El mapa está disponible con licencia MIT.
+A map of Montevideo bus lines and stops, available at [https://nikolaikolosov.github.io/montevideo-bus-map/](https://nikolaikolosov.github.io/montevideo-bus-map/).
 
 ## Updating the data (manual, by design)
 

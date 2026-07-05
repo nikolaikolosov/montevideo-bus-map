@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createStopPopup } from '../../src/map.js';
+import { t } from '../../src/i18n.js';
 import {
     buildIndexes,
     getLineColor,
@@ -93,7 +94,7 @@ describe('createStopPopup (synthetic)', () => {
         expect(sourceFeature).toBe(feature);
     });
 
-    it('"Ver rutas (todas)" requests all lines and all variants', () => {
+    it('"Ver todos los recorridos" requests all lines and all variants', () => {
         const onShowRoutes = vi.fn();
         const popup = createStopPopup(stopFeature(1), onShowRoutes);
         popup.querySelector('.draw-lines-btn').click();
@@ -102,11 +103,14 @@ describe('createStopPopup (synthetic)', () => {
         expect(variants.sort()).toEqual(['v1', 'v2', 'v3']);
     });
 
-    it('chips carry Spanish action labels (a11y)', () => {
+    it('chips carry localized action labels (a11y)', () => {
         const popup = createStopPopup(stopFeature(1), vi.fn());
         const chip = popup.querySelector('.line-chip');
         expect(chip.tagName).toBe('BUTTON');
-        expect(chip.getAttribute('aria-label')).toBe('Ver ruta 7 desde esta parada');
+        expect(chip.getAttribute('aria-label')).toBe(t('popup.chipAria', { id: '7' }));
+        const btn = popup.querySelector('.draw-lines-btn');
+        expect(btn.textContent).toBe(t('popup.viewAll'));
+        expect(btn.getAttribute('aria-label')).toBe(t('popup.viewAllAria'));
     });
 
     it('escapes street names (XSS)', () => {
