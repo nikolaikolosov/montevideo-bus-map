@@ -1,0 +1,67 @@
+# VPS / bare-metal (Hetzner, DigitalOcean, OVH, Linode...) landscape for architecture design.
+# The cost-floor variant: maximum control, minimum managed services - you ARE the platform team.
+# Last reviewed: 2026-07.
+
+platform:
+  id: vps
+  name: VPS / dedicated servers (Hetzner, DigitalOcean, OVH, Linode)
+  iac_preference: [terraform for provisioning, ansible or cloud-init for config, docker-compose for workloads]
+  regions_note: pick provider regions near users; multi-region = you build the failover yourself
+
+architecture_bias:
+  favored_patterns: [modular-monolith, static-plus-api]
+  notes: >
+    Honest fit: small-to-medium steady loads, cost-sensitive projects, teams comfortable
+    with Linux ops. A single beefy VPS with a modular monolith + Postgres + Redis behind
+    Caddy/nginx serves a LOT of product for very little money. The trade: no managed
+    anything - backups, security patching, failover, monitoring are project deliverables,
+    not checkboxes. SLO ceiling: a single-node setup cannot honestly promise more than
+    ~99.5% - say so at ARB (sre-lead rule).
+
+compute:
+  single_node: { use_for: "the default start - docker-compose stack on one VPS", note: vertical scaling goes far (dedicated vCPU tiers); systemd for non-container bits }
+  multi_node: { use_for: "when one node is not enough - LB node + app nodes + DB node", note: this is the step where k8s/managed clouds deserve a re-trade }
+  pricing_dimension: flat monthly per node - the predictability is the selling point
+
+api_edge:
+  reverse_proxy: { use_for: "Caddy (auto-TLS, simple) or nginx - TLS termination, routing, static serving, rate limiting" }
+  cdn_waf: { use_for: "put Cloudflare (free/pro) in front for CDN/WAF/DDoS - standard pairing", note: also hides origin IP }
+  lb: { use_for: provider LB or a dedicated proxy node at multi-node stage }
+
+data:
+  postgres: { use_for: default relational - self-hosted in container or on host, note: "backups are YOUR deliverable: pgBackRest/wal-g to object storage, restore DRILLED before LRR" }
+  redis: { use_for: cache/sessions/queues-lite }
+  sqlite: { use_for: "genuinely great for single-node apps (Litestream replication to object storage)", anti_pattern: multi-node writers }
+  object_storage: { use_for: provider object storage or Cloudflare R2 for blobs + backup target }
+  search: { use_for: Meilisearch/Typesense self-hosted for full-text }
+
+messaging_eventing:
+  lightweight_first: "Postgres-backed queues (SKIP LOCKED / pg-boss / Oban-style) or Redis (BullMQ) - enough for most apps at this scale"
+  broker: { use_for: NATS or RabbitMQ in compose when patterns outgrow the above }
+  cron: systemd timers or cron in a container; idempotent handlers as everywhere
+
+auth:
+  user_auth: "library-first (Auth.js/Lucia-style) with the app DB, or self-hosted Keycloak/Authentik if SSO needed; external SaaS (Auth0/Clerk) trades money for ops"
+  service_auth: mTLS/wireguard between nodes at multi-node stage; ufw/nftables default-deny
+
+observability:
+  stack: "self-hosted: Prometheus + Grafana + Loki (or VictoriaMetrics), node_exporter + cAdvisor; uptime-kuma for synthetic checks"
+  external_ping: at least one OUTSIDE uptime check (the node cannot report its own death)
+  pricing_dimension: your nodes + your time
+
+delivery:
+  pipeline: "GitHub Actions -> build image -> registry -> ssh/webhook deploy (compose pull + up) or gitops-lite (watchtower with pinned digests - pin, never :latest)"
+  rollback: previous image tag redeploy - documented and drilled
+  secrets: sops-age or ansible-vault encrypted in repo, decrypted at deploy; never plaintext .env in git
+
+security_baseline_extra:
+  mandatory: [unattended-upgrades, ssh-keys-only + no-root-login, fail2ban or crowdsec, default-deny firewall, docker-socket-not-exposed]
+  note: on VPS these are project deliverables - the /security-review checks them explicitly
+
+cost_notes:
+  watch: [snapshot/backup storage growth, egress overages on cheap providers, the hidden cost - human hours of ops]
+  lever: "predictable flat pricing; 10-20x cheaper than cloud for steady CPU-bound loads - THE reason this variant exists"
+
+reference_stacks:
+  single_node: [Caddy, app containers via compose, Postgres + Redis, pgBackRest -> R2, Prometheus/Grafana/Loki, Cloudflare in front, GitHub Actions deploy]
+  multi_node: [LB/proxy node, 2x app nodes, DB node with streaming replica, R2 backups, wireguard mesh]

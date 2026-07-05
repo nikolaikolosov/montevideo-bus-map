@@ -1,0 +1,77 @@
+# Azure service landscape for architecture design.
+# Verify current pricing at https://azure.microsoft.com/pricing/ before definitive estimates.
+# Last reviewed: 2026-07.
+
+platform:
+  id: azure
+  name: Microsoft Azure
+  iac_preference: [terraform, bicep]
+  regions_note: strongest choice when the org already lives in Entra ID / M365 / .NET
+
+architecture_bias:
+  favored_patterns: [container-apps-first, serverless-event-driven, static-plus-api]
+  notes: >
+    Container Apps (KEDA-scaled containers, scale-to-zero) is the modern default compute;
+    Functions for event glue; Static Web Apps for frontends. Entra ID integration is the
+    differentiator for B2B/enterprise apps. Service Bus is the enterprise-grade messaging
+    backbone.
+
+compute:
+  container_apps:
+    use_for: web services, APIs, workers - the default
+    limits: { scale_to_zero: true, keda_scalers: "HTTP, queues, cron, custom" }
+    pricing_dimension: vCPU-seconds + GiB-seconds + requests (consumption) or dedicated plans
+  functions:
+    use_for: event handlers, bindings-driven glue
+    limits: { timeout_consumption: "5-10min (plan-dependent)", durable_functions: for orchestration }
+    cold_start: consumption plan noticeable; premium plan removes it
+    pricing_dimension: executions + GB-seconds (consumption)
+  app_service: { use_for: classic web apps / .NET lift-and-shift, pricing_dimension: plan-hours }
+  aks: { use_for: full k8s needs, note: see kubernetes.yaml for the k8s-shaped variant }
+
+api_edge:
+  front_door: { use_for: global entry - CDN + WAF + LB, pricing_dimension: requests + egress + WAF policies }
+  api_management: { use_for: API gateway/portal/policies, pricing_dimension: tier-based, note: consumption tier for serverless-scale }
+  static_web_apps: { use_for: static/SSR frontends with previews + integrated Functions API, pricing_dimension: free/standard tiers }
+  application_gateway: { use_for: regional L7 LB + WAF }
+
+data:
+  azure_sql: { use_for: default relational (SQL Server family), pricing_dimension: vCore or DTU + storage; serverless auto-pause option }
+  postgres_flexible: { use_for: Postgres relational, pricing_dimension: vCore-hours + storage }
+  cosmos_db:
+    use_for: multi-model document/KV, global distribution
+    consistency: five tunable levels
+    pricing_dimension: RU/s (provisioned or serverless) + storage
+    anti_pattern: unbounded cross-partition queries - partition-key design first (DynamoDB-grade discipline)
+  azure_cache_redis: { use_for: cache/sessions, pricing_dimension: tier-hours }
+  blob_storage: { use_for: blobs/static/data lake, pricing_dimension: GB-month + operations + egress, note: lifecycle tiers hot/cool/archive }
+  ai_search: { use_for: full-text + vector search, pricing_dimension: search units }
+
+messaging_eventing:
+  service_bus: { use_for: "queues + topics, sessions, dedup, DLQ - the enterprise backbone", delivery: at-least-once (sessions/dedup for stronger semantics), pricing_dimension: operations + tier }
+  event_grid: { use_for: "event routing/bus (EventBridge analog), Azure + custom + SaaS events", pricing_dimension: per-million-operations }
+  storage_queues: { use_for: cheap simple queues, note: fewer features than Service Bus }
+  event_hubs: { use_for: high-throughput streaming (Kafka-compatible endpoint), pricing_dimension: throughput units }
+  durable_functions: { use_for: code-first orchestration/sagas }
+
+auth:
+  entra_id: { use_for: B2B/enterprise SSO - the platform differentiator }
+  entra_external_id: { use_for: customer identity (B2C successor), pricing_dimension: MAU }
+  managed_identities: { use_for: service-to-service - always; no connection strings where MI works }
+
+observability:
+  azure_monitor: { logs: Log Analytics ingestion GB + retention, metrics: included baseline + custom, app_insights: instrumentation on ingestion pricing, note: ingestion costs surprise - sample and cap }
+
+delivery:
+  container_registry: { use_for: images, pricing_dimension: tier + storage }
+  key_vault: { use_for: secrets/keys/certs, pricing_dimension: operations }
+  azure_devops_or_github_actions: { use_for: CI/CD - GitHub Actions is the default for new work }
+
+cost_notes:
+  free_tier: "Functions/Static Web Apps/Cosmos serverless free allotments - exclude from estimates"
+  watch: [log_analytics_ingestion, front_door_waf_policies, cosmos_ru_overprovisioning, idle_app_service_plans, egress]
+
+reference_stacks:
+  serverless_web_app: [Static Web Apps, Functions or Container Apps, Cosmos DB serverless, Event Grid, Service Bus, Entra External ID, App Insights]
+  container_web_app: [Front Door, Container Apps, Azure SQL or Postgres Flexible, Azure Cache, Service Bus]
+  enterprise_b2b: [Front Door + APIM, Container Apps, Azure SQL, Entra ID SSO, Service Bus, Azure Monitor]

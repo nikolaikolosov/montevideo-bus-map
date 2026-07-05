@@ -1,0 +1,161 @@
+# Web application development pipeline: optional ideation pre-phase (I) + greenfield track
+# (phases 0-6) + adopt track (A0-A3).
+# Skills reference this file; /help renders it; delivery-manager enforces gates.
+
+phases:
+  - id: I
+    name: Ideation
+    optional: true   # for "what should I build?" - skip when the product is already known
+    goal: Find and choose a business idea with an audience that will pay - pain-first, evidence-labeled.
+    skills: [brainstorm, idea-discovery, audience-research]
+    agents: [growth-lead, market-researcher, audience-researcher, product-director]
+    outputs:
+      - product/ideas/brainstorm-*.md, product/ideas/idea-cards/*.md, product/ideas/evaluation.md
+      - product/research/audience-*.md
+    exit_criteria:
+      - One idea picked with a beachhead segment profiled (persona, usage scenarios, watering holes)
+      - Willingness-to-pay evidence at behavioral/payment rung, or the gap explicitly accepted by the user
+    gate: Idea pick (product-director; the user decides)
+
+  - id: 0
+    name: Discovery
+    goal: Define what the application must do, for whom, within what budget and constraints.
+    skills: [start, product-brief, requirements, deploy-target]
+    agents: [product-director, lead-architect, delivery-manager, ux-lead, compliance-analyst]
+    outputs:
+      - product/00-product-brief.md
+      - product/requirements-spec.md
+    exit_criteria:
+      - Target users, core jobs-to-be-done, and success metrics fixed
+      - Non-functional requirements quantified (load profile, latency class, availability tier)
+      - deployment_target set (or explicitly deferred to the variants comparison)
+      - Compliance flags acknowledged (GDPR/PCI/... or none)
+    gate: DG (product-director + delivery-manager sign-off)
+
+  - id: 1
+    name: Architecture
+    goal: Converge on system architecture via variants designed against the target platform landscape.
+    skills: [architecture-variants, stack-select, trade-study, cost-estimate]
+    agents: [lead-architect, platform-lead, data-lead, backend-lead, frontend-lead, cost-analyst, sre-lead]
+    outputs:
+      - architecture/variants/*.md        # 2-4 variants, each mapped to concrete platform services
+      - architecture/ADR-001-architecture-selection.md
+      - product/trade-studies/*.md
+      - architecture/cost-model.md
+    exit_criteria:
+      - Variant chosen; component-to-service mapping complete for the deployment target
+      - Stack selected with versions; cost estimate per expected load with estimate class
+      - SLO tier feasible on the chosen architecture (sre-lead concurrence)
+    gate: ARB (all directors)
+
+  - id: 2
+    name: Design
+    goal: Specify every externally visible surface before building it.
+    skills: [design-system, data-model, api-contract, threat-model]
+    agents: [ux-lead, data-lead, api-designer, db-engineer, security-lead, accessibility-specialist,
+             integration-specialist, seo-analytics-specialist]
+    outputs:
+      - design/user-flows.md, design/design-tokens.md, design/component-inventory.md
+      - architecture/data-model.md
+      - architecture/contracts/*.yaml      # OpenAPI / GraphQL schemas
+      - security/threat-model.md
+    exit_criteria:
+      - All P0 user flows wired to API contract operations; no orphan endpoints
+      - Data model normalized decisions recorded; migration strategy named
+      - Threat model covers every externally reachable interface; mitigations assigned
+      - A11y requirements attached to component inventory
+    gate: DR (skill /design-review DR)
+
+  - id: 3
+    name: Build
+    goal: Implement the application per the frozen contracts, under path rules.
+    skills: [scaffold, feature]
+    agents: [frontend-lead, backend-lead, ui-engineer, db-engineer, test-automation-engineer,
+             integration-specialist, iac-engineer]
+    outputs:
+      - app/**                             # application source with tests alongside
+      - architecture/ADR-*.md              # any in-flight architecture decisions
+    exit_criteria:
+      - All P0 features implemented with tests; contracts unchanged or re-approved via ADR
+      - Lint/typecheck/test suite green; security baseline checks pass (no secrets, deps scanned)
+    gate: CC (frontend-lead + backend-lead + qa-lead)
+
+  - id: 4
+    name: Verify
+    goal: Prove quality, security, performance, and accessibility against the budgets.
+    skills: [test-plan, security-review, performance-audit, accessibility-audit]
+    agents: [qa-lead, security-lead, security-tester, performance-engineer,
+             accessibility-specialist, test-automation-engineer]
+    outputs:
+      - qa/verification-matrix.md          # every requirement -> test/analysis/inspection
+      - qa/test-plans/*.md, qa/reports/*.md
+      - security/security-review.md
+    exit_criteria:
+      - Verification matrix 100% allocated; acceptance criteria quantitative
+      - No open critical/high security findings; performance and a11y budgets green
+    gate: QG (qa-lead + security-lead)
+
+  - id: 5
+    name: Ship
+    goal: Deployable, observable, operable — infrastructure as code end to end; go-to-market ready.
+    skills: [iac, ci-cd, observability, marketing-plan, release]
+    agents: [platform-lead, iac-engineer, cicd-engineer, observability-engineer, sre-lead,
+             cost-analyst, marketing-strategist, growth-lead]
+    outputs:
+      - infra/**                           # IaC modules, pipeline definitions, env configs
+      - docs/slo.md, docs/runbooks/*.md
+      - product/marketing/marketing-plan.md
+    exit_criteria:
+      - Reproducible deploy from clean clone to a fresh environment
+      - Pipelines run build+test+scan+deploy with rollback path; alerts wired to SLOs
+      - Actual-vs-estimated cost checked after first deploy (cloud deploys wait for the user's go-ahead)
+    gate: LRR (delivery-manager + sre-lead + platform-lead)
+
+  - id: 6
+    name: Operate-Handover
+    goal: Package everything a maintaining team needs, with a forward-looking backlog.
+    skills: [docs-package, improvement-backlog]
+    agents: [docs-lead, tech-writer, sre-lead, product-director, delivery-manager]
+    outputs:
+      - docs/**                            # onboarding guide, runbooks, architecture overview
+      - product/improvement-backlog.md
+    exit_criteria:
+      - A new developer can set up, run, test, and deploy using docs/ alone
+      - Open risks and deferred items documented with owners
+    gate: Handover review (delivery-manager)
+
+adopt_track:
+  - id: A0
+    name: Inventory
+    goal: Establish what exists - stack, size, entry points, build health, test state.
+    skills: [adopt]
+    agents: [adoption-lead, code-archaeologist, delivery-manager]
+    outputs: [audit/inventory.md]
+    exit_criteria:
+      - Repo builds (or blockers documented); stack and versions cataloged; hotspots listed
+  - id: A1
+    name: Current-state
+    goal: Document the implementation as it IS - architecture, data flows, implicit contracts.
+    skills: [code-audit]
+    agents: [adoption-lead, code-archaeologist, security-lead, data-lead, qa-lead]
+    outputs: [audit/current-state-report.md, audit/dependency-map.md]
+    exit_criteria:
+      - Every externally reachable interface documented; data stores and flows mapped
+      - Known-unknowns explicitly listed
+  - id: A2
+    name: Improvements
+    goal: Prioritized improvement proposals with effort/impact and risk.
+    skills: [improvement-backlog]
+    agents: [adoption-lead, lead-architect, security-lead, performance-engineer, cost-analyst]
+    outputs: [audit/improvement-backlog.md]
+    exit_criteria:
+      - Each proposal has evidence link, effort class, impact, and risk of NOT doing it
+  - id: A3
+    name: Target-migration
+    goal: Target architecture variants for the existing system + incremental migration plan.
+    skills: [architecture-variants, migration-plan, cost-estimate]
+    agents: [lead-architect, migration-specialist, platform-lead, data-lead, sre-lead]
+    outputs: [architecture/variants/*.md, audit/migration-plan.md]
+    exit_criteria:
+      - Migration plan is incremental with rollback per step; joins greenfield track at phase 2 or 3
+    gate: ARB (all directors)

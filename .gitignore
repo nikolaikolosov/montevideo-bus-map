@@ -194,8 +194,12 @@ cython_debug/
 #   Learn more at https://abstra.io/docs
 .abstra/
 
-# Claude Code local tooling (dev server config for preview, etc.)
-.claude/
+# Claude Code local tooling stays private (settings, launch config, hooks, rules);
+# framework definition files below are published so CI can run the self-audit.
+/.claude/*
+!/.claude/agents/
+!/.claude/skills/
+!/.claude/docs/
 
 # Visual Studio Code
 #   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
@@ -224,11 +228,14 @@ __marimo__/
 node_modules/
 
 
-# --- WebDev Studio agent framework (private, never publish) -----------------
+# --- WebDev Studio agent framework -------------------------------------------
+# Working documents (product/, audit/, security/, ...) stay private. Framework
+# definition files (CLAUDE.md, .claude/agents|skills|docs, constraints/platforms)
+# are published deliberately so tools/audit/self_audit.py runs for real in CI.
 # Patterns are anchored to the repo root (leading /) so they can never swallow
 # same-named directories elsewhere (e.g. tools/audit/ or a future src/app/).
-CLAUDE.md
-/constraints/
+/constraints/*
+!/constraints/platforms/
 /examples/
 /app/
 /audit/

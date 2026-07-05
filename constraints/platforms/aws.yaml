@@ -1,0 +1,87 @@
+# AWS service landscape for architecture design.
+# Values are stable public facts (limits/pricing dimensions), verify current pricing at
+# https://aws.amazon.com/pricing/ before definitive estimates. Last reviewed: 2026-07.
+
+platform:
+  id: aws
+  name: Amazon Web Services
+  iac_preference: [terraform, cdk]        # CDK when team is TypeScript-native
+  regions_note: check service availability per region; data residency via region pinning
+
+architecture_bias:
+  favored_patterns: [serverless-event-driven, containers-on-ecs, static-plus-api]
+  notes: >
+    Design WITH the platform: managed services over self-hosted, events over polling,
+    Lambda for bursty/spiky loads, Fargate/ECS for steady loads, never hand-rolled
+    VM clusters when a managed equivalent exists. IAM is the backbone - least privilege
+    per function/service.
+
+compute:
+  lambda:
+    use_for: APIs with bursty load, event handlers, glue
+    limits: { timeout_max: 15min, memory_max: 10240MB, payload_sync: 6MB, payload_async: 256KB, tmp_storage: "512MB-10GB" }
+    cold_start: "~50-500ms (runtime-dependent); provisioned concurrency removes it at a price"
+    pricing_dimension: GB-seconds + requests
+    anti_pattern: steady 24/7 CPU-bound load (Fargate/EC2 cheaper), long-running jobs >15min (Step Functions or Fargate)
+  fargate_ecs:
+    use_for: steady-load containers, long-running services, background workers
+    pricing_dimension: vCPU-hours + GB-hours
+  app_runner:
+    use_for: simple container web apps without cluster management
+    pricing_dimension: provisioned + active vCPU/memory
+  ec2:
+    use_for: special cases - GPU, licensed software, extreme tuning
+    note: default to managed compute first
+
+api_edge:
+  api_gateway_rest: { use_for: "REST APIs, request validation, usage plans", limits: { timeout_default: 29s }, pricing_dimension: per-million-requests }
+  api_gateway_http: { use_for: "cheaper/simpler HTTP APIs, JWT authorizers", pricing_dimension: per-million-requests (lower than REST) }
+  cloudfront: { use_for: "CDN, static assets, edge caching", pricing_dimension: egress GB + requests }
+  lambda_at_edge_functions: { use_for: "header rewrites, AB routing at edge", note: CloudFront Functions cheaper for simple transforms }
+  alb: { use_for: "container/VM load balancing, websockets", pricing_dimension: LCU-hours }
+
+data:
+  dynamodb:
+    use_for: key-value/document with known access patterns, serverless-native
+    limits: { item_max: 400KB }
+    consistency: eventual by default, strong per-read option, transactions available
+    pricing_dimension: on-demand per-request or provisioned RCU/WCU + storage
+    anti_pattern: ad-hoc queries/analytics without access-pattern design (single-table design first)
+  rds_postgres_mysql: { use_for: relational workloads, pricing_dimension: instance-hours + storage + IOPS }
+  aurora_serverless_v2: { use_for: "relational with variable load", pricing_dimension: ACU-hours, note: scales to configured min, true-zero only where supported }
+  elasticache_redis: { use_for: "hot cache, sessions, rate counters", pricing_dimension: node-hours (or serverless GB-hours) }
+  opensearch: { use_for: full-text search + analytics, pricing_dimension: instance-hours; consider managed alternatives for small scale }
+  s3:
+    use_for: blobs, static hosting, data lake
+    pricing_dimension: GB-month + requests + egress
+    note: lifecycle policies to IA/Glacier for cost; presigned URLs for direct upload
+
+messaging_eventing:
+  sqs: { use_for: "queues, buffering, decoupling", limits: { message_max: 256KB, visibility_timeout_max: 12h }, delivery: at-least-once (FIFO for ordering/exactly-once-ish), pricing_dimension: per-million-requests }
+  sns: { use_for: fan-out pub/sub to queues/lambdas/webhooks, pricing_dimension: per-million-publishes }
+  eventbridge: { use_for: "event bus - domain events, schedules, SaaS event ingestion, routing rules", pricing_dimension: per-million-events, note: the default backbone for event-driven variants }
+  step_functions: { use_for: "workflows, sagas, long-running orchestration", pricing_dimension: per-state-transition (standard) or per-request+duration (express) }
+  kinesis: { use_for: high-throughput ordered streams, note: overkill below tens of MB/s - prefer SQS/EventBridge }
+
+auth:
+  cognito: { use_for: "user pools, OAuth/OIDC, hosted UI", pricing_dimension: MAU, note: quirky but native; evaluate against Auth0/Clerk trade (lock-in vs DX) }
+  iam: { use_for: service-to-service authz - always, note: never share long-lived keys; roles + OIDC federation for CI }
+
+observability:
+  cloudwatch: { logs: "ingestion GB + storage", metrics: per-custom-metric, alarms: per-alarm, note: log ingestion is a famous surprise cost - sample and set retention }
+  xray: { use_for: distributed tracing, pricing_dimension: per-trace }
+
+delivery:
+  amplify_hosting: { use_for: managed static/SSR frontend hosting with previews }
+  ecr: { use_for: container registry }
+  secrets_manager: { use_for: secrets with rotation, pricing_dimension: per-secret-month + API calls }
+  parameter_store: { use_for: config + simple secrets (free tier generous) }
+
+cost_notes:
+  free_tier: "Lambda 1M req/mo, DynamoDB 25GB, CloudFront 1TB egress/mo (as of review date) - exclude from expected-load estimates"
+  watch: [nat_gateway_hours_and_gb, cloudwatch_ingestion, cross_az_traffic, egress, idle_provisioned_capacity]
+
+reference_stacks:
+  serverless_web_app: [CloudFront, S3, API Gateway HTTP, Lambda, DynamoDB, EventBridge, SQS, Cognito, CloudWatch]
+  container_web_app: [CloudFront, ALB, ECS Fargate, RDS Postgres, ElastiCache, SQS, Secrets Manager]
+  static_plus_api: [Amplify Hosting or CloudFront+S3, Lambda, Aurora Serverless v2]

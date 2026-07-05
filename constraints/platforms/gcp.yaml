@@ -1,0 +1,74 @@
+# GCP service landscape for architecture design.
+# Verify current pricing at https://cloud.google.com/pricing before definitive estimates.
+# Last reviewed: 2026-07.
+
+platform:
+  id: gcp
+  name: Google Cloud Platform
+  iac_preference: [terraform]
+  regions_note: strong multi-region managed data options (Spanner, multi-region GCS)
+
+architecture_bias:
+  favored_patterns: [cloud-run-first, serverless-event-driven, containers-on-gke]
+  notes: >
+    Cloud Run (containers with scale-to-zero) is the default compute answer - it covers
+    both the Lambda-style and the Fargate-style niche with one primitive. Pub/Sub is the
+    eventing backbone. BigQuery for analytics is the standout differentiator.
+
+compute:
+  cloud_run:
+    use_for: web services, APIs, workers - the default
+    limits: { timeout_max: 60min, memory_max: 32GB, concurrency_per_instance: up_to_1000 }
+    cold_start: "~100ms-2s; min-instances removes it at a price"
+    pricing_dimension: vCPU-seconds + GB-seconds + requests (or instance-based billing)
+    note: per-instance concurrency >1 makes it much cheaper than Lambda for IO-bound loads
+  cloud_functions_gen2: { use_for: small event handlers (runs on Cloud Run infra), note: prefer Cloud Run for anything non-trivial }
+  gke_autopilot: { use_for: teams needing full k8s API, pricing_dimension: per-pod vCPU/memory, note: see kubernetes.yaml for the k8s-shaped variant }
+  compute_engine: { use_for: special cases (GPU, custom kernels), note: managed first }
+
+api_edge:
+  cloud_load_balancing: { use_for: global anycast LB + CDN integration, pricing_dimension: forwarding rules + data }
+  cloud_cdn: { use_for: CDN on top of the global LB, pricing_dimension: egress + cache fill }
+  api_gateway: { use_for: managed API fronting for serverless, note: lighter than Apigee; Apigee only for enterprise API-management needs }
+  firebase_hosting: { use_for: static/frontend hosting with CDN, integrates with Cloud Run backends }
+
+data:
+  cloud_sql_postgres: { use_for: default relational, pricing_dimension: instance-hours + storage, note: use the connectors/auth-proxy pattern from Cloud Run }
+  alloydb: { use_for: high-performance Postgres-compatible, pricing_dimension: vCPU/memory + storage }
+  firestore:
+    use_for: serverless document DB, realtime listeners, mobile/web SDK
+    consistency: strong
+    pricing_dimension: per-operation (reads/writes/deletes) + storage
+    anti_pattern: heavy aggregate/ad-hoc queries (export to BigQuery instead)
+  spanner: { use_for: global relational at large scale, note: expensive floor - do not default to it }
+  memorystore_redis: { use_for: cache/sessions, pricing_dimension: GB-hours }
+  gcs: { use_for: blobs/static/data lake, pricing_dimension: GB-month + operations + egress }
+  bigquery: { use_for: analytics/warehouse, pricing_dimension: on-demand per-TB-scanned or slots, note: the reason analytics-heavy products pick GCP }
+
+messaging_eventing:
+  pubsub: { use_for: "pub/sub backbone, fan-out, streaming ingestion", delivery: at-least-once (exactly-once available), pricing_dimension: per-TB throughput }
+  cloud_tasks: { use_for: "task queues with rate control, delayed delivery, per-task HTTP targets", pricing_dimension: per-million-operations }
+  eventarc: { use_for: routing GCP/SaaS events to Cloud Run (EventBridge analog) }
+  workflows: { use_for: orchestration/sagas, pricing_dimension: per-step }
+  cloud_scheduler: { use_for: cron }
+
+auth:
+  identity_platform: { use_for: "user auth (Firebase Auth enterprise flavor), OIDC/SAML", pricing_dimension: MAU }
+  iam_workload_identity: { use_for: service-to-service + CI federation - no exported keys }
+
+observability:
+  cloud_operations: { logging: ingestion GB (generous free allotment) + storage, monitoring: per-metric ingestion, trace: per-span, note: native OTel support }
+
+delivery:
+  artifact_registry: { use_for: containers + language packages }
+  secret_manager: { use_for: secrets, pricing_dimension: per-secret-version + access calls }
+  cloud_build: { use_for: CI native option, pricing_dimension: build-minutes }
+
+cost_notes:
+  free_tier: "Cloud Run/Functions monthly free allotments; BigQuery 1TB scan/mo - exclude from estimates"
+  watch: [egress, cloud_sql_idle_instances, firestore_per_op_costs_at_scale, log_ingestion_over_allotment]
+
+reference_stacks:
+  serverless_web_app: [Firebase Hosting or LB+CDN, Cloud Run, Firestore or Cloud SQL, Pub/Sub, Cloud Tasks, Identity Platform, Cloud Operations]
+  container_web_app: [Global LB + Cloud CDN, Cloud Run or GKE Autopilot, Cloud SQL, Memorystore, Pub/Sub]
+  analytics_heavy: [Cloud Run, Cloud SQL, Pub/Sub -> BigQuery, Looker Studio]
