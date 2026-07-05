@@ -14,8 +14,6 @@
  * offset is always `offsetPx` screen pixels regardless of zoom.
  */
 
-/* global L */
-
 /**
  * Intersection of the infinite lines (p1,p2) and (p3,p4).
  * @returns {{t: number, u: number, x: number, y: number}|null}

@@ -4,13 +4,17 @@
  * @returns {string}
  */
 export const escapeHTML = (str) =>
-    String(str).replace(/[&<>'"]/g, (match) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;',
-    }[match]));
+    String(str).replace(
+        /[&<>'"]/g,
+        (match) =>
+            ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;',
+            })[match],
+    );
 
 /**
  * Removes consecutive duplicate / near-duplicate points (within ~1 meter) from a
@@ -36,9 +40,7 @@ export const cleanCoordinates = (coords) => {
         });
     }
     // MultiLineString: array of lines
-    return coords
-        .map((line) => cleanCoordinates(line))
-        .filter((line) => line.length > 1);
+    return coords.map((line) => cleanCoordinates(line)).filter((line) => line.length > 1);
 };
 
 /**

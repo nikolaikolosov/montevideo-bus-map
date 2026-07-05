@@ -3,6 +3,13 @@ import { CONFIG } from './config.js';
 /**
  * Pre-built lookup indexes for O(1) access to routes and stops by key.
  * Populated once by buildIndexes() during app initialisation.
+ *
+ * Data format (v2, see architecture/contracts/data-contract.md):
+ *  - routes.json: FeatureCollection of LineString variants
+ *    (properties DESC_LINEA, COD_VARIAN, DESC_VARIA)
+ *  - stops.json: FeatureCollection with ONE Point feature per physical stop
+ *    (properties COD_UBIC_P, CALLE, ESQUINA) plus a `patterns` foreign member:
+ *    { COD_VARIAN: { linea, paradas: [[COD_UBIC_P, ORDINAL], ...] } }
  */
 
 /** Map<lineId, GeoJSON Feature[]> */
@@ -17,11 +24,17 @@ export const stopLinesMap = new Map();
 /** Map<stopCode, Set<variantId>> */
 export const stopVariantsMap = new Map();
 
-/** Map<variantId, GeoJSON Feature[]> - stops grouped by variant */
+/** Map<variantId, Array<{feature: object, ordinal: number}>> - stops along a variant */
 export const stopsByVariant = new Map();
 
-/** Map<stopCode, GeoJSON Feature[]> - all stop features per code */
-export const stopsByCode = new Map();
+/** Map<stopCode, GeoJSON Feature> - the unique feature per physical stop */
+export const uniqueStopByCode = new Map();
+
+/** Map<stopCode, Map<variantId, ordinal>> - ordinal of the stop within each variant */
+const stopOrdinalsMap = new Map();
+
+/** Unique stop features (one per physical stop) */
+export const uniqueStopsData = [];
 
 /**
  * Returns a deterministic HSL color for any line ID.
@@ -48,20 +61,16 @@ export function getLineColor(lineId) {
     return `hsl(${hue.toFixed(1)}, 85%, 60%)`;
 }
 
-/** Unique deduplicated stop features (one per physical stop) */
-export const uniqueStopsData = [];
-
 /**
- * Build all lookup indexes from the raw GeoJSON datasets.
+ * Build all lookup indexes from the raw datasets.
  * Must be called once at startup before any rendering.
  *
- * @param {object} routesData - GeoJSON FeatureCollection
- * @param {object} stopsData  - GeoJSON FeatureCollection
+ * @param {object} routesData - GeoJSON FeatureCollection (v2)
+ * @param {object} stopsData  - GeoJSON FeatureCollection with `patterns` (v2)
  */
 export function buildIndexes(routesData, stopsData) {
     _indexRoutes(routesData);
     _indexStops(stopsData);
-    // Note: colors no longer need pre-computation—see getLineColor().
 }
 
 function _indexRoutes(routesData) {
@@ -83,38 +92,29 @@ function _indexRoutes(routesData) {
 
 function _indexStops(stopsData) {
     if (!stopsData?.features) return;
-    const seenStops = new Set();
 
     stopsData.features.forEach((f) => {
         const cod = f.properties.COD_UBIC_P;
-        const linea = f.properties.DESC_LINEA;
-        const variantId = f.properties.COD_VARIAN;
-
-        // stopLinesMap / stopVariantsMap
-        if (!stopLinesMap.has(cod)) stopLinesMap.set(cod, new Set());
-        if (!stopVariantsMap.has(cod)) stopVariantsMap.set(cod, new Set());
-        if (linea) stopLinesMap.get(cod).add(linea);
-        if (variantId) stopVariantsMap.get(cod).add(variantId);
-
-        // stopsByVariant
-        if (variantId) {
-            if (!stopsByVariant.has(variantId)) stopsByVariant.set(variantId, []);
-            stopsByVariant.get(variantId).push(f);
-        }
-
-        // stopsByCode
-        if (!stopsByCode.has(cod)) stopsByCode.set(cod, []);
-        stopsByCode.get(cod).push(f);
-
-        // uniqueStopsData — one feature per physical stop
-        if (!seenStops.has(cod)) {
-            seenStops.add(cod);
-            uniqueStopsData.push(f);
-        }
+        uniqueStopByCode.set(cod, f);
+        uniqueStopsData.push(f);
+        stopLinesMap.set(cod, new Set());
+        stopVariantsMap.set(cod, new Set());
+        stopOrdinalsMap.set(cod, new Map());
     });
+
+    for (const [variantId, pattern] of Object.entries(stopsData.patterns ?? {})) {
+        const entries = [];
+        for (const [cod, ordinal] of pattern.paradas) {
+            const feature = uniqueStopByCode.get(cod);
+            if (!feature) continue; // contract-validated upstream; stay defensive
+            stopLinesMap.get(cod).add(pattern.linea);
+            stopVariantsMap.get(cod).add(variantId);
+            stopOrdinalsMap.get(cod).set(variantId, ordinal);
+            entries.push({ feature, ordinal });
+        }
+        stopsByVariant.set(variantId, entries);
+    }
 }
-
-
 
 /**
  * Returns all unique line IDs, sorted numerically.
@@ -122,7 +122,7 @@ function _indexStops(stopsData) {
  */
 export function getSortedLines() {
     return Array.from(routesByLine.keys()).sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }),
     );
 }
 
@@ -142,42 +142,35 @@ export function getFilteredRouteFeatures(lineIds, variantsArr) {
 }
 
 /**
- * Returns stop GeoJSON features for the given variants/lines,
- * optionally filtered to only those at or after the sourceOrdinal.
+ * Returns unique stop features for the given variants/lines, optionally
+ * filtered to only those at or after the source stop's ordinal per variant.
  *
  * @param {string[]} lineIds
  * @param {string[]|null} variantsArr
  * @param {Map<string, number>|null} variantOrdinalMap - variant → ordinal at source stop
- * @returns {object[]}
+ * @returns {object[]} deduplicated GeoJSON Feature[]
  */
 export function getFilteredStopFeatures(lineIds, variantsArr, variantOrdinalMap) {
-    let features;
-
     if (variantsArr) {
-        features = variantsArr.flatMap((v) => stopsByVariant.get(v) ?? []);
-        if (variantOrdinalMap) {
-            features = features.filter((f) => {
-                const sourceOrdinal = variantOrdinalMap.get(f.properties.COD_VARIAN);
-                return sourceOrdinal === undefined || f.properties.ORDINAL >= sourceOrdinal;
-            });
+        const seen = new Set();
+        const out = [];
+        for (const variantId of variantsArr) {
+            const sourceOrdinal = variantOrdinalMap?.get(variantId);
+            for (const { feature, ordinal } of stopsByVariant.get(variantId) ?? []) {
+                if (sourceOrdinal !== undefined && ordinal < sourceOrdinal) continue;
+                const cod = feature.properties.COD_UBIC_P;
+                if (seen.has(cod)) continue;
+                seen.add(cod);
+                out.push(feature);
+            }
         }
-    } else {
-        // For line-based display, use uniqueStopsData filtered by line membership
-        features = uniqueStopsData.filter((f) => {
-            const cod = f.properties.COD_UBIC_P;
-            const lines = stopLinesMap.get(cod);
-            return lines && lineIds.some((id) => lines.has(id));
-        });
-        return features; // already deduplicated
+        return out;
     }
 
-    // Deduplicate by stop code
-    const seen = new Set();
-    return features.filter((f) => {
-        const cod = f.properties.COD_UBIC_P;
-        if (seen.has(cod)) return false;
-        seen.add(cod);
-        return true;
+    // For line-based display, filter the unique stops by line membership
+    return uniqueStopsData.filter((f) => {
+        const lines = stopLinesMap.get(f.properties.COD_UBIC_P);
+        return lines && lineIds.some((id) => lines.has(id));
     });
 }
 
@@ -189,10 +182,5 @@ export function getFilteredStopFeatures(lineIds, variantsArr, variantOrdinalMap)
  * @returns {Map<string, number>}
  */
 export function buildVariantOrdinalMap(stopCode) {
-    const map = new Map();
-    const stopFeatures = stopsByCode.get(stopCode) ?? [];
-    stopFeatures.forEach((s) => {
-        map.set(s.properties.COD_VARIAN, s.properties.ORDINAL);
-    });
-    return map;
+    return new Map(stopOrdinalsMap.get(stopCode) ?? []);
 }

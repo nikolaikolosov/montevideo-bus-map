@@ -3,6 +3,8 @@
  * Keeps the data and map layers decoupled from DOM manipulation.
  */
 
+import { CONFIG } from './config.js';
+
 // ---------------------------------------------------------------------------
 // Loader & error states
 // ---------------------------------------------------------------------------
@@ -36,6 +38,40 @@ export function showError(message) {
     if (msgEl) msgEl.textContent = message;
     container.style.display = 'flex';
     container.removeAttribute('aria-hidden');
+}
+
+// ---------------------------------------------------------------------------
+// Data freshness
+// ---------------------------------------------------------------------------
+
+/**
+ * Shows when the datasets were generated. The data is updated manually
+ * (the API is reachable only from Uruguay), so the date tells users how
+ * current the map is. Marked stale after CONFIG.FRESHNESS_WARN_DAYS.
+ *
+ * @param {string|null} value - ISO-8601 (v2 generated_at) or HTTP Last-Modified
+ */
+export function renderDataFreshness(value) {
+    const el = document.getElementById('dataFreshness');
+    if (!el) return;
+
+    const date = value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) {
+        el.hidden = true;
+        return;
+    }
+
+    const formatted = date.toLocaleDateString('es-UY', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+    el.textContent = `Datos: ${formatted}`;
+    el.title = 'Fecha de la última actualización de rutas y paradas';
+
+    const ageDays = (Date.now() - date.getTime()) / 86_400_000;
+    el.classList.toggle('stale', ageDays > CONFIG.FRESHNESS_WARN_DAYS);
+    el.hidden = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,7 +110,12 @@ export function populateRouteSelect(sortedLines) {
  * @param {number} [options.stopCount]
  * @param {string|null} [options.selectedValue] - value to set on the select element
  */
-export function updateStatsPanel({ show, variantCount = null, stopCount = 0, selectedValue = null }) {
+export function updateStatsPanel({
+    show,
+    variantCount = null,
+    stopCount = 0,
+    selectedValue = null,
+}) {
     const routeInfo = document.getElementById('routeInfo');
     if (!show) {
         routeInfo.classList.remove('active');

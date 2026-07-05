@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+include = ["fetch_api_data.py", "scripts/*.py", "tests/python/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

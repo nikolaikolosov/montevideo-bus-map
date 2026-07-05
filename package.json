@@ -1,0 +1,21 @@
+{
+    "name": "montevideo-bus-map",
+    "private": true,
+    "type": "module",
+    "description": "Dev tooling for the Montevideo bus map (the app itself is a buildless static site)",
+    "scripts": {
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "lint": "eslint src tests/js",
+        "format": "prettier --write \"src/**/*.js\" \"tests/js/**/*.js\" \"css/**/*.css\"",
+        "format:check": "prettier --check \"src/**/*.js\" \"tests/js/**/*.js\" \"css/**/*.css\""
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.6.0",
+        "globals": "^17.7.0",
+        "jsdom": "^29.1.1",
+        "prettier": "^3.9.4",
+        "vitest": "^4.1.9"
+    }
+}

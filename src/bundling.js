@@ -30,8 +30,7 @@ import { CONFIG } from './config.js';
  * @property {Map<string, Set<string>>} variantsByLine - variant names per line
  */
 
-const lineCompare = (a, b) =>
-    a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+const lineCompare = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 
 /**
  * Douglas–Peucker simplification. Canonical nodes are cluster means, so they
@@ -467,7 +466,7 @@ export function buildSections(features) {
         sections.push({
             coords: simplifyPath(
                 chainNodes.map((id) => [nodes[id].x, nodes[id].y]),
-                CONFIG.BUNDLE_SIMPLIFY_EPS_DEG
+                CONFIG.BUNDLE_SIMPLIFY_EPS_DEG,
             ),
             lines: [...startEdge.lines].sort(lineCompare),
             variantsByLine,

@@ -219,3 +219,31 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node dev tooling
+node_modules/
+
+# --- WebDev Studio agent framework (private, never publish) -----------------
+# Deployed from a personal framework repo; keep all of it out of this public repo.
+CLAUDE.md
+constraints/
+examples/
+tools/
+.github/workflows/audit.yml
+# Studio working directories (framework scaffolds + internal process docs)
+app/
+audit/
+design/
+infra/
+product/
+security/
+# Selective: these trees stay private EXCEPT the project-facing docs that the
+# README and the code reference directly.
+architecture/*
+!architecture/contracts/
+docs/*
+!docs/data-update-runbook.md
+qa/*
+!qa/reports/
+# Local AI tooling caches
+.token-savior-cache.json

@@ -16,12 +16,18 @@ import { debounce, isCoarsePointer } from './utils.js';
 import {
     buildIndexes,
     getSortedLines,
-    stopsByCode,
+    uniqueStopByCode,
     stopLinesMap,
     stopVariantsMap,
 } from './data.js';
 import { initMap, renderGlobalStops, renderRoutes, locateUser } from './map.js';
-import { hideLoader, showError, populateRouteSelect, updateStatsPanel } from './ui.js';
+import {
+    hideLoader,
+    showError,
+    populateRouteSelect,
+    updateStatsPanel,
+    renderDataFreshness,
+} from './ui.js';
 
 // ---------------------------------------------------------------------------
 // Data loading
@@ -31,7 +37,7 @@ import { hideLoader, showError, populateRouteSelect, updateStatsPanel } from './
  * Fetches a JSON file with a timeout guard.
  * @param {string} url
  * @param {number} [timeoutMs=15000]
- * @returns {Promise<object>}
+ * @returns {Promise<{data: object, lastModified: string|null}>}
  */
 async function fetchWithTimeout(url, timeoutMs = 15000) {
     const controller = new AbortController();
@@ -39,7 +45,7 @@ async function fetchWithTimeout(url, timeoutMs = 15000) {
     try {
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status} loading ${url}`);
-        return await res.json();
+        return { data: await res.json(), lastModified: res.headers.get('last-modified') };
     } finally {
         clearTimeout(id);
     }
@@ -48,19 +54,28 @@ async function fetchWithTimeout(url, timeoutMs = 15000) {
 /**
  * Loads both GeoJSON datasets in parallel.
  * Throws a descriptive error on failure.
- * @returns {Promise<[object, object]>} [routesData, stopsData]
+ * @returns {Promise<[object, object, string|null]>} [routesData, stopsData, generatedAt]
  */
 async function loadData() {
-    const [routesData, stopsData] = await Promise.all([
+    const [routes, stops] = await Promise.all([
         fetchWithTimeout(CONFIG.DATA_URLS.ROUTES),
         fetchWithTimeout(CONFIG.DATA_URLS.STOPS),
     ]);
 
-    if (!routesData?.features || !stopsData?.features) {
+    if (!routes.data?.features || !stops.data?.features) {
         throw new Error('Los datos descargados tienen un formato inesperado.');
     }
 
-    return [routesData, stopsData];
+    // Data freshness: prefer the pipeline's generated_at stamp (v2 contract);
+    // fall back to the HTTP Last-Modified header for pre-v2 files.
+    const generatedAt =
+        stops.data.generated_at ??
+        routes.data.generated_at ??
+        stops.lastModified ??
+        routes.lastModified ??
+        null;
+
+    return [routes.data, stops.data, generatedAt];
 }
 
 // ---------------------------------------------------------------------------
@@ -111,13 +126,13 @@ function handleShowAllStops() {
  * @returns {boolean} true if the stop exists and routes were rendered
  */
 window.__mvdShowStopRoutes = (stopCode) => {
-    const stopFeatures = stopsByCode.get(stopCode);
-    if (!stopFeatures?.length) return false;
+    const stopFeature = uniqueStopByCode.get(stopCode);
+    if (!stopFeature) return false;
     const linesArr = Array.from(stopLinesMap.get(stopCode) ?? []).sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }),
     );
     const variantsArr = Array.from(stopVariantsMap.get(stopCode) ?? []);
-    handleShowRoutes(linesArr, variantsArr, stopFeatures[0]);
+    handleShowRoutes(linesArr, variantsArr, stopFeature);
     return true;
 };
 
@@ -128,10 +143,13 @@ window.__mvdShowStopRoutes = (stopCode) => {
 async function initApp() {
     try {
         // Load datasets in parallel
-        const [routesData, stopsData] = await loadData();
+        const [routesData, stopsData, generatedAt] = await loadData();
 
         // Build O(1) lookup indexes (runs once, not on every interaction)
         buildIndexes(routesData, stopsData);
+
+        // Show when the data was generated (manual-update workflow)
+        renderDataFreshness(generatedAt);
 
         // Initialise Leaflet map
         initMap();
@@ -151,7 +169,7 @@ async function initApp() {
                 } else {
                     handleSelectLine(val);
                 }
-            }, CONFIG.SELECT_CHANGE_DEBOUNCE_MS)
+            }, CONFIG.SELECT_CHANGE_DEBOUNCE_MS),
         );
 
         // Default view — all stops
