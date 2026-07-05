@@ -309,6 +309,59 @@ option {
     color: var(--text-muted);
 }
 
+.popup-content .popup-sub {
+    font-size: 0.72rem;
+    margin-bottom: 10px;
+}
+
+/* Line chips: one tappable colored chip per line serving the stop.
+   Capped at ~5 rows; busier stops (up to 41 lines) scroll inside. */
+.popup-lines {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    padding: 2px;
+    max-height: 138px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.line-chip {
+    background: var(--input-bg);
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.line-chip:hover {
+    background: var(--input-bg-hover);
+}
+
+.line-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+    .line-chip {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        min-width: 42px;
+    }
+
+    .popup-lines {
+        max-height: 190px;
+    }
+}
+
 .popup-content .btn {
     margin-top: 12px;
     width: 100%;

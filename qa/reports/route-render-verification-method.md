@@ -49,11 +49,19 @@ Update after an intentional rendering change:
 
 ## Layer 3 — Curated pixel scenes (every PR, ~20 s)
 
-`tests/e2e/visual.spec.js`: 11 screenshots — global stops + Línea 100 in BOTH
+`tests/e2e/visual.spec.js`: 13 screenshots — global stops + Línea 100 in BOTH
 themes, stop 4018 downstream (both themes), terminal 4967 (empty-render edge),
-line 187 spur, and the 18 de Julio corridor at zooms 12/15/17 (parallel-offset
-engagement at 15). `maxDiffPixelRatio: 0.02` absorbs anti-aliasing; real
-regressions move whole polylines.
+line 187 spur, the 18 de Julio corridor at zooms 12/15/17 (parallel-offset
+engagement at 15), and the 34-chip popup of stop 4772 in both themes.
+`maxDiffPixelRatio: 0.02` absorbs anti-aliasing; real regressions move whole
+polylines.
+
+Popup interactions have their own functional spec
+(`tests/e2e/popup-actions.spec.js`): chip counts at the busiest stop, chip
+click → single-line render (one color in the manifest, stats/select synced),
+"Ver rutas (todas)" → full bundle. Unit-level popup coverage (chip order,
+colors, per-line variant payload, XSS escaping, chips==stopLinesMap invariant)
+lives in `tests/js/popup.test.js`.
 
 - Baselines are platform-suffixed (`…-win32.png`, `…-linux.png`) under
   `tests/e2e/__screenshots__/`, committed to the repo.

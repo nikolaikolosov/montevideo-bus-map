@@ -13,6 +13,7 @@ import {
     getFilteredStopFeatures,
     buildVariantOrdinalMap,
     getLineColor,
+    getStopLineVariants,
 } from './data.js';
 
 /** @type {L.Map} */
@@ -307,21 +308,46 @@ export function createStopPopup(feature, onShowRoutes) {
           )
         : [];
     const variantsArr = stopVariantsMap.has(cod) ? Array.from(stopVariantsMap.get(cod)) : [];
-    const linesText = linesArr.length > 0 ? linesArr.join(', ') : 'Ninguna';
+    const linesLabel =
+        linesArr.length === 0
+            ? 'sin líneas'
+            : linesArr.length === 1
+              ? '1 línea'
+              : `${linesArr.length} líneas`;
 
     const div = document.createElement('div');
     div.className = 'popup-content';
     div.innerHTML = `
-        <h3>Parada</h3>
-        <p><strong>Calle:</strong> ${escapeHTML(CALLE)}</p>
-        <p><strong>Esquina:</strong> ${escapeHTML(ESQUINA)}</p>
-        <p><strong>Líneas:</strong> ${escapeHTML(linesText)}</p>
-        <button type="button" class="btn draw-lines-btn" aria-label="Ver rutas desde esta parada">Ver rutas</button>
+        <h3>${escapeHTML(CALLE)}</h3>
+        <p class="popup-sub">esq. ${escapeHTML(ESQUINA)} · Parada ${escapeHTML(cod)} · ${linesLabel}</p>
+        <ul class="popup-lines" role="list"></ul>
+        <button type="button" class="btn draw-lines-btn"
+            aria-label="Ver todas las rutas desde esta parada">Ver rutas (todas)</button>
     `;
+
+    // One tappable chip per line: shows JUST that line downstream from here.
+    const list = div.querySelector('.popup-lines');
+    for (const line of linesArr) {
+        const li = document.createElement('li');
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'line-chip';
+        chip.textContent = line;
+        const color = getLineColor(line);
+        chip.style.borderColor = color;
+        chip.style.color = color;
+        chip.setAttribute('aria-label', `Ver ruta ${line} desde esta parada`);
+        chip.addEventListener('click', () => {
+            onShowRoutes([line], getStopLineVariants(cod, line), feature);
+            map?.closePopup();
+        });
+        li.appendChild(chip);
+        list.appendChild(li);
+    }
 
     div.querySelector('.draw-lines-btn').addEventListener('click', () => {
         onShowRoutes(linesArr, variantsArr, feature);
-        map.closePopup();
+        map?.closePopup();
     });
 
     return div;
@@ -385,7 +411,7 @@ export function renderGlobalStops(onShowRoutes) {
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
-                layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
+                layer.bindPopup(() => createStopPopup(feature, onShowRoutes), { maxWidth: 340 });
                 setupStopListeners(layer);
             },
         },
@@ -705,7 +731,7 @@ function renderStops(features, onShowRoutes) {
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
-                layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
+                layer.bindPopup(() => createStopPopup(feature, onShowRoutes), { maxWidth: 340 });
                 setupStopListeners(layer);
             },
         },

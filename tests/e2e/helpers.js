@@ -39,6 +39,19 @@ export async function renderStopRoutes(page, stopCode) {
     await page.waitForTimeout(300);
 }
 
+/** Opens the Leaflet popup of a stop in the current (global) view. */
+export async function openStopPopup(page, stopCode) {
+    await page.evaluate((cod) => {
+        let target = null;
+        window.__mvdMap.eachLayer((l) => {
+            if (l.feature?.properties?.COD_UBIC_P === cod) target = l;
+        });
+        if (!target) throw new Error(`stop layer ${cod} not found`);
+        target.openPopup();
+    }, stopCode);
+    await page.waitForSelector('.popup-content');
+}
+
 /** Fixed camera for corridor scenes (no animation → deterministic pixels). */
 export async function setView(page, center, zoom) {
     await page.evaluate(
