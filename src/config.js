@@ -13,10 +13,21 @@ export const CONFIG = {
     // "street node" (~13 m). Must stay well below half the typical distance
     // between parallel streets (~85 m blocks in Montevideo) so distinct streets
     // never merge, yet above the ~1–5 m jitter between variant traces.
-    BUNDLE_TOLERANCE_DEG: 0.00013,
+    // Sized to merge the ida/vuelta digitisation offset of one line into a
+    // single corridor (measured up to ~22 m on line 104); adjacent parallel
+    // streets are ≥80 m apart, far outside the radius (brainstorm/report 104).
+    BUNDLE_TOLERANCE_DEG: 0.00022,
     // Corridor polylines are simplified (Douglas–Peucker) with this tolerance
     // (~4 m) to iron out the ±2–3 m jitter of averaged street nodes.
     BUNDLE_SIMPLIFY_EPS_DEG: 0.00004,
+    // Laplacian passes over each corridor before simplification — cancels the
+    // sawtooth left where merged opposite-direction strands alternate nodes.
+    // Guards: only vertices flanked by sawtooth-scale segments move (sparse
+    // peripheral traces have km-long legs whose corners must stay put), and
+    // no vertex shifts more than ~11 m.
+    BUNDLE_SMOOTH_PASSES: 2,
+    BUNDLE_SMOOTH_MAX_SEG_DEG: 0.0006,
+    BUNDLE_SMOOTH_MAX_SHIFT_DEG: 0.0001,
     // Gap (px) between parallel lines of a bundle at high zoom.
     ROUTE_BUNDLE_GAP_PX: 1,
     // Cap on the total width (px) of a bundle: with many lines the per-line

@@ -768,6 +768,12 @@ function renderRouteLines(features) {
         if (!layersByLine.has(j.line)) layersByLine.set(j.line, []);
         layersByLine.get(j.line).push(layer);
         layer.addTo(appState.currentRouteLayer);
+        // Joints render UNDER the strands: where sections overlap at a node
+        // the connectors of several lines cross each other and read as a
+        // colored knot; beneath the strands they stay visible only inside
+        // the corner wedge they exist to fill (user report at 26 de Marzo y
+        // Miguel Barreiro).
+        layer.bringToBack();
     }
 }
 

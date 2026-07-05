@@ -144,36 +144,42 @@ export function strandEndpoint(node, neighbor, nodeIsEnd, d) {
 }
 
 /**
- * Connector geometry between two strand endpoints at a boundary node: a short
- * chord, with one midpoint on the offset circle around the node when the
- * corner is sharp (mirrors offsetPoints' outer-join arc look).
+ * Connector geometry between two strand endpoints at a boundary node: a
+ * cubic Bézier that LEAVES endpoint A along strand A's direction and ENTERS
+ * endpoint B along strand B's direction — the visual continuation of both
+ * strands. Replaces the earlier circular-arc midpoint, which bulged into
+ * neighbouring strands whenever the two offsets differed (a line changing
+ * slot between a 12-line and a 6-line section — user report at the
+ * 26 de Marzo y Miguel Barreiro turn).
  *
- * @param {L.Point} node
  * @param {L.Point} ea - strand endpoint on side A (from strandEndpoint)
  * @param {L.Point} eb - strand endpoint on side B
+ * @param {L.Point} ta - unit tangent of strand A pointing INTO the node
+ * @param {L.Point} tb - unit tangent of strand B pointing AWAY from the node
  * @returns {L.Point[]}
  */
-export function jointPath(node, ea, eb) {
-    const ax = ea.x - node.x;
-    const ay = ea.y - node.y;
-    const bx = eb.x - node.x;
-    const by = eb.y - node.y;
-    const ra = Math.sqrt(ax * ax + ay * ay);
-    const rb = Math.sqrt(bx * bx + by * by);
-    if (ra < 1e-6 || rb < 1e-6) return [ea, eb];
-    // Angle between the two radial directions; beyond ~60° a chord visibly
-    // cuts the corner, so add the arc midpoint at the mean radius.
-    const cos = (ax * bx + ay * by) / (ra * rb);
-    if (cos < 0.5) {
-        const mx = ax / ra + bx / rb;
-        const my = ay / ra + by / rb;
-        const ml = Math.sqrt(mx * mx + my * my);
-        if (ml > 1e-6) {
-            const rm = (ra + rb) / 2;
-            return [ea, L.point(node.x + (mx / ml) * rm, node.y + (my / ml) * rm), eb];
-        }
+export function jointPath(ea, eb, ta, tb) {
+    const d = Math.hypot(eb.x - ea.x, eb.y - ea.y);
+    if (d < 1) return [ea, eb];
+
+    const handle = d / 3;
+    const p1 = L.point(ea.x + ta.x * handle, ea.y + ta.y * handle);
+    const p2 = L.point(eb.x - tb.x * handle, eb.y - tb.y * handle);
+
+    const steps = Math.max(2, Math.min(8, Math.ceil(d / 6)));
+    const pts = [ea];
+    for (let s = 1; s < steps; s++) {
+        const t = s / steps;
+        const u = 1 - t;
+        pts.push(
+            L.point(
+                u * u * u * ea.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * eb.x,
+                u * u * u * ea.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * eb.y,
+            ),
+        );
     }
-    return [ea, eb];
+    pts.push(eb);
+    return pts;
 }
 
 /**
@@ -197,7 +203,14 @@ export const OffsetJoint = L.Polyline.extend({
         const ea = strandEndpoint(node, na, jointA.nodeIsEnd, offsetFor(jointA.slot, zoom));
         const eb = strandEndpoint(node, nb, jointB.nodeIsEnd, offsetFor(jointB.slot, zoom));
         if (!ea || !eb) return;
-        const ring = jointPath(node, ea, eb);
+        // Strand tangents at the node: A runs along (na → node), B continues
+        // along (node → nb) — independent of either section's orientation.
+        const la = Math.hypot(node.x - na.x, node.y - na.y);
+        const lb = Math.hypot(nb.x - node.x, nb.y - node.y);
+        if (la < 0.05 || lb < 0.05) return;
+        const ta = L.point((node.x - na.x) / la, (node.y - na.y) / la);
+        const tb = L.point((nb.x - node.x) / lb, (nb.y - node.y) / lb);
+        const ring = jointPath(ea, eb, ta, tb);
         for (const p of ring) projectedBounds.extend(p);
         result.push(ring);
     },

@@ -33,6 +33,57 @@ import { CONFIG } from './config.js';
 const lineCompare = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 
 /**
+ * Laplacian smoothing of a corridor polyline (endpoints pinned).
+ *
+ * Canonical nodes are running means of clustered trace vertices; where two
+ * opposite-direction strands of one line merge into a single corridor
+ * (BUNDLE_TOLERANCE sized for the ida/vuelta digitisation offset), successive
+ * nodes alternate between the two source strands and the corridor sawtooths
+ * sideways (user report: line 104 along Rambla Armenia). Two smoothing
+ * passes cancel that alternation — a ±10 m sawtooth flattens onto the street
+ * — while shifting any node by at most the same ~10 m the cluster radius
+ * already allows, so genuine street corners only get a slight rounding.
+ *
+ * @param {number[][]} coords - [lon, lat][]
+ * @param {number} passes
+ * @returns {number[][]}
+ */
+export function smoothPath(coords, passes, maxSegDeg, maxShiftDeg) {
+    if (coords.length < 3) return coords;
+    const maxSegSq = maxSegDeg * maxSegDeg;
+    let cur = coords;
+    for (let p = 0; p < passes; p++) {
+        const next = [cur[0]];
+        for (let i = 1; i < cur.length - 1; i++) {
+            const [px, py] = cur[i - 1];
+            const [cx, cy] = cur[i];
+            const [nx, ny] = cur[i + 1];
+            const l1 = (cx - px) ** 2 + (cy - py) ** 2;
+            const l2 = (nx - cx) ** 2 + (ny - cy) ** 2;
+            // Only sawtooth-scale vertices move: a vertex flanked by LONG
+            // segments is a genuine feature of a sparse trace (peripheral
+            // L*/G* lines have kilometre-long legs) — smoothing those swept
+            // corners hundreds of metres off the street.
+            if (l1 > maxSegSq || l2 > maxSegSq) {
+                next.push(cur[i]);
+                continue;
+            }
+            let dx = (px + 2 * cx + nx) / 4 - cx;
+            let dy = (py + 2 * cy + ny) / 4 - cy;
+            const shift = Math.hypot(dx, dy);
+            if (shift > maxShiftDeg) {
+                dx *= maxShiftDeg / shift;
+                dy *= maxShiftDeg / shift;
+            }
+            next.push([cx + dx, cy + dy]);
+        }
+        next.push(cur[cur.length - 1]);
+        cur = next;
+    }
+    return cur;
+}
+
+/**
  * Douglas–Peucker simplification. Canonical nodes are cluster means, so they
  * jitter ±2–3 m sideways; dropping points that deviate less than ~4 m from
  * the chord straightens the bundle without detaching it from the street.
@@ -170,7 +221,7 @@ export function buildSections(features) {
         const checked = new Set([aId, bId]);
         /** @type {{id: number, t: number}[]} */
         const inserts = [];
-        const perpTolSq = tolSq * 0.64; // (0.8·TOL)² — stricter than cluster radius
+        const perpTolSq = tolSq * 0.81; // (0.9·TOL)² — slightly stricter than cluster radius
         for (let s = 0; s <= steps; s++) {
             const px = a.x + (dx * s) / steps;
             const py = a.y + (dy * s) / steps;
@@ -465,7 +516,12 @@ export function buildSections(features) {
 
         sections.push({
             coords: simplifyPath(
-                chainNodes.map((id) => [nodes[id].x, nodes[id].y]),
+                smoothPath(
+                    chainNodes.map((id) => [nodes[id].x, nodes[id].y]),
+                    CONFIG.BUNDLE_SMOOTH_PASSES,
+                    CONFIG.BUNDLE_SMOOTH_MAX_SEG_DEG,
+                    CONFIG.BUNDLE_SMOOTH_MAX_SHIFT_DEG,
+                ),
                 CONFIG.BUNDLE_SIMPLIFY_EPS_DEG,
             ),
             lines: [...startEdge.lines].sort(lineCompare),
