@@ -79,11 +79,27 @@ describe('truncateLineDownstream', () => {
         [3, 0],
     ];
 
-    it('slices from the vertex nearest to the source and snaps it to the source', () => {
+    it('cuts at the projection ON the line — the stop coordinate is never injected', () => {
+        // Source sits 0.1 off the line; the head must be its projection (1.9, 0),
+        // not the source itself: injecting the stop used to draw chords across
+        // city blocks (stops 4534/3987, phantom D1 branch at 3179).
         const out = truncateLineDownstream(line, [1.9, 0.1]);
         expect(out).toEqual([
-            [1.9, 0.1], // snapped
+            [1.9, 0],
+            [2, 0],
             [3, 0],
+        ]);
+    });
+
+    it('projects onto segment interiors, not just vertices (DP-sparse traces)', () => {
+        const sparse = [
+            [0, 0],
+            [100, 0],
+        ];
+        // Nearest vertex is 40 away; the projection is right below the source.
+        expect(truncateLineDownstream(sparse, [60, 5])).toEqual([
+            [60, 0],
+            [100, 0],
         ]);
     });
 
@@ -93,7 +109,20 @@ describe('truncateLineDownstream', () => {
         expect(out[0]).toEqual([0, 0]);
     });
 
-    it('snaps only the closest part of a MultiLineString', () => {
+    it('drops the degenerate head when the projection lands on a vertex', () => {
+        const out = truncateLineDownstream(line, [2, 0.5]);
+        expect(out).toEqual([
+            [2, 0],
+            [3, 0],
+        ]);
+    });
+
+    it('collapses to a single point at the terminal (caller drops it)', () => {
+        const out = truncateLineDownstream(line, [3.5, 0]);
+        expect(out).toEqual([[3, 0]]);
+    });
+
+    it('truncates only the nearest piece of a MultiLineString', () => {
         const multi = [
             [
                 [0, 0],
@@ -105,12 +134,15 @@ describe('truncateLineDownstream', () => {
                 [12, 0],
             ],
         ];
-        const out = truncateLineDownstream(multi, [10.9, 0]);
-        // First part: nearest vertex is [1,0] -> slice leaves 1 point -> dropped
-        // Second part: sliced from [11,0], first point snapped to the source
+        const out = truncateLineDownstream(multi, [10.9, 0.2]);
         expect(out).toEqual([
             [
+                [0, 0],
+                [1, 0],
+            ],
+            [
                 [10.9, 0],
+                [11, 0],
                 [12, 0],
             ],
         ]);
