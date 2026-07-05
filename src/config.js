@@ -34,6 +34,12 @@ export const CONFIG = {
     FIT_BOUNDS_MAX_ZOOM: 15,
     // Auto-geolocation (mobile only): how far to zoom in when centring on the user.
     GEOLOCATION_MAX_ZOOM: 16,
+    // Service area gate for auto-geolocation: bounding box of all stops in
+    // the committed data (lat -34.9271…-34.7167, lon -56.4048…-55.9955) plus
+    // a ~2 km buffer for GPS drift. A mobile visitor located OUTSIDE this box
+    // (tourists, friends abroad) keeps the default city overview instead of
+    // being flown to an empty map (brainstorm-007).
+    CITY_BOUNDS: { south: -34.95, west: -56.43, north: -34.69, east: -55.97 },
     SELECT_CHANGE_DEBOUNCE_MS: 150,
     // Data freshness label turns amber when the dataset is older than this.
     FRESHNESS_WARN_DAYS: 45,

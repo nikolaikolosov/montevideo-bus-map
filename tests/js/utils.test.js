@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { escapeHTML, cleanCoordinates, truncateLineDownstream, debounce } from '../../src/utils.js';
+import {
+    escapeHTML,
+    cleanCoordinates,
+    truncateLineDownstream,
+    debounce,
+    isWithinBounds,
+} from '../../src/utils.js';
+import { CONFIG } from '../../src/config.js';
 
 describe('escapeHTML', () => {
     it('escapes all HTML-significant characters', () => {
@@ -163,5 +170,46 @@ describe('debounce', () => {
         expect(fn).toHaveBeenCalledTimes(1);
         expect(fn).toHaveBeenCalledWith(3);
         vi.useRealTimers();
+    });
+});
+
+describe('isWithinBounds (geolocation service-area gate)', () => {
+    const B = CONFIG.CITY_BOUNDS;
+
+    it('accepts locations inside Montevideo', () => {
+        expect(isWithinBounds(-34.9055, -56.187, B)).toBe(true); // 18 de Julio y Ejido
+        expect(isWithinBounds(-34.7167, -56.2, B)).toBe(true); // northern stops edge
+        expect(isWithinBounds(-34.9271, -56.16, B)).toBe(true); // southern stops edge
+    });
+
+    it('rejects locations outside the service area', () => {
+        expect(isWithinBounds(-34.6037, -58.3816, B)).toBe(false); // Buenos Aires
+        expect(isWithinBounds(-34.9608, -54.9433, B)).toBe(false); // Punta del Este
+        expect(isWithinBounds(55.7558, 37.6173, B)).toBe(false); // Moscow
+        expect(isWithinBounds(-34.65, -56.2, B)).toBe(false); // just north of the buffer
+    });
+
+    it('treats the buffered box edges as inclusive', () => {
+        expect(isWithinBounds(B.south, B.west, B)).toBe(true);
+        expect(isWithinBounds(B.north, B.east, B)).toBe(true);
+        expect(isWithinBounds(B.south - 1e-6, B.west, B)).toBe(false);
+        expect(isWithinBounds(B.north, B.east + 1e-6, B)).toBe(false);
+    });
+
+    it('the bounds actually contain every stop in the committed data', () => {
+        // Guards the config against data updates that widen the network.
+        // (Read lazily to keep this file otherwise synthetic.)
+        return import('node:fs').then(({ readFileSync }) => {
+            const stops = JSON.parse(
+                readFileSync(new URL('../../stops.json', import.meta.url), 'utf8'),
+            );
+            for (const f of stops.features) {
+                const [lon, lat] = f.geometry.coordinates;
+                expect(
+                    isWithinBounds(lat, lon, B),
+                    `stop ${f.properties.COD_UBIC_P} outside CITY_BOUNDS`,
+                ).toBe(true);
+            }
+        });
     });
 });

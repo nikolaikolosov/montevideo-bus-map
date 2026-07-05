@@ -1,5 +1,11 @@
 import { CONFIG } from './config.js';
-import { escapeHTML, cleanCoordinates, truncateLineDownstream, isCoarsePointer } from './utils.js';
+import {
+    escapeHTML,
+    cleanCoordinates,
+    truncateLineDownstream,
+    isCoarsePointer,
+    isWithinBounds,
+} from './utils.js';
 import { appState, resetLayers } from './state.js';
 import { buildSections, buildJoints } from './bundling.js';
 import { OffsetPolyline, OffsetJoint } from './offsetline.js';
@@ -247,6 +253,19 @@ export function locateUser() {
     if (!map) return;
 
     map.once('locationfound', (e) => {
+        // Service-area gate (brainstorm-007): a visitor located outside
+        // Montevideo keeps the default city overview — centring on them
+        // would show an empty map with no stops or routes. No marker either:
+        // it would sit off-screen.
+        if (!isWithinBounds(e.latlng.lat, e.latlng.lng, CONFIG.CITY_BOUNDS)) {
+            console.info(
+                '[geolocation] ubicación fuera de Montevideo — se mantiene la vista general',
+            );
+            return;
+        }
+
+        map.setView(e.latlng, CONFIG.GEOLOCATION_MAX_ZOOM);
+
         if (userLocationLayer) map.removeLayer(userLocationLayer);
 
         const accent = '#3b82f6'; // --accent
@@ -278,9 +297,9 @@ export function locateUser() {
         console.warn('[geolocation] no se pudo obtener la ubicación:', err.message);
     });
 
+    // The camera move is decided in the handler above (setView: true would
+    // fly to the fix no matter where it lands).
     map.locate({
-        setView: true,
-        maxZoom: CONFIG.GEOLOCATION_MAX_ZOOM,
         enableHighAccuracy: true,
         timeout: 10000,
     });
