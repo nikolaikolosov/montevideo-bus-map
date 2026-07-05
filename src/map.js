@@ -3,6 +3,7 @@ import { escapeHTML, cleanCoordinates, truncateLineDownstream, isCoarsePointer }
 import { appState, resetLayers } from './state.js';
 import { buildSections } from './bundling.js';
 import { OffsetPolyline } from './offsetline.js';
+import { getTheme } from './theme.js';
 import {
     uniqueStopsData,
     stopLinesMap,
@@ -16,6 +17,12 @@ import {
 
 /** @type {L.Map} */
 let map;
+
+/** @type {L.TileLayer|null} basemap layer — swapped on theme change */
+let baseTileLayer = null;
+
+/** Stop marker palette for the active theme. */
+const stopColors = () => CONFIG.STOP_COLORS_BY_THEME[getTheme()];
 
 /**
  * Per-line parallel offset (px) for slot `idx` within a bundle of `total`
@@ -109,6 +116,24 @@ function updateMapStyles() {
     }
 }
 
+/**
+ * Applies the active theme to the map: swaps the basemap tiles and redraws
+ * the current view so route lines, stops and labels pick up theme colors.
+ * Safe to call before initMap() (no-op).
+ */
+export function applyMapTheme() {
+    if (!map) return;
+    if (baseTileLayer) baseTileLayer.setUrl(CONFIG.TILE_URLS[getTheme()]);
+
+    const last = appState.lastRender;
+    if (!last) return;
+    if (last.type === 'global') {
+        renderGlobalStops(last.args.onShowRoutes);
+    } else {
+        renderRoutes(last.args);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Map initialisation
 // ---------------------------------------------------------------------------
@@ -131,7 +156,7 @@ export function initMap() {
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    baseTileLayer = L.tileLayer(CONFIG.TILE_URLS[getTheme()], {
         attribution:
             '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
             '&copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -275,24 +300,24 @@ export function createStopPopup(feature, onShowRoutes) {
  */
 function setupStopListeners(layer) {
     layer.on('mouseover', function () {
-        this.setStyle({ fillColor: '#ffffff' });
+        this.setStyle({ fillColor: stopColors().activeFill });
         this.bringToFront();
     });
 
     layer.on('mouseout', function () {
-        // Only turn black if it's not the currently selected stop
+        // Only reset if it's not the currently selected stop
         if (appState.selectedStopLayer !== this) {
-            this.setStyle({ fillColor: '#000000' });
+            this.setStyle({ fillColor: stopColors().fill });
         }
     });
 
     layer.on('click', function () {
         // Reset previous selected stop
         if (appState.selectedStopLayer && appState.selectedStopLayer !== this) {
-            appState.selectedStopLayer.setStyle({ fillColor: '#000000' });
+            appState.selectedStopLayer.setStyle({ fillColor: stopColors().fill });
         }
         // Set new selected stop
-        this.setStyle({ fillColor: '#ffffff' });
+        this.setStyle({ fillColor: stopColors().activeFill });
         appState.selectedStopLayer = this;
     });
 }
@@ -307,6 +332,7 @@ function setupStopListeners(layer) {
  */
 export function renderGlobalStops(onShowRoutes) {
     clearLayers();
+    appState.lastRender = { type: 'global', args: { onShowRoutes } };
     const touch = isCoarsePointer();
     const style = getStopStyleForZoom(map.getZoom(), touch);
 
@@ -316,8 +342,8 @@ export function renderGlobalStops(onShowRoutes) {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
                     ...style,
-                    fillColor: '#000000',
-                    color: '#ffffff',
+                    fillColor: stopColors().fill,
+                    color: stopColors().stroke,
                     opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
@@ -598,8 +624,8 @@ function renderStops(features, onShowRoutes) {
             pointToLayer: (_feature, latlng) =>
                 L.circleMarker(latlng, {
                     ...style,
-                    fillColor: '#000000',
-                    color: '#ffffff',
+                    fillColor: stopColors().fill,
+                    color: stopColors().stroke,
                     opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
@@ -648,6 +674,10 @@ function renderHighlightStop(sourceFeature) {
  */
 export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null, onShowRoutes }) {
     clearLayers();
+    appState.lastRender = {
+        type: 'routes',
+        args: { lineIds, variantsArr, sourceFeature, onShowRoutes },
+    };
     if (lineIds.length === 0) return { variantCount: 0, stopCount: 0 };
 
     const sourceLonLat = sourceFeature?.geometry?.coordinates ?? null;

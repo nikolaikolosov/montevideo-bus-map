@@ -41,6 +41,34 @@ export function showError(message) {
 }
 
 // ---------------------------------------------------------------------------
+// Theme toggle
+// ---------------------------------------------------------------------------
+
+/**
+ * Reflects the active theme on the toggle button: the icon shows the theme
+ * the click switches TO (sun while dark, moon while light).
+ * @param {'dark'|'light'} theme
+ */
+export function updateThemeToggle(theme) {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    const switchesToLight = theme === 'dark';
+    btn.textContent = switchesToLight ? '☀️' : '🌙';
+    const label = switchesToLight ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+}
+
+/**
+ * Wires the theme toggle button.
+ * @param {() => void} onToggle
+ */
+export function initThemeToggle(onToggle) {
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', onToggle);
+}
+
+// ---------------------------------------------------------------------------
 // Data freshness
 // ---------------------------------------------------------------------------
 

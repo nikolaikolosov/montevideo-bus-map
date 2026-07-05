@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { getTheme } from './theme.js';
 
 /**
  * Pre-built lookup indexes for O(1) access to routes and stops by key.
@@ -47,6 +48,10 @@ export const uniqueStopsData = [];
  * Golden-ratio multiplication spreads the hue space evenly even for
  * numerically adjacent line IDs ("1", "2", "3" … don't cluster together).
  *
+ * The hue is theme-independent (a line keeps its identity); saturation and
+ * lightness come from CONFIG.LINE_COLOR_BY_THEME so lines hold contrast on
+ * both the dark and the light basemap.
+ *
  * @param {string} lineId
  * @returns {string} CSS hsl() color
  */
@@ -58,7 +63,8 @@ export function getLineColor(lineId) {
     }
     // Spread hue evenly with golden ratio
     const hue = (hash * CONFIG.GOLDEN_RATIO * 360) % 360;
-    return `hsl(${hue.toFixed(1)}, 85%, 60%)`;
+    const { saturation, lightness } = CONFIG.LINE_COLOR_BY_THEME[getTheme()];
+    return `hsl(${hue.toFixed(1)}, ${saturation}%, ${lightness}%)`;
 }
 
 /**

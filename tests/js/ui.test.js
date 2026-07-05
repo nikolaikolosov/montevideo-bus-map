@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderDataFreshness, populateRouteSelect } from '../../src/ui.js';
+import {
+    renderDataFreshness,
+    populateRouteSelect,
+    updateThemeToggle,
+    initThemeToggle,
+} from '../../src/ui.js';
 import { CONFIG } from '../../src/config.js';
 
 describe('renderDataFreshness', () => {
@@ -46,6 +51,35 @@ describe('renderDataFreshness', () => {
     it('does not throw when the element is absent', () => {
         document.body.innerHTML = '';
         expect(() => renderDataFreshness('2026-06-27')).not.toThrow();
+    });
+});
+
+describe('theme toggle', () => {
+    beforeEach(() => {
+        document.body.innerHTML =
+            '<button type="button" id="themeToggle" aria-label="Cambiar a tema claro">☀️</button>';
+    });
+
+    it('shows the theme the click switches TO', () => {
+        updateThemeToggle('dark');
+        const btn = document.getElementById('themeToggle');
+        expect(btn.textContent).toBe('☀️');
+        expect(btn.getAttribute('aria-label')).toBe('Cambiar a tema claro');
+
+        updateThemeToggle('light');
+        expect(btn.textContent).toBe('🌙');
+        expect(btn.getAttribute('aria-label')).toBe('Cambiar a tema oscuro');
+    });
+
+    it('fires the handler on click and survives a missing button', () => {
+        const onToggle = vi.fn();
+        initThemeToggle(onToggle);
+        document.getElementById('themeToggle').click();
+        expect(onToggle).toHaveBeenCalledTimes(1);
+
+        document.body.innerHTML = '';
+        expect(() => initThemeToggle(onToggle)).not.toThrow();
+        expect(() => updateThemeToggle('dark')).not.toThrow();
     });
 });
 
