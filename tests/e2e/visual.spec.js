@@ -14,7 +14,7 @@
  * baselines are compared strictly.
  */
 import { test, expect } from '@playwright/test';
-import { openMap, renderLine, renderStopRoutes, setView } from './helpers.js';
+import { openMap, renderLine, renderStopRoutes, setView, openStopPopup } from './helpers.js';
 
 // 18 de Julio / Ejido — the densest shared corridor in the network.
 const CORRIDOR_CENTER = [-34.9055, -56.187];
@@ -31,6 +31,9 @@ const scenes = [
     { name: 'corridor-zoom-12', theme: 'dark', line: '100', view: { zoom: 12 } },
     { name: 'corridor-zoom-15', theme: 'dark', line: '100', view: { zoom: 15 } },
     { name: 'corridor-zoom-17', theme: 'dark', line: '100', view: { zoom: 17 } },
+    // Busiest-popup reference: 34 line chips with inner scroll (brainstorm-003)
+    { name: 'popup-4772-dark', theme: 'dark', popup: 4772 },
+    { name: 'popup-4772-light', theme: 'light', popup: 4772 },
 ];
 
 for (const scene of scenes) {
@@ -38,6 +41,7 @@ for (const scene of scenes) {
         await openMap(page, { theme: scene.theme });
         if (scene.line) await renderLine(page, scene.line);
         if (scene.stop) await renderStopRoutes(page, scene.stop);
+        if (scene.popup) await openStopPopup(page, scene.popup);
         if (scene.view) await setView(page, CORRIDOR_CENTER, scene.view.zoom);
         await page.waitForTimeout(400); // let the canvas settle
         await expect(page).toHaveScreenshot(`${scene.name}.png`);

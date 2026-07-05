@@ -34,6 +34,9 @@ export const uniqueStopByCode = new Map();
 /** Map<stopCode, Map<variantId, ordinal>> - ordinal of the stop within each variant */
 const stopOrdinalsMap = new Map();
 
+/** Map<variantId, lineId> - which line a variant belongs to */
+const variantLineMap = new Map();
+
 /** Unique stop features (one per physical stop) */
 export const uniqueStopsData = [];
 
@@ -109,6 +112,7 @@ function _indexStops(stopsData) {
     });
 
     for (const [variantId, pattern] of Object.entries(stopsData.patterns ?? {})) {
+        variantLineMap.set(variantId, pattern.linea);
         const entries = [];
         for (const [cod, ordinal] of pattern.paradas) {
             const feature = uniqueStopByCode.get(cod);
@@ -189,4 +193,18 @@ export function getFilteredStopFeatures(lineIds, variantsArr, variantOrdinalMap)
  */
 export function buildVariantOrdinalMap(stopCode) {
     return new Map(stopOrdinalsMap.get(stopCode) ?? []);
+}
+
+/**
+ * Variants of ONE line that pass through the given stop — the payload for a
+ * popup line-chip tap ("show just this line from here").
+ *
+ * @param {string|number} stopCode
+ * @param {string} lineId
+ * @returns {string[]}
+ */
+export function getStopLineVariants(stopCode, lineId) {
+    return [...(stopVariantsMap.get(stopCode) ?? [])].filter(
+        (v) => variantLineMap.get(v) === lineId,
+    );
 }
