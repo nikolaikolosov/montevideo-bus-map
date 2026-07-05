@@ -1,0 +1,67 @@
+# Vercel / Netlify (managed frontend cloud) service landscape for architecture design.
+# Verify current pricing at https://vercel.com/pricing / https://www.netlify.com/pricing/
+# before definitive estimates. Last reviewed: 2026-07.
+
+platform:
+  id: vercel
+  name: Vercel / Netlify (managed frontend clouds)
+  iac_preference: [dashboard+config-file, terraform-providers-exist]
+  regions_note: functions pinned to region(s); static/edge global by default
+
+architecture_bias:
+  favored_patterns: [static-plus-api, frontend-first-with-baas, edge-first]
+  notes: >
+    The DX-optimized path for frontend-heavy products: git push -> preview -> production,
+    framework-native (Next.js on Vercel is first-party). Compute is request-scoped
+    functions; anything stateful lives in attached/external services (managed Postgres,
+    Redis, queues from marketplace partners). Watch the cost cliff: generous hobby tier,
+    then per-seat + usage pricing that can exceed raw-cloud equivalents at scale.
+    Great for: marketing+product sites, SaaS frontends, MVPs. Reassess at sustained high
+    traffic or heavy backend/async needs.
+
+compute:
+  serverless_functions:
+    use_for: API routes, SSR
+    limits: { duration: "plan-dependent (10s-300s+ with fluid compute)", memory: plan-dependent }
+    pricing_dimension: invocations + GB-hours (active CPU pricing on fluid compute)
+  edge_functions_middleware:
+    use_for: auth checks, rewrites, personalization at edge
+    limits: { runtime: V8 isolate subset - no native deps, tight CPU budget }
+  background_note: no first-party long-job primitive - use partner queues (Inngest, Upstash QStash, Trigger.dev) or an external worker; record as ADR
+
+api_edge:
+  cdn: { use_for: built-in global CDN for static + ISR output }
+  isr_ssg: { use_for: "incremental static regeneration - the content-site workhorse" }
+  previews: { use_for: per-PR preview deployments - the collaboration differentiator }
+
+data:
+  marketplace_storage:
+    note: first-party-branded but partner-backed - Postgres (Neon), KV/Redis (Upstash), Blob
+    pricing_dimension: per-partner - read each pricing page, they differ
+  external_db_default: >
+    Production-grade default: managed Postgres (Neon/Supabase/PlanetScale/RDS) chosen via
+    /trade-study; keep the connection-pooling story explicit (serverless functions exhaust
+    naive connection limits - use pooled/HTTP drivers).
+  blob: { use_for: user uploads via partner blob or external S3/R2 }
+
+messaging_eventing:
+  note: no native queue/bus - Inngest/QStash/Trigger.dev partners or an external cloud queue; webhook handlers must be idempotent as everywhere
+
+auth:
+  note: no first-party user auth - Auth.js/Clerk/Auth0/Supabase Auth; edge middleware handles session checks
+
+observability:
+  analytics: { use_for: web analytics + speed insights, pricing_dimension: events }
+  logs: { use_for: runtime logs with limited retention - ship to external sink (Axiom/Datadog) for production }
+
+delivery:
+  git_integration: { use_for: "push-to-deploy, previews, instant rollback to previous deployment" }
+  env_secrets: { use_for: per-environment env vars via dashboard/CLI }
+
+cost_notes:
+  free_tier: hobby tier is non-commercial - production means Pro per-seat + usage
+  watch: [image_optimization_counts, function_gb_hours_on_ssr_heavy_pages, bandwidth_overages, per_seat_growth, partner_storage_bills_arriving_separately]
+
+reference_stacks:
+  saas_frontend: [Next.js on Vercel, marketplace Postgres (Neon) + pooled driver, Upstash Redis, Clerk/Auth.js, Inngest for async, Axiom logs]
+  content_site: [Next.js ISR, headless CMS, built-in CDN + previews]

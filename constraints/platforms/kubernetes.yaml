@@ -1,0 +1,63 @@
+# Kubernetes (managed: EKS/GKE/AKS or self-hosted) landscape for architecture design.
+# This is the cloud-agnostic containers variant - portability bought with operational burden.
+# Last reviewed: 2026-07.
+
+platform:
+  id: kubernetes
+  name: Kubernetes (EKS / GKE / AKS / self-hosted)
+  iac_preference: [terraform for cluster+cloud, helm/kustomize for workloads, argocd/flux for gitops]
+  regions_note: whatever the underlying cloud provides; multi-cluster = serious ops maturity
+
+architecture_bias:
+  favored_patterns: [containers-on-k8s, modular-monolith-in-containers, microservices-when-team-scale-demands]
+  notes: >
+    Choose k8s when: portability across clouds is a hard requirement, the org already runs
+    clusters with a platform team, or workload shape needs fine-grained orchestration.
+    Do NOT choose it for a small team without ops capacity - Cloud Run/Container Apps/
+    Fargate deliver 80% at a fraction of the burden (that is the anti-pattern check).
+    Everything below assumes a managed control plane.
+
+compute:
+  deployments: { use_for: stateless services, note: HPA on CPU/memory/custom metrics; PDBs + resource requests/limits mandatory }
+  jobs_cronjobs: { use_for: batch/scheduled work }
+  keda: { use_for: event-driven scaling (queue depth, cron, custom) - scale-to-zero for workers }
+  knative: { use_for: serverless-style request-scoped autoscaling on-cluster, note: adds complexity - justify }
+
+api_edge:
+  ingress_gateway: { use_for: "ingress-nginx / cloud LB / Gateway API; cert-manager for TLS", note: CDN/WAF still come from the cloud or Cloudflare in front }
+  service_mesh: { use_for: mTLS/traffic policy at many-service scale, note: Linkerd lighter than Istio; do not install a mesh for 3 services }
+
+data:
+  operators_vs_managed: >
+    DEFAULT: keep state OUT of the cluster - managed Postgres/Redis/queues from the
+    underlying cloud. In-cluster operators (CloudNativePG, Redis operator, Strimzi Kafka)
+    only with a platform team owning backups/failover/upgrades; that decision is an ADR
+    with the on-call burden stated.
+  persistent_volumes: { use_for: when state must live in-cluster - storage classes from the cloud CSI }
+
+messaging_eventing:
+  managed_first: cloud queues/buses (SQS/PubSub/Service Bus) unless portability is hard-required
+  in_cluster: { nats: lightweight pub/sub + JetStream persistence, rabbitmq: classic broker via operator, kafka_strimzi: only at real streaming scale }
+
+auth:
+  workload: workload identity federation to the cloud (no long-lived keys in pods)
+  user_auth: external IdP (Keycloak in-cluster only with ops capacity; else Auth0/Entra/Cognito)
+  secrets: external-secrets-operator pulling from the cloud secret store; sealed-secrets for gitops-only setups
+
+observability:
+  standard_stack: [prometheus_operator, grafana, loki, tempo, opentelemetry-collector]
+  pricing_dimension: nodes running it + storage - self-hosted observability is not free, count it
+  alternative: managed (Grafana Cloud/Datadog) - trade money for ops time, record as ADR
+
+delivery:
+  gitops: { use_for: "ArgoCD/Flux - desired state in git, drift-free deploys, the k8s-native CD answer" }
+  registry: cloud registry (ECR/AR/ACR)
+  progressive: { use_for: argo-rollouts/flagger for canary/blue-green }
+
+cost_notes:
+  watch: [control_plane_fee_per_cluster, node_underutilization (requests vs actual - the classic k8s waste), lb_per_service_sprawl (use one ingress), observability_stack_nodes, cross_az_traffic]
+  lever: spot/preemptible node pools for stateless workloads + karpenter/cluster-autoscaler bin-packing
+
+reference_stacks:
+  standard_web: [cloud LB + ingress-nginx + cert-manager, app Deployments + HPA, managed Postgres + Redis outside cluster, KEDA workers on cloud queue, ArgoCD, prometheus/grafana/loki]
+  portable_strict: [Gateway API, in-cluster CloudNativePG + NATS (ADR with ops burden), external-secrets, full self-hosted observability]

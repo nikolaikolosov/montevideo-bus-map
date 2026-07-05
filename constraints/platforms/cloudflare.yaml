@@ -1,0 +1,80 @@
+# Cloudflare Developer Platform service landscape for architecture design.
+# Verify current pricing at https://developers.cloudflare.com/workers/platform/pricing/
+# before definitive estimates. Last reviewed: 2026-07.
+
+platform:
+  id: cloudflare
+  name: Cloudflare Developer Platform
+  iac_preference: [wrangler, terraform]
+  regions_note: everything runs on the global edge - no region picking; data residency needs care (Durable Objects jurisdiction feature)
+
+architecture_bias:
+  favored_patterns: [edge-first, static-plus-api, serverless-event-driven]
+  notes: >
+    Edge-native: code runs in every PoP, ~0ms cold starts, but the runtime is V8 isolates
+    (workerd) - NOT Node: no arbitrary native deps, CPU-time limits per request, no long
+    CPU-bound work. Design around request-scoped compute + edge data primitives. Zero egress
+    fees on R2 is a major cost lever vs S3. Best fit: global read-heavy apps, APIs, sites;
+    poor fit: heavy compute, big relational monoliths.
+
+compute:
+  workers:
+    use_for: APIs, SSR, edge logic - the compute primitive
+    limits: { cpu_time_default: "30s max configurable (interactive requests should stay ms-range)", memory: 128MB, subrequests_per_request: capped, runtime: "workerd V8 isolates - nodejs_compat partial" }
+    cold_start: ~0ms (isolates)
+    pricing_dimension: requests + CPU-ms
+    anti_pattern: CPU-heavy work (image/video transcode - use Images/Stream), long-running jobs (use Queues + Workflows)
+  workers_cron: { use_for: scheduled handlers }
+  workflows: { use_for: durable multi-step execution (saga/orchestration analog) }
+  containers: { use_for: escape hatch for non-isolate workloads, note: newer offering - check maturity for production criticality }
+
+api_edge:
+  cdn_cache: { use_for: built-in - every Worker sits behind the CDN; Cache API for programmatic control }
+  pages: { use_for: static/frontend hosting with previews, note: converging with Workers assets - check current guidance }
+  waf_ddos: { use_for: included WAF/DDoS - a differentiator vs assembling it on other clouds }
+
+data:
+  kv:
+    use_for: read-heavy config/content, session-ish data
+    consistency: eventual (up to ~60s propagation) - NOT for read-after-write needs
+    pricing_dimension: reads/writes/storage
+  d1:
+    use_for: relational SQLite at the edge
+    limits: { db_size: 10GB per database (check current), model: single-writer per DB }
+    pricing_dimension: rows-read/rows-written/storage
+    anti_pattern: write-heavy multi-tenant monolith DB - shard per-tenant DBs instead (per-tenant D1 is idiomatic)
+  durable_objects:
+    use_for: strongly consistent coordination - websockets rooms, counters, per-entity state
+    consistency: strong (single-threaded per object)
+    pricing_dimension: requests + duration + storage
+  r2:
+    use_for: blobs - S3-compatible API
+    pricing_dimension: storage + operations, egress: FREE (the headline lever)
+  hyperdrive: { use_for: connection pooling to external Postgres/MySQL (when the relational DB lives elsewhere) }
+  vectorize: { use_for: vector search }
+  analytics_engine: { use_for: high-cardinality product analytics events }
+
+messaging_eventing:
+  queues: { use_for: async processing, delivery: at-least-once with batching + DLQ, pricing_dimension: operations }
+  pubsub_note: no general pub/sub bus analog - fan-out via Queues consumers or Durable Objects
+
+auth:
+  access_zero_trust: { use_for: protecting admin/internal surfaces }
+  auth_note: no first-party user-auth service - bring Auth0/Clerk/Lucia-style or roll on D1+DO; record the choice as an ADR
+
+observability:
+  workers_analytics: { use_for: request metrics included }
+  logs: { use_for: "wrangler tail (dev), Logpush to external sinks (prod)", note: production logging usually means shipping to an external store - budget it }
+  tracing_note: OTel exporters exist; less turnkey than big-cloud stacks
+
+delivery:
+  wrangler: { use_for: dev/deploy CLI - the native path; CI via GitHub Actions + wrangler }
+  secrets: { use_for: worker secrets via wrangler/dashboard }
+
+cost_notes:
+  free_tier: "generous Workers/KV/R2/D1 free tiers - real products run on paid plan ($5/mo base as of review)"
+  watch: [do_duration_charges, kv_write_costs_on_hot_writes, external_log_shipping, d1_row_ops_at_scale]
+
+reference_stacks:
+  edge_web_app: [Pages/Workers assets, Workers, D1, KV, R2, Queues, Durable Objects for realtime, external auth provider]
+  global_api: [Workers, Hyperdrive -> external Postgres, KV cache, Queues, Logpush -> external observability]
