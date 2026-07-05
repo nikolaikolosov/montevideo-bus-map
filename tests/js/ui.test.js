@@ -7,6 +7,7 @@ import {
     initThemeToggle,
 } from '../../src/ui.js';
 import { CONFIG } from '../../src/config.js';
+import { setLang, t } from '../../src/i18n.js';
 
 describe('renderDataFreshness', () => {
     beforeEach(() => {
@@ -91,5 +92,50 @@ describe('populateRouteSelect', () => {
         expect(options[0].value).toBe('ALL_STOPS');
         expect(options.map((o) => o.value)).toEqual(['ALL_STOPS', '7', '100']);
         expect(options[2].textContent).toBe('Línea 100');
+    });
+});
+
+describe('localized UI helpers (i18n)', () => {
+    afterEach(() => setLang('es'));
+
+    it('renderDataFreshness localizes the label and the date', () => {
+        document.body.innerHTML = '<p id="dataFreshness" hidden></p>';
+        const el = document.getElementById('dataFreshness');
+
+        setLang('ru');
+        renderDataFreshness('2026-06-27T11:37:49-03:00');
+        expect(el.textContent).toContain('Данные на');
+        expect(el.textContent).toContain('июня');
+        expect(el.title).toBe(t('freshness.title'));
+
+        setLang('en');
+        renderDataFreshness('2026-06-27T11:37:49-03:00');
+        expect(el.textContent).toContain('Data as of');
+        expect(el.textContent).toContain('June');
+    });
+
+    it('updateThemeToggle speaks the active language', () => {
+        document.body.innerHTML = '<button id="themeToggle"></button>';
+        setLang('ru');
+        updateThemeToggle('dark');
+        const btn = document.getElementById('themeToggle');
+        expect(btn.getAttribute('aria-label')).toBe('Переключить на светлую тему');
+        updateThemeToggle('light');
+        expect(btn.getAttribute('aria-label')).toBe('Переключить на тёмную тему');
+    });
+
+    it('populateRouteSelect re-populates without duplicating and localizes options', () => {
+        document.body.innerHTML =
+            '<select id="routeSelect"><option value="" disabled selected>…</option></select>';
+        populateRouteSelect(['7', '100']);
+        setLang('ru');
+        populateRouteSelect(['7', '100']); // language-switch path repopulates
+        const options = [...document.querySelectorAll('#routeSelect option')];
+        // placeholder + ALL_STOPS + two lines — no duplicates from the rerun
+        expect(options).toHaveLength(4);
+        expect(options[1].textContent).toBe('📍 Показать все остановки');
+        expect(options[3].textContent).toBe('Линия 100');
+        // the disabled placeholder survives (applyTranslations owns its text)
+        expect(options[0].disabled).toBe(true);
     });
 });
