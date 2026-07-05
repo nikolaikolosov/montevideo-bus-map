@@ -126,6 +126,20 @@ export const truncateLineDownstream = (coords, sourceLonLat) => {
 };
 
 /**
+ * True when a coordinate falls inside a lat/lon bounding box.
+ * Used to gate auto-geolocation to the service area: a visitor located
+ * outside Montevideo keeps the default city overview instead of being
+ * centred on an empty map (brainstorm-007).
+ *
+ * @param {number} lat
+ * @param {number} lng
+ * @param {{south: number, west: number, north: number, east: number}} bounds
+ * @returns {boolean}
+ */
+export const isWithinBounds = (lat, lng, bounds) =>
+    lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+
+/**
  * Simple debounce utility.
  * @param {Function} fn
  * @param {number} delay - ms
