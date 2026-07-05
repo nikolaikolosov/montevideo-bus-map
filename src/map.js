@@ -117,6 +117,43 @@ function updateMapStyles() {
 }
 
 /**
+ * Serializable snapshot of what is currently rendered — route sections with
+ * colors/offsets/bounds, stop and label counts. Deterministic (sorted), so it
+ * can be compared against a golden manifest in the render-sweep e2e test.
+ * @returns {object}
+ */
+export function getRenderState() {
+    const sections = [];
+    if (appState.currentRouteLayer) {
+        appState.currentRouteLayer.eachLayer((l) => {
+            if (!l._bundleSlot) return;
+            const b = l.getBounds();
+            const flat = (pts) => (Array.isArray(pts[0]) ? pts.flat() : pts);
+            sections.push({
+                color: l.options.color,
+                weight: l.options.weight,
+                offsetPx: l.options.offsetPx ?? 0,
+                points: flat(l.getLatLngs()).length,
+                bounds: [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map(
+                    (v) => +v.toFixed(4),
+                ),
+            });
+        });
+    }
+    sections.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+    const count = (layer) => (layer?.getLayers ? layer.getLayers().length : 0);
+    return {
+        theme: getTheme(),
+        zoom: map ? map.getZoom() : null,
+        sections: sections.length,
+        sectionList: sections,
+        stops: count(appState.currentStopsLayer) + count(appState.globalStopsLayer),
+        labels: count(appState.routeLabelsLayer),
+    };
+}
+
+/**
  * Applies the active theme to the map: swaps the basemap tiles and redraws
  * the current view so route lines, stops and labels pick up theme colors.
  * Safe to call before initMap() (no-op).
@@ -368,7 +405,7 @@ export function renderGlobalStops(onShowRoutes) {
  * @param {string} variantId
  * @returns {Array}
  */
-function trimToStops(coords, variantId) {
+export function trimToStops(coords, variantId) {
     const variantStops = stopsByVariant.get(variantId);
     if (!variantStops || variantStops.length < 2) return coords;
     // Only meaningful for a flat LineString.
@@ -382,26 +419,61 @@ function trimToStops(coords, variantId) {
         if (s.ordinal > last.ordinal) last = s;
     }
 
-    const nearestIdx = (pt) => {
-        let minIdx = 0;
-        let minDistSq = Infinity;
-        for (let i = 0; i < coords.length; i++) {
-            const dx = coords[i][0] - pt[0];
-            const dy = coords[i][1] - pt[1];
-            const d2 = dx * dx + dy * dy;
-            if (d2 < minDistSq) {
-                minDistSq = d2;
-                minIdx = i;
-            }
+    // All near-minimal projections of a point onto the trace, as fractional
+    // positions i+t along the segment list. A loop route passes a terminal
+    // stop twice, so the nearest projection alone can select a tiny arc of
+    // the trace; collecting every candidate within ~10 m of the minimum and
+    // then maximizing the covered span keeps the whole revenue route.
+    // (Projection onto segments — not vertices — also stays exact on the
+    // Douglas–Peucker-simplified traces where vertices are hundreds of
+    // meters apart on straight avenues.)
+    const candidatesNear = (pt) => {
+        const positions = [];
+        let bestD2 = Infinity;
+        for (let i = 0; i < coords.length - 1; i++) {
+            const [ax, ay] = coords[i];
+            const [bx, by] = coords[i + 1];
+            const dx = bx - ax;
+            const dy = by - ay;
+            const len2 = dx * dx + dy * dy;
+            let t = len2 > 0 ? ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / len2 : 0;
+            t = Math.max(0, Math.min(1, t));
+            const ex = pt[0] - (ax + t * dx);
+            const ey = pt[1] - (ay + t * dy);
+            const d2 = ex * ex + ey * ey;
+            positions.push({ i, t, d2 });
+            if (d2 < bestD2) bestD2 = d2;
         }
-        return minIdx;
+        const limit = (Math.sqrt(bestD2) + 1e-4) ** 2; // minimum + ~10 m
+        return positions.filter((p) => p.d2 <= limit);
     };
 
-    let startIdx = nearestIdx(first.feature.geometry.coordinates);
-    let endIdx = nearestIdx(last.feature.geometry.coordinates);
-    if (startIdx > endIdx) [startIdx, endIdx] = [endIdx, startIdx];
+    const startCandidates = candidatesNear(first.feature.geometry.coordinates);
+    const endCandidates = candidatesNear(last.feature.geometry.coordinates);
 
-    return coords.slice(startIdx, endIdx + 1);
+    let best = null;
+    for (const a of startCandidates) {
+        const pa = a.i + a.t;
+        for (const b of endCandidates) {
+            const pb = b.i + b.t;
+            const span = Math.abs(pb - pa);
+            if (!best || span > best.span) {
+                best = pa <= pb ? { span, from: a, to: b } : { span, from: b, to: a };
+            }
+        }
+    }
+    if (!best || best.span === 0) return coords;
+
+    const pointAt = ({ i, t }) => {
+        const [ax, ay] = coords[i];
+        const [bx, by] = coords[i + 1];
+        return [ax + (bx - ax) * t, ay + (by - ay) * t];
+    };
+
+    const out = [pointAt(best.from)];
+    for (let i = best.from.i + 1; i <= best.to.i; i++) out.push(coords[i]);
+    out.push(pointAt(best.to));
+    return out;
 }
 
 /**
@@ -409,11 +481,14 @@ function trimToStops(coords, variantId) {
  * Uses shallow clone + geometry-only cloning instead of structuredClone
  * for better performance on large GeoJSON datasets.
  *
+ * Exported for the route-invariant test suite (tests/js/route-invariants.test.js),
+ * which runs the real prepare→bundle pipeline over the committed data.
+ *
  * @param {object} f - original GeoJSON Feature
  * @param {number[]|null} sourceLonLat - if set, truncate route from this point
  * @returns {object|null} cleaned feature, or null if geometry becomes empty
  */
-function prepareRouteFeature(f, sourceLonLat) {
+export function prepareRouteFeature(f, sourceLonLat) {
     if (!f.geometry?.coordinates) return null;
 
     // Deep-clone coordinates to avoid mutating the original data

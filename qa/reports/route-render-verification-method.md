@@ -1,0 +1,74 @@
+# Route Render Verification — Method
+
+> Date: 2026-07-05 · Owner: qa-lead / test-automation-engineer
+> Origin: brainstorm-002 (full package ratified). Configs committed alongside
+> per qa rules: `playwright.config.js`, `vitest.config.js`, suites under `tests/`.
+
+Three layers, each catching what the others can't (`preferCanvas: true` means
+route lines are canvas pixels — DOM assertions can't see them):
+
+## Layer 1 — Construction invariants & oracles (every `npm test`, seconds)
+
+`tests/js/route-invariants.test.js` runs the REAL committed data through the
+production pipeline (`prepareRouteFeature` → `buildSections`) for all 140 lines
+/ 1,083 variants and asserts:
+
+- **Stops-on-route oracle** (relative): every stop of a line lies ≤ ~60 m from
+  the line's corridors — unless the RAW API shape is itself far from the stop
+  (~54 stop-line pairs in the 2026-06 data, mostly "L*" local lines); then the
+  pipeline must simply not be worse than the raw data (+ ~20 m slack).
+- **Vertex containment**: no prepared-trace vertex strays > ~20 m from a
+  corridor (nothing dropped by bundling).
+- **Length band**: corridors cover ≥ 50 % of the longest variant (out-and-back
+  dedup) and never exceed the variant sum.
+- **Connectivity**: ≤ 3 corridor components per line.
+- **Trim endpoints**: trimmed variant ends land ≤ ~120 m from the first/last
+  stop (residual = real curb-to-centreline offset at terminal plazas).
+- **Frozen edge cases**: 4018 (15 lines/37 variants), 4967 (terminal → no
+  downstream geometry), 187 (spur must survive), dataset cardinalities.
+
+Tolerances are calibrated against the 2026-06-27 dataset and documented next
+to each constant in the test file. Run standalone: `npm run verify:routes`.
+
+**Found on introduction:** the vertex-snapping `trimToStops` truncated loop
+variants almost entirely (variant 8908 kept 0.9 % of its trace; corridors ended
+up 1.6 km from served stops) and undershot DP-simplified terminals by ~170 m.
+Fixed by segment-projection + span-maximizing candidate selection
+(`src/map.js:trimToStops`); 8908 now keeps 98.5 %.
+
+## Layer 2 — Whole-map golden sweep (every PR, ~10 s)
+
+`tests/e2e/render-sweep.spec.js` (Playwright, headless Chromium, tiles/fonts
+blocked, theme pinned dark): renders ALL 140 lines via the
+`window.__mvdSelectLine` hook and captures `window.__mvdGetRenderState()` — a
+deterministic manifest per line (corridor count, total points, colors, weights,
+bbox, stop/label counts) — compared to `tests/e2e/golden/render-manifest.json`.
+
+Update after an intentional rendering change:
+`UPDATE_GOLDEN=1 npx playwright test render-sweep` (review the JSON diff in the PR).
+
+## Layer 3 — Curated pixel scenes (every PR, ~20 s)
+
+`tests/e2e/visual.spec.js`: 11 screenshots — global stops + Línea 100 in BOTH
+themes, stop 4018 downstream (both themes), terminal 4967 (empty-render edge),
+line 187 spur, and the 18 de Julio corridor at zooms 12/15/17 (parallel-offset
+engagement at 15). `maxDiffPixelRatio: 0.02` absorbs anti-aliasing; real
+regressions move whole polylines.
+
+- Baselines are platform-suffixed (`…-win32.png`, `…-linux.png`) under
+  `tests/e2e/__screenshots__/`, committed to the repo.
+- CI runs `--update-snapshots=missing`: the first run on a new platform creates
+  its baselines and uploads them as the `screenshot-baselines` artifact —
+  download and commit them; from then on comparison is strict.
+- Update after an intentional visual change: `npm run test:e2e:update`.
+- Known-correct data oddities are deliberately part of the baselines:
+  Terminal Cerro driveway diagonals, line 187's out-and-back spur, ida/vuelta
+  double strands on wide avenues.
+
+## Representativeness & limits
+
+- Data-dependent: suites verify the committed dataset; a data update changes
+  layer-1 statistics (tolerances have headroom) and REQUIRES regenerating the
+  layer-2 golden + reviewing layer-3 diffs.
+- External CDN (unpkg Leaflet) still loads in e2e — SRI-pinned; tiles/fonts do not.
+- Not covered: touch interactions, geolocation flows, mobile layout pixels.
