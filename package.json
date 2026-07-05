@@ -10,8 +10,11 @@
         "test:e2e:update": "playwright test --update-snapshots",
         "verify:routes": "vitest run tests/js/route-invariants.test.js",
         "verify:colors": "vitest run tests/js/line-colors.test.js",
+        "verify:scales": "node scripts/derive_geometry_scales.mjs",
+        "verify:oracles": "node scripts/verify_route_oracles.mjs",
+        "triage:oracles": "node scripts/triage_route_oracles.mjs",
         "assign:colors": "node scripts/assign_line_colors.mjs",
-        "lint": "eslint src tests/js tests/e2e",
+        "lint": "eslint src tests/js tests/e2e scripts",
         "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\" \"css/**/*.css\" \"*.config.js\"",
         "format:check": "prettier --check \"src/**/*.js\" \"tests/**/*.js\" \"css/**/*.css\" \"*.config.js\""
     },

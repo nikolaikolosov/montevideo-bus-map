@@ -1,3 +1,5 @@
+import { projectPointOnPolyline } from './geometry.js';
+
 /**
  * Escapes a string to prevent XSS when injecting into innerHTML.
  * @param {*} str
@@ -64,27 +66,8 @@ export const truncateLineDownstream = (coords, sourceLonLat) => {
     if (!coords || coords.length === 0) return coords;
     if (typeof coords[0] === 'number') return coords;
 
-    /** Nearest on-line projection: { d2, i (segment), px, py } */
-    const projectOnto = (line) => {
-        let best = null;
-        for (let i = 0; i < line.length - 1; i++) {
-            const [ax, ay] = line[i];
-            const [bx, by] = line[i + 1];
-            const dx = bx - ax;
-            const dy = by - ay;
-            const len2 = dx * dx + dy * dy;
-            let t =
-                len2 > 0 ? ((sourceLonLat[0] - ax) * dx + (sourceLonLat[1] - ay) * dy) / len2 : 0;
-            t = Math.max(0, Math.min(1, t));
-            const px = ax + t * dx;
-            const py = ay + t * dy;
-            const ex = sourceLonLat[0] - px;
-            const ey = sourceLonLat[1] - py;
-            const d2 = ex * ex + ey * ey;
-            if (!best || d2 < best.d2) best = { d2, i, px, py };
-        }
-        return best;
-    };
+    /** Nearest on-line projection (shared primitive, rule R-PROJECT). */
+    const projectOnto = (line) => projectPointOnPolyline(sourceLonLat, line);
 
     const truncateOne = (line, proj) => {
         const rest = line.slice(proj.i + 1);
@@ -92,12 +75,12 @@ export const truncateLineDownstream = (coords, sourceLonLat) => {
         const EPS = 1e-9;
         if (
             rest.length > 0 &&
-            Math.abs(rest[0][0] - proj.px) < EPS &&
-            Math.abs(rest[0][1] - proj.py) < EPS
+            Math.abs(rest[0][0] - proj.x) < EPS &&
+            Math.abs(rest[0][1] - proj.y) < EPS
         ) {
             return rest;
         }
-        return [[proj.px, proj.py], ...rest];
+        return [[proj.x, proj.y], ...rest];
     };
 
     // LineString: array of positions [ [lon, lat], ... ]

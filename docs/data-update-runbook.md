@@ -55,22 +55,34 @@ data's generation date ("Datos: …"), turning amber after 45 days
    --regenerate-all` and review the visual scene diffs (all baselines change).
    CI fails on a missing palette entry, so skipping this step cannot ship.
 
-4. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas".
+4. Re-derive the geometry scale ladder (the bundling constants are sized
+   against measured data properties — a new dataset must not drift past them):
+
+   ```bash
+   npm run verify:scales    # regenerates qa/reports/geometry-scales-report.md
+   ```
+
+   A FAILed assertion means the digitisation style of the feed changed (e.g.
+   ida/vuelta offsets grew past the merge radius). Do NOT loosen the bound:
+   re-derive the constant per `architecture/contracts/route-geometry-contract.md` and
+   review the render diffs (golden + baselines will change).
+
+5. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas".
    The panel's "Datos: …" date must show today.
 
-5. Commit and push (push to `main` **is** the production deploy — GitHub Pages
+6. Commit and push (push to `main` **is** the production deploy — GitHub Pages
    rebuilds automatically; CI validates the data again on the push):
 
    ```bash
-   git add routes.json stops.json src/line-colors.js qa/reports/line-colors-report.md
+   git add routes.json stops.json src/line-colors.js qa/reports/line-colors-report.md qa/reports/geometry-scales-report.md
    git commit -m "Update bus routes and stops data from API"
    git push
    ```
 
    `./update_and_push.sh` does steps 1 + 5 in one go (it only commits when the
-   data actually changed) — run step 3 first when the line set changed.
+   data actually changed) — run steps 3–4 first when the line set changed.
 
-6. Verify: <https://nikolaikolosov.github.io/montevideo-bus-map/> shows the new
+7. Verify: <https://nikolaikolosov.github.io/montevideo-bus-map/> shows the new
    date in "Datos: …" (allow a couple of minutes for the Pages build; hard-refresh
    to skip the browser cache).
 

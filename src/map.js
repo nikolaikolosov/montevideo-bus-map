@@ -7,6 +7,7 @@ import {
     isWithinBounds,
 } from './utils.js';
 import { appState, resetLayers } from './state.js';
+import { projectionCandidates, pointAt } from './geometry.js';
 import { buildSections, buildJoints } from './bundling.js';
 import { OffsetPolyline, OffsetJoint } from './offsetline.js';
 import { getTheme } from './theme.js';
@@ -473,33 +474,14 @@ export function trimToStops(coords, variantId) {
     }
 
     // All near-minimal projections of a point onto the trace, as fractional
-    // positions i+t along the segment list. A loop route passes a terminal
-    // stop twice, so the nearest projection alone can select a tiny arc of
-    // the trace; collecting every candidate within ~10 m of the minimum and
-    // then maximizing the covered span keeps the whole revenue route.
-    // (Projection onto segments — not vertices — also stays exact on the
-    // Douglas–Peucker-simplified traces where vertices are hundreds of
-    // meters apart on straight avenues.)
-    const candidatesNear = (pt) => {
-        const positions = [];
-        let bestD2 = Infinity;
-        for (let i = 0; i < coords.length - 1; i++) {
-            const [ax, ay] = coords[i];
-            const [bx, by] = coords[i + 1];
-            const dx = bx - ax;
-            const dy = by - ay;
-            const len2 = dx * dx + dy * dy;
-            let t = len2 > 0 ? ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / len2 : 0;
-            t = Math.max(0, Math.min(1, t));
-            const ex = pt[0] - (ax + t * dx);
-            const ey = pt[1] - (ay + t * dy);
-            const d2 = ex * ex + ey * ey;
-            positions.push({ i, t, d2 });
-            if (d2 < bestD2) bestD2 = d2;
-        }
-        const limit = (Math.sqrt(bestD2) + 1e-4) ** 2; // minimum + ~10 m
-        return positions.filter((p) => p.d2 <= limit);
-    };
+    // positions i+t along the segment list (shared primitive, rule
+    // R-PROJECT). A loop route passes a terminal stop twice, so the nearest
+    // projection alone can select a tiny arc of the trace; collecting every
+    // candidate within ~10 m of the minimum and then maximizing the covered
+    // span keeps the whole revenue route. (Projection onto segments — not
+    // vertices — also stays exact on the Douglas–Peucker-simplified traces
+    // where vertices are hundreds of meters apart on straight avenues.)
+    const candidatesNear = (pt) => projectionCandidates(pt, coords, 1e-4); // slack ≈ 10 m
 
     const startCandidates = candidatesNear(first.feature.geometry.coordinates);
     const endCandidates = candidatesNear(last.feature.geometry.coordinates);
@@ -517,15 +499,9 @@ export function trimToStops(coords, variantId) {
     }
     if (!best || best.span === 0) return coords;
 
-    const pointAt = ({ i, t }) => {
-        const [ax, ay] = coords[i];
-        const [bx, by] = coords[i + 1];
-        return [ax + (bx - ax) * t, ay + (by - ay) * t];
-    };
-
-    const out = [pointAt(best.from)];
+    const out = [pointAt(coords, best.from.i, best.from.t)];
     for (let i = best.from.i + 1; i <= best.to.i; i++) out.push(coords[i]);
-    out.push(pointAt(best.to));
+    out.push(pointAt(coords, best.to.i, best.to.t));
     return out;
 }
 
