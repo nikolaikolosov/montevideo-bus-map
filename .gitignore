@@ -219,3 +219,30 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node dev tooling
+node_modules/
+
+
+# --- WebDev Studio agent framework (private, never publish) -----------------
+# Patterns are anchored to the repo root (leading /) so they can never swallow
+# same-named directories elsewhere (e.g. tools/audit/ or a future src/app/).
+CLAUDE.md
+/constraints/
+/examples/
+/app/
+/audit/
+/design/
+/infra/
+/product/
+/security/
+# Selective: these trees stay private EXCEPT the project-facing docs that the
+# README and the code reference directly.
+/architecture/*
+!/architecture/contracts/
+/docs/*
+!/docs/data-update-runbook.md
+/qa/*
+!/qa/reports/
+# Local AI tooling caches
+/.token-savior-cache.json

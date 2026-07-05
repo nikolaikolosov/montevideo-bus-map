@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 #
-# Fetch the latest Montevideo bus data and push it to the repo.
+# Fetch the latest Montevideo bus data, commit and push it in one go.
 #
-# Designed to run from cron on a host WITH Uruguayan connectivity
+# Convenience wrapper for the MANUAL update procedure (docs/data-update-runbook.md).
+# Must run from a machine WITH Uruguayan connectivity
 # (api.montevideo.gub.uy only accepts connections from inside UY).
 #
 # Setup:
-#   1. cp .env.example .env   and fill in API_CLIENT_ID / API_CLIENT_SECRET
-#   2. Make sure `git push` works non-interactively (SSH deploy key or token).
-#   3. crontab -e:
-#        0 4 * * *  /path/to/montevideo-bus-map/update_and_push.sh >> /path/to/update.log 2>&1
+#   1. cp .env.example .env   and fill in the API_* variables
+#   2. Make sure `git push` works non-interactively (SSH key or token).
+#
+# (Can also be cron'd on a UY host if one ever exists — the flock guard below
+# protects against overlapping runs.)
 #
 set -euo pipefail
 

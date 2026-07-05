@@ -109,7 +109,6 @@ function updateMapStyles() {
     }
 }
 
-
 // ---------------------------------------------------------------------------
 // Map initialisation
 // ---------------------------------------------------------------------------
@@ -123,11 +122,11 @@ export function initMap() {
 
     map = L.map('map', {
         zoomControl: false,
-        preferCanvas: true,  // canvas renderer — better performance for many markers
+        preferCanvas: true, // canvas renderer — better performance for many markers
         // On touch devices, increase the pixel tolerance so a finger tap slightly
         // off-centre still registers as a hit on a stop marker.
         clickTolerance: touch ? CONFIG.CLICK_TOLERANCE_TOUCH : 3,
-        tapTolerance:   touch ? CONFIG.TAP_TOLERANCE_TOUCH   : 15,
+        tapTolerance: touch ? CONFIG.TAP_TOLERANCE_TOUCH : 15,
     }).setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
 
     L.control.zoom({ position: 'topright' }).addTo(map);
@@ -242,12 +241,10 @@ export function createStopPopup(feature, onShowRoutes) {
     const { CALLE = 'Desconocida', ESQUINA = 'Desconocida', COD_UBIC_P: cod } = feature.properties;
     const linesArr = stopLinesMap.has(cod)
         ? Array.from(stopLinesMap.get(cod)).sort((a, b) =>
-              a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+              a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }),
           )
         : [];
-    const variantsArr = stopVariantsMap.has(cod)
-        ? Array.from(stopVariantsMap.get(cod))
-        : [];
+    const variantsArr = stopVariantsMap.has(cod) ? Array.from(stopVariantsMap.get(cod)) : [];
     const linesText = linesArr.length > 0 ? linesArr.join(', ') : 'Ninguna';
 
     const div = document.createElement('div');
@@ -328,7 +325,7 @@ export function renderGlobalStops(onShowRoutes) {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
                 setupStopListeners(layer);
             },
-        }
+        },
     ).addTo(map);
 }
 
@@ -351,12 +348,12 @@ function trimToStops(coords, variantId) {
     // Only meaningful for a flat LineString.
     if (typeof coords[0]?.[0] !== 'number') return coords;
 
-    // First / last passenger stops by ORDINAL.
+    // First / last passenger stops by ordinal.
     let first = variantStops[0];
     let last = variantStops[0];
     for (const s of variantStops) {
-        if (s.properties.ORDINAL < first.properties.ORDINAL) first = s;
-        if (s.properties.ORDINAL > last.properties.ORDINAL) last = s;
+        if (s.ordinal < first.ordinal) first = s;
+        if (s.ordinal > last.ordinal) last = s;
     }
 
     const nearestIdx = (pt) => {
@@ -374,8 +371,8 @@ function trimToStops(coords, variantId) {
         return minIdx;
     };
 
-    let startIdx = nearestIdx(first.geometry.coordinates);
-    let endIdx = nearestIdx(last.geometry.coordinates);
+    let startIdx = nearestIdx(first.feature.geometry.coordinates);
+    let endIdx = nearestIdx(last.feature.geometry.coordinates);
     if (startIdx > endIdx) [startIdx, endIdx] = [endIdx, startIdx];
 
     return coords.slice(startIdx, endIdx + 1);
@@ -481,13 +478,13 @@ function renderRouteLabels(labelGroups) {
 
     labelGroups.forEach((group) => {
         group.labels.sort((a, b) =>
-            a.linea.localeCompare(b.linea, undefined, { numeric: true, sensitivity: 'base' })
+            a.linea.localeCompare(b.linea, undefined, { numeric: true, sensitivity: 'base' }),
         );
 
         const labelsHtml = group.labels
             .map(
                 (l) =>
-                    `<div class="route-label-icon route-label-item" style="border-color:${escapeHTML(l.color)};color:${escapeHTML(l.color)}">${escapeHTML(l.linea)}</div>`
+                    `<div class="route-label-icon route-label-item" style="border-color:${escapeHTML(l.color)};color:${escapeHTML(l.color)}">${escapeHTML(l.linea)}</div>`,
             )
             .join('');
 
@@ -610,7 +607,7 @@ function renderStops(features, onShowRoutes) {
                 layer.bindPopup(() => createStopPopup(feature, onShowRoutes));
                 setupStopListeners(layer);
             },
-        }
+        },
     ).addTo(map);
 }
 
@@ -696,9 +693,7 @@ export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null
     }
 
     // --- Return stats for UI ---
-    const variantCount = new Set(
-        cleanedRouteFeatures.map((f) => f.properties.DESC_VARIA)
-    ).size;
+    const variantCount = new Set(cleanedRouteFeatures.map((f) => f.properties.DESC_VARIA)).size;
 
     return { variantCount, stopCount: stopFeatures.length };
 }

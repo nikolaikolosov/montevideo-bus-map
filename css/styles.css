@@ -39,17 +39,22 @@ body {
 }
 
 /* Glassmorphism Panel with fallback */
-#ui-panel, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .route-label-icon {
+#ui-panel,
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip,
+.route-label-icon {
     background: var(--panel-bg-fallback);
 }
 
 @supports (backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px)) {
-    #ui-panel, .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    #ui-panel,
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
         background: var(--panel-bg);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
     }
-    
+
     .route-label-icon {
         background-color: var(--panel-bg);
         backdrop-filter: blur(4px);
@@ -67,7 +72,9 @@ body {
     border-radius: 16px;
     padding: 24px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
 }
 
 #ui-panel:hover {
@@ -112,7 +119,10 @@ select {
     border-radius: 8px;
     outline: none;
     cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
@@ -124,7 +134,8 @@ select:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-select:focus, select:focus-visible {
+select:focus,
+select:focus-visible {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
@@ -161,6 +172,17 @@ option {
     font-weight: 600;
 }
 
+/* Data freshness label (manual-update workflow) */
+.data-freshness {
+    margin-top: 14px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.data-freshness.stale {
+    color: var(--stop-color);
+}
+
 /* Common Buttons */
 .btn {
     padding: 10px 16px;
@@ -172,7 +194,9 @@ option {
     font-family: 'Inter', sans-serif;
     font-size: 0.85rem;
     font-weight: 600;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition:
+        background-color 0.2s ease,
+        transform 0.1s ease;
 }
 
 .btn:hover {
@@ -218,12 +242,19 @@ option {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Loading Overlay & Error State */
-#loader, #error-container {
+#loader,
+#error-container {
     position: fixed;
     top: 0;
     left: 0;
@@ -294,13 +325,17 @@ option {
     background-color: #ffffff;
     border: 3px solid var(--accent);
     border-radius: 50%;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(59, 130, 246, 0.5);
+    box-shadow:
+        0 0 15px rgba(255, 255, 255, 0.8),
+        0 0 30px rgba(59, 130, 246, 0.5);
     width: 20px;
     height: 20px;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* "You are here" marker (mobile auto-geolocation) */
@@ -315,9 +350,15 @@ option {
 }
 
 @keyframes userLocationPulse {
-    0%   { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
-    70%  { box-shadow: 0 0 0 16px rgba(59, 130, 246, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 16px rgba(59, 130, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
 }
 
 /* Responsive Mobile Layout */
