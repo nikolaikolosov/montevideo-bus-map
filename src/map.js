@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
 import { escapeHTML, cleanCoordinates, truncateLineDownstream, isCoarsePointer } from './utils.js';
 import { appState, resetLayers } from './state.js';
-import { buildSections } from './bundling.js';
-import { OffsetPolyline } from './offsetline.js';
+import { buildSections, buildJoints } from './bundling.js';
+import { OffsetPolyline, OffsetJoint } from './offsetline.js';
 import { getTheme } from './theme.js';
 import {
     uniqueStopsData,
@@ -41,7 +41,7 @@ const stopColors = () => CONFIG.STOP_COLORS_BY_THEME[getTheme()];
  * @param {number} weight - base stroke weight (px)
  * @returns {number}
  */
-function getLineOffset(idx, total, zoom, weight) {
+export function getLineOffset(idx, total, zoom, weight) {
     if (total <= 1 || zoom < CONFIG.ROUTE_OFFSET_MIN_ZOOM) return 0;
     let spacing =
         zoom === CONFIG.ROUTE_OFFSET_MIN_ZOOM ? weight : weight + CONFIG.ROUTE_BUNDLE_GAP_PX;
@@ -125,8 +125,13 @@ function updateMapStyles() {
  */
 export function getRenderState() {
     const sections = [];
+    let joints = 0;
     if (appState.currentRouteLayer) {
         appState.currentRouteLayer.eachLayer((l) => {
+            if (l._jointFor) {
+                joints++;
+                return;
+            }
             if (!l._bundleSlot) return;
             const b = l.getBounds();
             const flat = (pts) => (Array.isArray(pts[0]) ? pts.flat() : pts);
@@ -149,6 +154,7 @@ export function getRenderState() {
         zoom: map ? map.getZoom() : null,
         sections: sections.length,
         sectionList: sections,
+        joints,
         stops: count(appState.currentStopsLayer) + count(appState.globalStopsLayer),
         labels: count(appState.routeLabelsLayer),
     };
@@ -662,7 +668,7 @@ function renderRouteLines(features) {
                 l.setStyle({ weight: CONFIG.ROUTE_HOVER_WEIGHT, opacity: 1 });
                 l.bringToFront();
             } else {
-                l.setStyle({ weight: l._bundleSlot.weight, opacity: CONFIG.ROUTE_OPACITY });
+                l.setStyle({ weight: l._baseWeight, opacity: CONFIG.ROUTE_OPACITY });
             }
         }
     };
@@ -689,6 +695,7 @@ function renderRouteLines(features) {
                 offsetPx: getLineOffset(idx, total, zoom, weight),
             });
             layer._bundleSlot = { idx, total, weight };
+            layer._baseWeight = weight;
 
             layer.bindPopup(`
                 <div class="popup-content">
@@ -703,6 +710,37 @@ function renderRouteLines(features) {
             layersByLine.get(lineId).push(layer);
             layer.addTo(appState.currentRouteLayer);
         });
+    }
+
+    // Stitch strands across section boundaries so every line stays visually
+    // continuous through corners and slot changes (brainstorm-005). Joints are
+    // non-interactive (the strands own popups/hover) but join the line's
+    // highlight group so hover thickens them too.
+    for (const j of buildJoints(sections)) {
+        const layer = new OffsetJoint(
+            [
+                [j.a.neighbor[1], j.a.neighbor[0]],
+                [j.node[1], j.node[0]],
+                [j.b.neighbor[1], j.b.neighbor[0]],
+            ],
+            {
+                color: getLineColor(j.line),
+                weight,
+                opacity: CONFIG.ROUTE_OPACITY,
+                lineCap: 'round',
+                lineJoin: 'round',
+                interactive: false,
+                jointA: { nodeIsEnd: j.a.nodeIsEnd, slot: { idx: j.a.idx, total: j.a.total } },
+                jointB: { nodeIsEnd: j.b.nodeIsEnd, slot: { idx: j.b.idx, total: j.b.total } },
+                offsetFor: (slot, z) => getLineOffset(slot.idx, slot.total, z, weight),
+            },
+        );
+        layer._jointFor = j.line;
+        layer._baseWeight = weight;
+
+        if (!layersByLine.has(j.line)) layersByLine.set(j.line, []);
+        layersByLine.get(j.line).push(layer);
+        layer.addTo(appState.currentRouteLayer);
     }
 }
 
