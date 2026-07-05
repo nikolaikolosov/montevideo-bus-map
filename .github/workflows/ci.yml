@@ -44,3 +44,34 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Whole-map render verification: golden layer-manifest sweep over all 140
+  # lines + curated pixel scenes (method: qa/reports/route-render-verification-method.md).
+  # --update-snapshots=missing: first run on a new platform CREATES its
+  # screenshot baselines (upload them from the artifact and commit); existing
+  # baselines are compared strictly.
+  render-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --update-snapshots=missing
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-baselines
+          path: tests/e2e/__screenshots__/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-failure-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore

@@ -20,7 +20,14 @@ import {
     stopLinesMap,
     stopVariantsMap,
 } from './data.js';
-import { initMap, renderGlobalStops, renderRoutes, locateUser, applyMapTheme } from './map.js';
+import {
+    initMap,
+    renderGlobalStops,
+    renderRoutes,
+    locateUser,
+    applyMapTheme,
+    getRenderState,
+} from './map.js';
 import { initTheme, getTheme, setThemeOverride, onThemeChange } from './theme.js';
 import {
     hideLoader,
@@ -128,6 +135,19 @@ function handleShowAllStops() {
  * @param {number} stopCode - COD_UBIC_P
  * @returns {boolean} true if the stop exists and routes were rendered
  */
+/**
+ * Debug/verification hooks (pair with __mvdShowStopRoutes below):
+ * __mvdSelectLine renders a line exactly as picking it in the dropdown would
+ * (without the UI debounce); __mvdGetRenderState returns a deterministic
+ * snapshot of the rendered layers for the golden render-sweep e2e test.
+ */
+window.__mvdSelectLine = (lineId) => {
+    handleSelectLine(lineId);
+    const select = document.getElementById('routeSelect');
+    if (select) select.value = lineId;
+};
+window.__mvdGetRenderState = getRenderState;
+
 window.__mvdShowStopRoutes = (stopCode) => {
     const stopFeature = uniqueStopByCode.get(stopCode);
     if (!stopFeature) return false;

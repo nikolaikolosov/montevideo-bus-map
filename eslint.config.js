@@ -25,4 +25,15 @@ export default [
             },
         },
     },
+    {
+        files: ['tests/e2e/**/*.js', 'playwright.config.js', 'vitest.config.js'],
+        languageOptions: {
+            ecmaVersion: 2023,
+            sourceType: 'module',
+            globals: {
+                ...globals.node,
+                ...globals.browser,
+            },
+        },
+    },
 ];

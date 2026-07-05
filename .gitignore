@@ -253,3 +253,5 @@ node_modules/
 !/qa/reports/
 # Local AI tooling caches
 /.token-savior-cache.json
+/test-results/
+/playwright-report/

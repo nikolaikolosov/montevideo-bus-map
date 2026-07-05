@@ -6,12 +6,16 @@
     "scripts": {
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "eslint src tests/js",
-        "format": "prettier --write \"src/**/*.js\" \"tests/js/**/*.js\" \"css/**/*.css\"",
-        "format:check": "prettier --check \"src/**/*.js\" \"tests/js/**/*.js\" \"css/**/*.css\""
+        "test:e2e": "playwright test",
+        "test:e2e:update": "playwright test --update-snapshots",
+        "verify:routes": "vitest run tests/js/route-invariants.test.js",
+        "lint": "eslint src tests/js tests/e2e",
+        "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\" \"css/**/*.css\" \"*.config.js\"",
+        "format:check": "prettier --check \"src/**/*.js\" \"tests/**/*.js\" \"css/**/*.css\" \"*.config.js\""
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@playwright/test": "^1.61.1",
         "eslint": "^10.6.0",
         "globals": "^17.7.0",
         "jsdom": "^29.1.1",
