@@ -149,6 +149,9 @@ export const M_PER_DEG_LAT = 111000;
 /** [lon, lat] → [mx, my] in the local equirectangular meter frame. */
 export const toMeters = (p) => [p[0] * M_PER_DEG_LON, p[1] * M_PER_DEG_LAT];
 
+/** Inverse of toMeters. */
+export const fromMeters = (m) => [m[0] / M_PER_DEG_LON, m[1] / M_PER_DEG_LAT];
+
 /** Length of segment a–b in meters ([lon, lat] inputs). */
 export const segmentLengthM = (a, b) =>
     Math.hypot((b[0] - a[0]) * M_PER_DEG_LON, (b[1] - a[1]) * M_PER_DEG_LAT);
@@ -218,7 +221,10 @@ export function oneSidedHausdorffM(from, to) {
  *
  * @param {number[][]} s1 - [a, b]
  * @param {number[][]} s2 - [a, b]
- * @returns {{overlap: number, lat: number}|null}
+ * @returns {{overlap: number, lat: number, mid: number[]}|null} mid is the
+ *   [lon, lat] midpoint of the overlapping stretch on s1 — the anchor where
+ *   the two strands actually run side by side (a long block's first vertex
+ *   can lie hundreds of meters from the overlap).
  */
 export function axialOverlapAndLateralM(s1, s2) {
     const [a1, b1] = s1.map(toMeters);
@@ -233,7 +239,12 @@ export function axialOverlapAndLateralM(s1, s2) {
     const lo = Math.max(0, Math.min(proj(a2), proj(b2)));
     const hi = Math.min(L1, Math.max(proj(a2), proj(b2)));
     if (hi - lo <= 0) return null;
-    return { overlap: hi - lo, lat: (lat(a2) + lat(b2)) / 2 };
+    const m = (lo + hi) / 2;
+    return {
+        overlap: hi - lo,
+        lat: (lat(a2) + lat(b2)) / 2,
+        mid: fromMeters([a1[0] + u[0] * m, a1[1] + u[1] * m]),
+    };
 }
 
 /**

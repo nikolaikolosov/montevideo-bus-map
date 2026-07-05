@@ -21,6 +21,10 @@ jobs:
       # Scale-ladder drift check: pipeline constants vs measured data
       # properties (report: qa/reports/geometry-scales-report.md)
       - run: npm run verify:scales
+      # Artifact-taxonomy sweep: every unexplained geometry artifact fails
+      # the gate (whitelist: qa/route-geometry-whitelist.json; report:
+      # qa/reports/route-geometry-oracles-report.md)
+      - run: npm run verify:oracles
 
   data-pipeline:
     runs-on: ubuntu-latest

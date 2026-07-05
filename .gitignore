@@ -251,6 +251,10 @@ node_modules/
 !/docs/data-update-runbook.md
 /qa/*
 !/qa/reports/
+# The geometry whitelist gates CI (scripts/verify_route_oracles.mjs) — published.
+!/qa/route-geometry-whitelist.json
+# The triage gallery is a regenerable working tool (npm run triage:oracles), not a report.
+/qa/reports/triage/
 # Local AI tooling caches
 /.token-savior-cache.json
 /test-results/
