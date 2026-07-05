@@ -25,7 +25,9 @@ import { prepareRouteFeature } from '../../src/map.js';
 
 // --- Tolerances (calibrated against the 2026-06-27 dataset) -------------------
 /** Prepared-trace vertex must lie this close to its line's corridors. */
-const TOL_CONTAIN_DEG = 2e-4; // ~20 m — bundle tolerance + node averaging + DP
+// Budget: cluster radius 2.2e-4 + two capped smoothing passes (≤1e-4 each)
+// + DP 4e-5 ≈ 5e-4 (~50 m worst case; typical drift is far smaller).
+const TOL_CONTAIN_DEG = 5e-4;
 /** Every stop of a line must lie this close to the line's corridors... */
 const TOL_STOP_DEG = 6e-4; // ~60 m — curb-side stop vs street centreline
 /**

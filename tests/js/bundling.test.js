@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSections } from '../../src/bundling.js';
+import { buildSections, smoothPath } from '../../src/bundling.js';
 import { CONFIG } from '../../src/config.js';
 
 /** Builds a route Feature along given [lon, lat] coords. */
@@ -65,5 +65,72 @@ describe('buildSections', () => {
     it('returns an empty array for no usable geometry', () => {
         expect(buildSections([])).toEqual([]);
         expect(buildSections([feature('1', 'v', [[0, 0]])])).toEqual([]);
+    });
+});
+
+describe('smoothPath (anti-sawtooth smoothing)', () => {
+    it('flattens an alternating sawtooth while pinning the endpoints', () => {
+        const saw = [
+            [0, 0],
+            [10, 5],
+            [20, -5],
+            [30, 5],
+            [40, 0],
+        ];
+        const out = smoothPath(saw, 2, 100, 10);
+        expect(out[0]).toEqual([0, 0]);
+        expect(out[out.length - 1]).toEqual([40, 0]);
+        const maxDev = Math.max(...out.slice(1, -1).map((p) => Math.abs(p[1])));
+        expect(maxDev).toBeLessThan(2.5); // was 5 before smoothing
+    });
+
+    it('leaves straight lines and short paths untouched', () => {
+        const straight = [
+            [0, 0],
+            [10, 0],
+            [20, 0],
+        ];
+        expect(smoothPath(straight, 2, 100, 10)).toEqual(straight);
+        const short = [
+            [0, 0],
+            [5, 5],
+        ];
+        expect(smoothPath(short, 2, 100, 10)).toBe(short);
+    });
+
+    it('rounds a corner proportionally to the node spacing, not more', () => {
+        const corner = [
+            [0, 0],
+            [30, 0],
+            [30, 30],
+        ];
+        const out = smoothPath(corner, 2, 100, 20);
+        const [cx, cy] = out[1];
+        expect(Math.hypot(cx - 30, cy - 0)).toBeLessThan(17);
+        expect(out[0]).toEqual([0, 0]);
+        expect(out[2]).toEqual([30, 30]);
+    });
+
+    it('never moves a vertex flanked by long segments (sparse peripheral traces)', () => {
+        // A km-scale corner of an L*/G* line must stay exactly put — the
+        // original unguarded smoothing swept such corners hundreds of meters
+        // off the street (route-invariants caught it).
+        const sparse = [
+            [0, 0],
+            [1000, 0],
+            [1000, 1000],
+        ];
+        expect(smoothPath(sparse, 2, 66, 10)).toEqual(sparse);
+    });
+
+    it('caps the displacement of any smoothed vertex', () => {
+        const spike = [
+            [0, 0],
+            [30, 40], // 40 off the axis: uncapped Laplacian would move it ~20
+            [60, 0],
+        ];
+        const out = smoothPath(spike, 1, 100, 5);
+        const moved = Math.hypot(out[1][0] - 30, out[1][1] - 40);
+        expect(moved).toBeLessThanOrEqual(5 + 1e-9);
     });
 });

@@ -80,27 +80,42 @@ describe('strandEndpoint', () => {
     });
 });
 
-describe('jointPath', () => {
-    it('returns a chord for a shallow angle', () => {
-        const node = P(0, 0);
-        const path = jointPath(node, P(3, 0.2), P(3, -0.2));
+describe('jointPath (cubic Bézier along strand tangents)', () => {
+    it('keeps the exact endpoints and starts/ends along the given tangents', () => {
+        const ea = P(0, 0);
+        const eb = P(10, 10);
+        const ta = P(1, 0); // strand A arrives heading +x
+        const tb = P(0, 1); // strand B departs heading +y
+        const path = jointPath(ea, eb, ta, tb);
+        expect(path.length).toBeGreaterThan(2);
+        expect(path[0]).toEqual(ea);
+        expect(path[path.length - 1]).toEqual(eb);
+        // First step leaves ea along ta (dy ≈ 0), last step enters eb along tb (dx ≈ 0).
+        expect(Math.abs(path[1].y - ea.y)).toBeLessThan(Math.abs(path[1].x - ea.x));
+        const pen = path[path.length - 2];
+        expect(Math.abs(eb.x - pen.x)).toBeLessThan(Math.abs(eb.y - pen.y));
+    });
+
+    it('collinear tangents produce points on the straight line', () => {
+        const path = jointPath(P(0, 0), P(12, 0), P(1, 0), P(1, 0));
+        for (const p of path) expect(p.y).toBeCloseTo(0, 9);
+    });
+
+    it('degenerates to a chord for sub-pixel gaps', () => {
+        const path = jointPath(P(0, 0), P(0.5, 0), P(1, 0), P(1, 0));
         expect(path).toHaveLength(2);
     });
 
-    it('adds an arc midpoint at the mean radius for a sharp corner', () => {
-        const node = P(0, 0);
-        const ea = P(4, 0); // radius 4
-        const eb = P(0, 6); // radius 6, 90deg away
-        const path = jointPath(node, ea, eb);
-        expect(path).toHaveLength(3);
-        const mid = path[1];
-        expect(Math.hypot(mid.x, mid.y)).toBeCloseTo(5, 6); // (4+6)/2
-        // bisector direction
-        expect(mid.x).toBeCloseTo(mid.y, 6);
-    });
-
-    it('degenerates gracefully when an endpoint sits on the node', () => {
-        const path = jointPath(P(0, 0), P(0, 0), P(3, 0));
-        expect(path).toHaveLength(2);
+    it('stays inside the control-point bounding box (no bulging into neighbours)', () => {
+        // A slot change: endpoints 8 px apart laterally, both strands heading +x.
+        const ea = P(0, 0);
+        const eb = P(20, 8);
+        const path = jointPath(ea, eb, P(1, 0), P(1, 0));
+        for (const p of path) {
+            expect(p.x).toBeGreaterThanOrEqual(0);
+            expect(p.x).toBeLessThanOrEqual(20);
+            expect(p.y).toBeGreaterThanOrEqual(-1e-9);
+            expect(p.y).toBeLessThanOrEqual(8 + 1e-9);
+        }
     });
 });
