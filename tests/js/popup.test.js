@@ -5,12 +5,12 @@
  * real committed data for the 34-line reference stop 4772 and the
  * chips == stopLinesMap invariant.
  */
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createStopPopup } from '../../src/map.js';
-import { t } from '../../src/i18n.js';
+import { t, tPlural, setLang } from '../../src/i18n.js';
 import {
     buildIndexes,
     getLineColor,
@@ -164,5 +164,30 @@ describe('createStopPopup (real data)', () => {
                 stopLinesMap.get(feature.properties.COD_UBIC_P).size,
             );
         }
+    });
+});
+
+describe('localized popups (i18n)', () => {
+    afterEach(() => setLang('es'));
+
+    it.each(['en', 'ru'])('renders the whole popup in %s', (lang) => {
+        setLang(lang);
+        const popup = createStopPopup(stopFeature(1), vi.fn());
+        const btn = popup.querySelector('.draw-lines-btn');
+        expect(btn.textContent).toBe(t('popup.viewAll'));
+        expect(btn.getAttribute('aria-label')).toBe(t('popup.viewAllAria'));
+        expect(popup.querySelector('.line-chip').getAttribute('aria-label')).toBe(
+            t('popup.chipAria', { id: '7' }),
+        );
+        expect(popup.querySelector('.popup-sub').textContent).toContain(tPlural('popup.lines', 2));
+    });
+
+    it('russian line counts pluralize correctly in the popup subtitle', () => {
+        setLang('ru');
+        const popup = createStopPopup(stopFeature(1), vi.fn());
+        // fixture stop serves exactly 2 lines → «2 линии» (few)
+        expect(popup.querySelector('.popup-sub').textContent).toContain('2 линии');
+        expect(popup.querySelector('.popup-sub').textContent).toContain('Остановка 1');
+        expect(popup.querySelector('.popup-sub').textContent).toContain('угол ITUZAINGO');
     });
 });

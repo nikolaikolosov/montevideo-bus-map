@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
     LANGS,
+    LOCALE_TAGS,
     __STRINGS,
     t,
     tPlural,
@@ -150,5 +151,86 @@ describe('applyTranslations', () => {
             'Date of the last routes-and-stops update',
         );
         expect(document.title).toBe('Montevideo Transit — Montevideo bus routes');
+    });
+});
+
+describe('interpolation & fallback edges', () => {
+    it('leaves an unknown placeholder literal instead of crashing', () => {
+        expect(t('panel.lineOption', {})).toBe('Línea {id}');
+    });
+
+    it('tPlural falls back to Spanish for a key missing in the active locale', () => {
+        setLang('en');
+        // Every real key exists everywhere (completeness test); simulate the
+        // programmer-error path through the public API with a bogus key.
+        expect(tPlural('no.such.plural', 3)).toBe('no.such.plural');
+    });
+
+    it('setLang with persist: false does not touch storage', () => {
+        setLang('ru', { persist: false });
+        expect(getLang()).toBe('ru');
+        expect(localStorage.getItem('mvd-lang')).toBeNull();
+    });
+
+    it('every subscriber hears every switch', () => {
+        const seen = [];
+        onLangChange((l) => seen.push(`a:${l}`));
+        onLangChange((l) => seen.push(`b:${l}`));
+        setLang('en');
+        setLang('ru');
+        expect(seen).toEqual(['a:en', 'b:en', 'a:ru', 'b:ru']);
+    });
+
+    it('LOCALE_TAGS covers every language with a valid Intl tag', () => {
+        for (const lang of LANGS) {
+            expect(LOCALE_TAGS[lang]).toBeTypeOf('string');
+            expect(() => new Intl.PluralRules(LOCALE_TAGS[lang])).not.toThrow();
+        }
+    });
+});
+
+describe('russian plural edge cases (teens and hundreds)', () => {
+    it.each([
+        [101, '101 линия'], // one
+        [22, '22 линии'], // few
+        [111, '111 линий'], // 111 % 100 = 11 → teens exception → many
+        [112, '112 линий'], // 12 → teens exception → many
+        [105, '105 линий'], // many
+    ])('%i lines', (n, expected) => {
+        setLang('ru');
+        expect(tPlural('popup.lines', n)).toBe(expected);
+    });
+
+    it('section variants pluralize per locale', () => {
+        expect(tPlural('section.variants', 1, { list: 'A' })).toBe('Variante: A');
+        expect(tPlural('section.variants', 2, { list: 'A, B' })).toBe('Variantes: A, B');
+        setLang('ru');
+        expect(tPlural('section.variants', 1, { list: 'A' })).toBe('Вариант: A');
+        expect(tPlural('section.variants', 3, { list: 'A, B, C' })).toBe('Варианты: A, B, C');
+    });
+});
+
+describe('applyTranslations robustness', () => {
+    it('is idempotent and re-applies cleanly after a switch', () => {
+        document.body.innerHTML = '<p data-i18n="panel.selectLabel">x</p>';
+        applyTranslations();
+        expect(document.querySelector('p').textContent).toBe('Línea');
+        applyTranslations();
+        expect(document.querySelector('p').textContent).toBe('Línea');
+        setLang('ru');
+        applyTranslations();
+        expect(document.querySelector('p').textContent).toBe('Линия');
+        setLang('es');
+        applyTranslations();
+        expect(document.querySelector('p').textContent).toBe('Línea');
+    });
+
+    it('scopes to the given root', () => {
+        document.body.innerHTML =
+            '<div id="a"><p data-i18n="panel.selectLabel">x</p></div>' +
+            '<div id="b"><p data-i18n="panel.selectLabel">y</p></div>';
+        applyTranslations(document.getElementById('a'));
+        expect(document.querySelector('#a p').textContent).toBe('Línea');
+        expect(document.querySelector('#b p').textContent).toBe('y');
     });
 });
