@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Explorador interactivo de rutas de ómnibus de Montevideo">
+    <meta name="theme-color" content="#0f172a">
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🚌</text></svg>"
         type="image/svg+xml">
@@ -39,7 +40,11 @@
 
     <!-- UI Panel -->
     <div id="ui-panel">
-        <h1>Montevideo Transit</h1>
+        <div class="panel-header">
+            <h1>Montevideo Transit</h1>
+            <button type="button" id="themeToggle" class="theme-toggle"
+                aria-label="Cambiar a tema claro">☀️</button>
+        </div>
         <p class="subtitle">Explorador interactivo de rutas</p>
 
         <div class="control-group">

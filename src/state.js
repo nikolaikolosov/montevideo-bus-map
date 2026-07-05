@@ -6,6 +6,13 @@ export const appState = {
     /** @type {string|null} Currently selected route line ID */
     selectedLine: null,
 
+    /**
+     * Arguments of the last render call, so the current view can be redrawn
+     * with fresh theme colors when the theme flips.
+     * @type {{type: 'global'|'routes', args: object}|null}
+     */
+    lastRender: null,
+
     /** @type {L.GeoJSON|null} */
     currentRouteLayer: null,
     /** @type {L.GeoJSON|null} */

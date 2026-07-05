@@ -38,6 +38,28 @@ export const CONFIG = {
     // Data freshness label turns amber when the dataset is older than this.
     FRESHNESS_WARN_DAYS: 45,
 
+    // --- Theme (light/dark by real sunrise/sunset, see theme.js) ---
+    // Basemap per theme (same CARTO CDN, same attribution).
+    TILE_URLS: {
+        dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    },
+    // Browser chrome color (meta theme-color), matches --bg-color per theme.
+    THEME_META_COLORS: { dark: '#0f172a', light: '#f1f5f9' },
+    // Route line colors: same deterministic hue per line, but lightness and
+    // saturation tuned per background so lines hold contrast on both maps.
+    LINE_COLOR_BY_THEME: {
+        dark: { saturation: 85, lightness: 60 },
+        light: { saturation: 70, lightness: 42 },
+    },
+    // Stop marker palette per theme (fill/stroke flip; active = hover/selected).
+    STOP_COLORS_BY_THEME: {
+        dark: { fill: '#000000', stroke: '#ffffff', activeFill: '#ffffff' },
+        light: { fill: '#ffffff', stroke: '#1e293b', activeFill: '#1e293b' },
+    },
+    // Fallback light window (local hours) if solar math ever fails.
+    THEME_FALLBACK_LIGHT_HOURS: [7, 19],
+
     // Touch / coarse-pointer overrides
     // clickTolerance: how many px away from a feature a touch can land and still register
     // Leaflet default is 3; we use a much larger value on mobile.

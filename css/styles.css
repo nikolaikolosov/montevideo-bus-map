@@ -10,6 +10,38 @@
     --route-color: #06b6d4;
     --stop-color: #f59e0b;
     --error-color: #ef4444;
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-bg-hover: rgba(255, 255, 255, 0.1);
+    --spinner-track: rgba(255, 255, 255, 0.1);
+    --highlight-stop-bg: #ffffff;
+    --highlight-stop-glow: rgba(255, 255, 255, 0.8);
+}
+
+/* Light theme palette — activated via <html data-theme="light"> (src/theme.js:
+   follows sunrise/sunset in Montevideo; sun/moon toggle overrides). */
+html[data-theme='light'] {
+    --bg-color: #f1f5f9;
+    --panel-bg: rgba(255, 255, 255, 0.78);
+    --panel-bg-fallback: rgba(255, 255, 255, 0.96);
+    --panel-border: rgba(15, 23, 42, 0.12);
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --route-color: #0891b2;
+    --stop-color: #b45309;
+    --error-color: #dc2626;
+    --input-bg: rgba(15, 23, 42, 0.04);
+    --input-bg-hover: rgba(15, 23, 42, 0.08);
+    --spinner-track: rgba(15, 23, 42, 0.1);
+    --highlight-stop-bg: #0f172a;
+    --highlight-stop-glow: rgba(15, 23, 42, 0.45);
+}
+
+/* The dark h1 gradient is too pale on a light background. */
+html[data-theme='light'] h1 {
+    background: linear-gradient(to right, #2563eb, #7c3aed);
+    -webkit-background-clip: text;
 }
 
 * {
@@ -23,6 +55,9 @@ body {
     background-color: var(--bg-color);
     color: var(--text-main);
     overflow: hidden;
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease;
 }
 
 .hidden {
@@ -74,7 +109,45 @@ body {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     transition:
         transform 0.3s ease,
-        box-shadow 0.3s ease;
+        box-shadow 0.3s ease,
+        background-color 0.3s ease,
+        color 0.3s ease,
+        border-color 0.3s ease;
+}
+
+.panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.theme-toggle {
+    background: var(--input-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition:
+        background-color 0.2s ease,
+        transform 0.1s ease;
+}
+
+.theme-toggle:hover {
+    background: var(--input-bg-hover);
+}
+
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.theme-toggle:active {
+    transform: scale(0.94);
 }
 
 #ui-panel:hover {
@@ -110,7 +183,7 @@ label {
 
 select {
     appearance: none;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--input-bg);
     border: 1px solid var(--panel-border);
     color: var(--text-main);
     font-family: 'Inter', sans-serif;
@@ -131,7 +204,7 @@ select {
 
 select:hover {
     border-color: var(--text-muted);
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--input-bg-hover);
 }
 
 select:focus,
@@ -204,7 +277,7 @@ option {
 }
 
 .btn:focus-visible {
-    outline: 2px solid white;
+    outline: 2px solid var(--text-main);
     outline-offset: 2px;
 }
 
@@ -282,7 +355,7 @@ option {
 .spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
+    border: 4px solid var(--spinner-track);
     border-left-color: var(--accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -322,11 +395,11 @@ option {
 }
 
 .highlight-stop-marker {
-    background-color: #ffffff;
+    background-color: var(--highlight-stop-bg);
     border: 3px solid var(--accent);
     border-radius: 50%;
     box-shadow:
-        0 0 15px rgba(255, 255, 255, 0.8),
+        0 0 15px var(--highlight-stop-glow),
         0 0 30px rgba(59, 130, 246, 0.5);
     width: 20px;
     height: 20px;

@@ -20,13 +20,16 @@ import {
     stopLinesMap,
     stopVariantsMap,
 } from './data.js';
-import { initMap, renderGlobalStops, renderRoutes, locateUser } from './map.js';
+import { initMap, renderGlobalStops, renderRoutes, locateUser, applyMapTheme } from './map.js';
+import { initTheme, getTheme, setThemeOverride, onThemeChange } from './theme.js';
 import {
     hideLoader,
     showError,
     populateRouteSelect,
     updateStatsPanel,
     renderDataFreshness,
+    initThemeToggle,
+    updateThemeToggle,
 } from './ui.js';
 
 // ---------------------------------------------------------------------------
@@ -142,6 +145,17 @@ window.__mvdShowStopRoutes = (stopCode) => {
 
 async function initApp() {
     try {
+        // Theme first, so the loader/panel and the initial tiles are correct.
+        // Follows sunrise/sunset in Montevideo; the toggle overrides until the
+        // next natural boundary (see theme.js).
+        initTheme();
+        updateThemeToggle(getTheme());
+        initThemeToggle(() => setThemeOverride(getTheme() === 'dark' ? 'light' : 'dark'));
+        onThemeChange((theme) => {
+            updateThemeToggle(theme);
+            applyMapTheme();
+        });
+
         // Load datasets in parallel
         const [routesData, stopsData, generatedAt] = await loadData();
 
