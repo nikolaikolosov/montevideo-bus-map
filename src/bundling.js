@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { projectPointOnSegment, unclampedSegmentParam } from './geometry.js';
 
 /**
  * Route bundling — unifies the per-variant GPS-like traces into a shared
@@ -91,7 +92,7 @@ export function smoothPath(coords, passes, maxSegDeg, maxShiftDeg) {
  * @param {number} eps - max deviation (degrees)
  * @returns {number[][]}
  */
-function simplifyPath(coords, eps) {
+export function simplifyPath(coords, eps) {
     if (coords.length <= 2) return coords;
     const epsSq = eps * eps;
     const keep = new Uint8Array(coords.length);
@@ -101,18 +102,11 @@ function simplifyPath(coords, eps) {
         const [s, e] = stack.pop();
         const [ax, ay] = coords[s];
         const [bx, by] = coords[e];
-        const dx = bx - ax;
-        const dy = by - ay;
-        const len2 = dx * dx + dy * dy;
         let worst = -1;
         let worstD = epsSq;
         for (let i = s + 1; i < e; i++) {
             const [px, py] = coords[i];
-            let t = len2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
-            t = Math.max(0, Math.min(1, t));
-            const ex = px - (ax + t * dx);
-            const ey = py - (ay + t * dy);
-            const d2 = ex * ex + ey * ey;
+            const { d2 } = projectPointOnSegment(px, py, ax, ay, bx, by);
             if (d2 > worstD) {
                 worstD = d2;
                 worst = i;
@@ -235,11 +229,9 @@ export function buildSections(features) {
                         if (checked.has(id)) continue;
                         checked.add(id);
                         const nd = nodes[id];
-                        const t = ((nd.x - a.x) * dx + (nd.y - a.y) * dy) / len2;
+                        const { t, d2 } = unclampedSegmentParam(nd.x, nd.y, a.x, a.y, b.x, b.y);
                         if (t <= 0 || t >= 1) continue;
-                        const ex = nd.x - (a.x + t * dx);
-                        const ey = nd.y - (a.y + t * dy);
-                        if (ex * ex + ey * ey >= perpTolSq) continue;
+                        if (d2 >= perpTolSq) continue;
                         // Keep a small clearance off the endpoints (adjacent
                         // clusters sit ~TOL apart, so this must stay well
                         // below TOL or legitimate on-path nodes get skipped
@@ -422,11 +414,9 @@ export function buildSections(features) {
             for (const w of [...(adj.get(a)?.keys() ?? [])]) {
                 if (w === b || !adj.get(b)?.has(w)) continue;
                 const nw = nodes[w];
-                const t = ((nw.x - na.x) * dx + (nw.y - na.y) * dy) / len2;
+                const { t, d2 } = unclampedSegmentParam(nw.x, nw.y, na.x, na.y, nb.x, nb.y);
                 if (t <= 0 || t >= 1) continue;
-                const ex = nw.x - (na.x + t * dx);
-                const ey = nw.y - (na.y + t * dy);
-                if (ex * ex + ey * ey >= tolSq * 0.64) continue;
+                if (d2 >= tolSq * 0.64) continue;
                 const fromA = e.dir[0] === a;
                 const aw = edges.get(adj.get(a).get(w));
                 const wb = edges.get(adj.get(b).get(w));
