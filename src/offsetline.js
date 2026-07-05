@@ -120,6 +120,89 @@ export function offsetPoints(pts, d) {
     return cullLoops(out);
 }
 
+/**
+ * Endpoint of an offset strand where its section meets a boundary node.
+ *
+ * offsetPoints displaces each segment perpendicular to its own direction, so
+ * the drawn strand terminates at `node + normal(last segment) * d`. The
+ * normal's sign depends on whether the node is the section's last vertex
+ * (segment runs neighbor→node) or its first (node→neighbor).
+ *
+ * @param {L.Point} node - projected boundary node
+ * @param {L.Point} neighbor - projected vertex adjacent to the node in the section
+ * @param {boolean} nodeIsEnd - true when the node is the section's LAST vertex
+ * @param {number} d - signed pixel offset of this line in this section
+ * @returns {L.Point|null} strand endpoint, or null for a degenerate segment
+ */
+export function strandEndpoint(node, neighbor, nodeIsEnd, d) {
+    const dx = node.x - neighbor.x;
+    const dy = node.y - neighbor.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.05) return null;
+    const sign = nodeIsEnd ? 1 : -1;
+    return L.point(node.x + (-dy / len) * d * sign, node.y + (dx / len) * d * sign);
+}
+
+/**
+ * Connector geometry between two strand endpoints at a boundary node: a short
+ * chord, with one midpoint on the offset circle around the node when the
+ * corner is sharp (mirrors offsetPoints' outer-join arc look).
+ *
+ * @param {L.Point} node
+ * @param {L.Point} ea - strand endpoint on side A (from strandEndpoint)
+ * @param {L.Point} eb - strand endpoint on side B
+ * @returns {L.Point[]}
+ */
+export function jointPath(node, ea, eb) {
+    const ax = ea.x - node.x;
+    const ay = ea.y - node.y;
+    const bx = eb.x - node.x;
+    const by = eb.y - node.y;
+    const ra = Math.sqrt(ax * ax + ay * ay);
+    const rb = Math.sqrt(bx * bx + by * by);
+    if (ra < 1e-6 || rb < 1e-6) return [ea, eb];
+    // Angle between the two radial directions; beyond ~60° a chord visibly
+    // cuts the corner, so add the arc midpoint at the mean radius.
+    const cos = (ax * bx + ay * by) / (ra * rb);
+    if (cos < 0.5) {
+        const mx = ax / ra + bx / rb;
+        const my = ay / ra + by / rb;
+        const ml = Math.sqrt(mx * mx + my * my);
+        if (ml > 1e-6) {
+            const rm = (ra + rb) / 2;
+            return [ea, L.point(node.x + (mx / ml) * rm, node.y + (my / ml) * rm), eb];
+        }
+    }
+    return [ea, eb];
+}
+
+/**
+ * OffsetJoint — the connector drawn at a section boundary for one line, so
+ * bundled strands stay visually continuous through corners and slot changes
+ * (brainstorm-005). Endpoints are recomputed with the SAME offset math as the
+ * adjacent OffsetPolylines on every (re)projection, so they match at every
+ * zoom by construction.
+ *
+ * latlngs: [neighborA, node, neighborB]. Options:
+ *  - jointA / jointB: { nodeIsEnd, slot: {idx,total,weight} }
+ *  - offsetFor: (slot, zoom) => signed pixel offset (injected to avoid a
+ *    circular import with map.js, where getLineOffset lives)
+ */
+export const OffsetJoint = L.Polyline.extend({
+    _projectLatlngs(latlngs, result, projectedBounds) {
+        const flat = L.LineUtil.isFlat(latlngs) ? latlngs : latlngs[0];
+        const [na, node, nb] = flat.map((ll) => this._map.latLngToLayerPoint(ll));
+        const zoom = this._map.getZoom();
+        const { jointA, jointB, offsetFor } = this.options;
+        const ea = strandEndpoint(node, na, jointA.nodeIsEnd, offsetFor(jointA.slot, zoom));
+        const eb = strandEndpoint(node, nb, jointB.nodeIsEnd, offsetFor(jointB.slot, zoom));
+        if (!ea || !eb) return;
+        const ring = jointPath(node, ea, eb);
+        for (const p of ring) projectedBounds.extend(p);
+        result.push(ring);
+    },
+});
+
 export const OffsetPolyline = L.Polyline.extend({
     /**
      * Changes the sideways pixel offset and redraws.

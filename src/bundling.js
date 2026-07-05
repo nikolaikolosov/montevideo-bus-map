@@ -475,3 +475,66 @@ export function buildSections(features) {
 
     return sections;
 }
+
+/**
+ * @typedef {object} JointSide
+ * @property {number[]} neighbor - [lon, lat] vertex adjacent to the node in the section
+ * @property {boolean} nodeIsEnd - node is the section's LAST coordinate
+ * @property {number} idx - the line's slot inside the section
+ * @property {number} total - the section's line count
+ */
+
+/**
+ * Detects where a line continues from one section into exactly one other and
+ * must be visually stitched (brainstorm-005): sections are separate offset
+ * polylines, so without a joint the strands fan out at corners and side-step
+ * where the bundle composition (and with it the line's slot) changes.
+ *
+ * A node with three or more sections carrying the same line is a true branch
+ * (the line genuinely diverges there) — no unambiguous joint exists and none
+ * is produced.
+ *
+ * @param {Section[]} sections - output of buildSections (coords share canonical nodes)
+ * @returns {Array<{node: number[], line: string, a: JointSide, b: JointSide}>}
+ */
+export function buildJoints(sections) {
+    /** node key -> Array<{sec: Section, nodeIsEnd: boolean}> */
+    const byNode = new Map();
+    for (const sec of sections) {
+        if (sec.coords.length < 2) continue;
+        for (const nodeIsEnd of [false, true]) {
+            const node = nodeIsEnd ? sec.coords[sec.coords.length - 1] : sec.coords[0];
+            const key = `${node[0]},${node[1]}`;
+            if (!byNode.has(key)) byNode.set(key, []);
+            byNode.get(key).push({ sec, nodeIsEnd });
+        }
+    }
+
+    const side = ({ sec, nodeIsEnd }, line) => ({
+        neighbor: nodeIsEnd ? sec.coords[sec.coords.length - 2] : sec.coords[1],
+        nodeIsEnd,
+        idx: sec.lines.indexOf(line),
+        total: sec.lines.length,
+    });
+
+    const joints = [];
+    for (const entries of byNode.values()) {
+        if (entries.length < 2) continue;
+        const byLine = new Map();
+        for (const e of entries) {
+            for (const line of e.sec.lines) {
+                if (!byLine.has(line)) byLine.set(line, []);
+                byLine.get(line).push(e);
+            }
+        }
+        for (const [line, es] of byLine) {
+            if (es.length !== 2) continue; // dead end or true branch
+            if (es[0].sec === es[1].sec) continue; // ring section meeting itself
+            const node = es[0].nodeIsEnd
+                ? es[0].sec.coords[es[0].sec.coords.length - 1]
+                : es[0].sec.coords[0];
+            joints.push({ node, line, a: side(es[0], line), b: side(es[1], line) });
+        }
+    }
+    return joints;
+}

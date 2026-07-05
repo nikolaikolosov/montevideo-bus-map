@@ -34,6 +34,21 @@ const scenes = [
     // Busiest-popup reference: 34 line chips with inner scroll (brainstorm-003)
     { name: 'popup-4772-dark', theme: 'dark', popup: 4772 },
     { name: 'popup-4772-light', theme: 'light', popup: 4772 },
+    // Section-boundary joints (brainstorm-005): the Artigas→Ellauri corner
+    // where 9 continuing lines previously rendered wedge gaps (stop 2061,
+    // "Ver rutas (todas)", between stops 4850 and 3382).
+    {
+        name: 'joint-ellauri-corner-dark',
+        theme: 'dark',
+        stop: 2061,
+        view: { center: [-34.92505, -56.16125], zoom: 18 },
+    },
+    {
+        name: 'joint-ellauri-corner-light',
+        theme: 'light',
+        stop: 2061,
+        view: { center: [-34.92505, -56.16125], zoom: 18 },
+    },
 ];
 
 for (const scene of scenes) {
@@ -42,7 +57,7 @@ for (const scene of scenes) {
         if (scene.line) await renderLine(page, scene.line);
         if (scene.stop) await renderStopRoutes(page, scene.stop);
         if (scene.popup) await openStopPopup(page, scene.popup);
-        if (scene.view) await setView(page, CORRIDOR_CENTER, scene.view.zoom);
+        if (scene.view) await setView(page, scene.view.center ?? CORRIDOR_CENTER, scene.view.zoom);
         await page.waitForTimeout(400); // let the canvas settle
         await expect(page).toHaveScreenshot(`${scene.name}.png`);
     });

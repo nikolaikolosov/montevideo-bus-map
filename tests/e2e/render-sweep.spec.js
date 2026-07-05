@@ -44,6 +44,7 @@ test('render manifest of all lines matches the golden', async ({ page }) => {
         );
         manifest[line] = {
             sections: s.sections,
+            joints: s.joints,
             totalPoints: s.sectionList.reduce((a, x) => a + x.points, 0),
             colors: [...new Set(s.sectionList.map((x) => x.color))].sort(),
             weights: [...new Set(s.sectionList.map((x) => x.weight))].sort(),
