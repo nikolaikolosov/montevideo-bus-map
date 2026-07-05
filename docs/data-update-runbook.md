@@ -64,7 +64,7 @@ data's generation date ("Datos: …"), turning amber after 45 days
 
    A FAILed assertion means the digitisation style of the feed changed (e.g.
    ida/vuelta offsets grew past the merge radius). Do NOT loosen the bound:
-   re-derive the constant per `architecture/route-geometry-contract.md` and
+   re-derive the constant per `architecture/contracts/route-geometry-contract.md` and
    review the render diffs (golden + baselines will change).
 
 5. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas".

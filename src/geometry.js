@@ -5,7 +5,7 @@
  * vertex-snapping bugs were born (trimToStops truncating loop variants,
  * PR #4; downstream cuts injecting stop coordinates, PR #9).
  *
- * Rules enforced here (architecture/route-geometry-contract.md):
+ * Rules enforced here (architecture/contracts/route-geometry-contract.md):
  *  - R-PROJECT: every cut/trim/match operation works on segment projections,
  *    never on nearest vertices.
  *  - R-FOREIGN: projections return points ON the trace; callers never inject

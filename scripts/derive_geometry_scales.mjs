@@ -3,7 +3,7 @@
  * committed dataset that the pipeline constants (src/config.js) must be
  * sized against, writes the evidence report, and FAILS when a constant no
  * longer sits where the data says it should (rule R-BOUNDED / scale ladder
- * of architecture/route-geometry-contract.md).
+ * of architecture/contracts/route-geometry-contract.md).
  *
  * Run: npm run verify:scales      (part of the data-update runbook step)
  *

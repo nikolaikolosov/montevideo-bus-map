@@ -1,6 +1,6 @@
 /**
  * Network-wide route-geometry oracle sweep (rule enforcement of
- * architecture/route-geometry-contract.md).
+ * architecture/contracts/route-geometry-contract.md).
  *
  * Runs every artifact-class measure of scripts/route_oracles.mjs over all
  * lines through the REAL pipeline, classifies each violation against the

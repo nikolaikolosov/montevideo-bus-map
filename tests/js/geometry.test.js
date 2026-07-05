@@ -5,7 +5,7 @@
  * relies on for every cut/trim/match (rule R-PROJECT) — they are verified
  * here against brute-force references so that the oracle suites may reuse
  * them without weakening test independence (see
- * architecture/route-geometry-contract.md, independence note).
+ * architecture/contracts/route-geometry-contract.md, independence note).
  */
 
 import { describe, it, expect } from 'vitest';

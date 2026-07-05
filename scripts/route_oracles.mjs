@@ -1,6 +1,6 @@
 /**
  * Route-geometry artifact oracles — the measurable taxonomy of
- * architecture/route-geometry-contract.md, applied per line to the REAL
+ * architecture/contracts/route-geometry-contract.md, applied per line to the REAL
  * pipeline output (prepareRouteFeature → buildSections, single-line build,
  * i.e. what a rider sees when one line is selected).
  *
