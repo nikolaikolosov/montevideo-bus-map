@@ -18,6 +18,9 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
+      # Scale-ladder drift check: pipeline constants vs measured data
+      # properties (report: qa/reports/geometry-scales-report.md)
+      - run: npm run verify:scales
 
   data-pipeline:
     runs-on: ubuntu-latest
