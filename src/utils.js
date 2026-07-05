@@ -44,8 +44,18 @@ export const cleanCoordinates = (coords) => {
 };
 
 /**
- * Truncates a coordinate array so it starts from the point nearest to sourceLonLat.
- * Used to show only the downstream part of a route from a selected stop.
+ * Truncates a coordinate array to the part downstream of sourceLonLat.
+ *
+ * The cut point is the nearest point ON the polyline — projection onto
+ * segments, which stays exact on Douglas–Peucker-simplified traces whose
+ * vertices can be hundreds of meters apart — never the nearest vertex, and
+ * the stop's own coordinate is NEVER injected into the geometry. A stop can
+ * sit tens of meters off its route's trace (up to ~600 m for a few known
+ * data oddities); bridging that gap with a synthetic vertex used to draw
+ * chords across city blocks (reported at stops 4534/3987 and as a phantom
+ * D1 branch at 3179). The rendered route therefore always follows the
+ * recorded trace; the highlighted stop marker shows where the rider stands.
+ *
  * @param {Array} coords
  * @param {number[]} sourceLonLat - [lon, lat]
  * @returns {Array}
@@ -54,60 +64,64 @@ export const truncateLineDownstream = (coords, sourceLonLat) => {
     if (!coords || coords.length === 0) return coords;
     if (typeof coords[0] === 'number') return coords;
 
+    /** Nearest on-line projection: { d2, i (segment), px, py } */
+    const projectOnto = (line) => {
+        let best = null;
+        for (let i = 0; i < line.length - 1; i++) {
+            const [ax, ay] = line[i];
+            const [bx, by] = line[i + 1];
+            const dx = bx - ax;
+            const dy = by - ay;
+            const len2 = dx * dx + dy * dy;
+            let t =
+                len2 > 0 ? ((sourceLonLat[0] - ax) * dx + (sourceLonLat[1] - ay) * dy) / len2 : 0;
+            t = Math.max(0, Math.min(1, t));
+            const px = ax + t * dx;
+            const py = ay + t * dy;
+            const ex = sourceLonLat[0] - px;
+            const ey = sourceLonLat[1] - py;
+            const d2 = ex * ex + ey * ey;
+            if (!best || d2 < best.d2) best = { d2, i, px, py };
+        }
+        return best;
+    };
+
+    const truncateOne = (line, proj) => {
+        const rest = line.slice(proj.i + 1);
+        // Skip a degenerate head when the projection lands on the next vertex.
+        const EPS = 1e-9;
+        if (
+            rest.length > 0 &&
+            Math.abs(rest[0][0] - proj.px) < EPS &&
+            Math.abs(rest[0][1] - proj.py) < EPS
+        ) {
+            return rest;
+        }
+        return [[proj.px, proj.py], ...rest];
+    };
+
     // LineString: array of positions [ [lon, lat], ... ]
     if (typeof coords[0][0] === 'number') {
-        let minIdx = 0;
-        let minDistSq = Infinity;
-        for (let i = 0; i < coords.length; i++) {
-            const dx = coords[i][0] - sourceLonLat[0];
-            const dy = coords[i][1] - sourceLonLat[1];
-            const d2 = dx * dx + dy * dy;
-            if (d2 < minDistSq) {
-                minDistSq = d2;
-                minIdx = i;
-            }
-        }
-        const sliced = coords.slice(minIdx);
-        if (sliced.length > 0) {
-            // Force the first point to be exactly the stop location
-            sliced[0] = [sourceLonLat[0], sourceLonLat[1]];
-        }
-        return sliced;
+        if (coords.length < 2) return coords;
+        return truncateOne(coords, projectOnto(coords));
     }
 
-    // MultiLineString: array of lines
-    // Find which segment is actually closest to the stop to avoid jumping
-    let bestLineIdx = -1;
-    let absoluteMinDistSq = Infinity;
-
-    const lineInfos = coords.map((line, idx) => {
-        let minIdx = 0;
-        let minDistSq = Infinity;
-        for (let i = 0; i < line.length; i++) {
-            const dx = line[i][0] - sourceLonLat[0];
-            const dy = line[i][1] - sourceLonLat[1];
-            const d2 = dx * dx + dy * dy;
-            if (d2 < minDistSq) {
-                minDistSq = d2;
-                minIdx = i;
-            }
+    // MultiLineString: truncate the piece nearest to the stop; the other
+    // pieces are independent geometry and pass through unchanged.
+    // (Not present in the current dataset — routes.json carries LineStrings.)
+    let bestIdx = -1;
+    let bestProj = null;
+    const projs = coords.map((line, idx) => {
+        if (line.length < 2) return null;
+        const p = projectOnto(line);
+        if (!bestProj || p.d2 < bestProj.d2) {
+            bestProj = p;
+            bestIdx = idx;
         }
-        if (minDistSq < absoluteMinDistSq) {
-            absoluteMinDistSq = minDistSq;
-            bestLineIdx = idx;
-        }
-        return { line, minIdx };
+        return p;
     });
-
-    return lineInfos
-        .map(({ line, minIdx }, idx) => {
-            const sliced = line.slice(minIdx);
-            // Only snap the very first point of the closest segment to the stop
-            if (idx === bestLineIdx && sliced.length > 0) {
-                sliced[0] = [sourceLonLat[0], sourceLonLat[1]];
-            }
-            return sliced;
-        })
+    return coords
+        .map((line, idx) => (idx === bestIdx ? truncateOne(line, projs[idx]) : line))
         .filter((line) => line.length > 1);
 };
 

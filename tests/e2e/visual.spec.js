@@ -49,6 +49,21 @@ const scenes = [
         stop: 2061,
         view: { center: [-34.92505, -56.16125], zoom: 18 },
     },
+    // Downstream-render fidelity (user report 2026-07-05): these stops used
+    // to render chords across city blocks because the stop coordinate was
+    // injected into the trace head (see truncateLineDownstream).
+    {
+        name: 'downstream-4534-dark',
+        theme: 'dark',
+        stop: 4534,
+        view: { center: [-34.9113, -56.1782], zoom: 16 },
+    },
+    {
+        name: 'downstream-3987-light',
+        theme: 'light',
+        stop: 3987,
+        view: { center: [-34.9117, -56.1598], zoom: 16 },
+    },
 ];
 
 for (const scene of scenes) {
