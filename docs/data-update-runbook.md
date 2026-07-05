@@ -40,22 +40,37 @@ data's generation date ("Datos: …"), turning amber after 45 days
    Expect both files to change moderately. A wild size swing (e.g. −80%) means a
    broken feed — stop and investigate before committing.
 
-3. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas".
+3. Refresh the line color palette (only does anything when lines were added or
+   removed):
+
+   ```bash
+   npm run assign:colors    # appends colors for NEW lines; never recolors existing ones
+   npm run verify:colors    # gates: coverage, uniqueness, in-clique ΔE, contrast
+   git diff --stat src/line-colors.js qa/reports/line-colors-report.md
+   ```
+
+   Expect at most a few added entries. If `verify:colors` fails its in-clique
+   distance gate, a new line landed in a crowded stop the incremental mode
+   can't serve — rerun with `node scripts/assign_line_colors.mjs
+   --regenerate-all` and review the visual scene diffs (all baselines change).
+   CI fails on a missing palette entry, so skipping this step cannot ship.
+
+4. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas".
    The panel's "Datos: …" date must show today.
 
-4. Commit and push (push to `main` **is** the production deploy — GitHub Pages
+5. Commit and push (push to `main` **is** the production deploy — GitHub Pages
    rebuilds automatically; CI validates the data again on the push):
 
    ```bash
-   git add routes.json stops.json
+   git add routes.json stops.json src/line-colors.js qa/reports/line-colors-report.md
    git commit -m "Update bus routes and stops data from API"
    git push
    ```
 
-   `./update_and_push.sh` does steps 1 + 4 in one go (it only commits when the
-   data actually changed).
+   `./update_and_push.sh` does steps 1 + 5 in one go (it only commits when the
+   data actually changed) — run step 3 first when the line set changed.
 
-5. Verify: <https://nikolaikolosov.github.io/montevideo-bus-map/> shows the new
+6. Verify: <https://nikolaikolosov.github.io/montevideo-bus-map/> shows the new
    date in "Datos: …" (allow a couple of minutes for the Pages build; hard-refresh
    to skip the browser cache).
 

@@ -116,11 +116,21 @@ describe('manual override', () => {
 });
 
 describe('theme-aware line colors', () => {
-    it('keeps the hue but changes lightness between themes', () => {
+    it('serves the palette variant of the active theme', () => {
         applyTheme('dark');
         const dark = getLineColor('100');
         applyTheme('light');
         const light = getLineColor('100');
+        expect(dark).not.toBe(light);
+        expect(dark).toMatch(/^#[0-9a-f]{6}$/);
+        expect(light).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('fallback (line missing from palette) keeps the hue, changes lightness', () => {
+        applyTheme('dark');
+        const dark = getLineColor('NO-SUCH-LINE');
+        applyTheme('light');
+        const light = getLineColor('NO-SUCH-LINE');
         expect(dark).not.toBe(light);
         const hue = (c) => c.match(/^hsl\(([\d.]+),/)[1];
         expect(hue(dark)).toBe(hue(light));

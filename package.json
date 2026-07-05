@@ -9,6 +9,8 @@
         "test:e2e": "playwright test",
         "test:e2e:update": "playwright test --update-snapshots",
         "verify:routes": "vitest run tests/js/route-invariants.test.js",
+        "verify:colors": "vitest run tests/js/line-colors.test.js",
+        "assign:colors": "node scripts/assign_line_colors.mjs",
         "lint": "eslint src tests/js tests/e2e",
         "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\" \"css/**/*.css\" \"*.config.js\"",
         "format:check": "prettier --check \"src/**/*.js\" \"tests/**/*.js\" \"css/**/*.css\" \"*.config.js\""
