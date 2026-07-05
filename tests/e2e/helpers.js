@@ -23,12 +23,28 @@ export async function openMap(page, { theme = 'dark' } = {}) {
         undefined,
         { timeout: 60_000 },
     );
+
+    // Kill Leaflet zoom animations for the whole session. An animated
+    // fitBounds (renderRoutes) only flips _animatingZoom inside a queued
+    // requestAnimationFrame, so a setView issued in that gap is silently
+    // reverted when the frame fires — the camera ends wherever fitBounds was
+    // headed. With _zoomAnimated off every zoom change applies synchronously.
+    await page.evaluate(() => {
+        window.__mvdMap._zoomAnimated = false;
+    });
 }
 
 /** Renders a line exactly as the dropdown would and waits for its corridors. */
 export async function renderLine(page, line) {
     await page.evaluate((l) => window.__mvdSelectLine(l), line);
     await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
+    // renderRoutes ends with an animated fitBounds. While that zoom animation
+    // is in flight, Leaflet silently ignores a later setView (even with
+    // animate: false — _tryAnimatedZoom returns true while _animatingZoom is
+    // set), so wait for the camera to go idle before the caller repositions it.
+    await page.waitForFunction(
+        () => !window.__mvdMap._animatingZoom && !window.__mvdMap._panAnim?._inProgress,
+    );
 }
 
 /** Triggers the "Ver rutas" view for a stop and waits for the render. */
