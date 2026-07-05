@@ -157,6 +157,14 @@ describe('getLineColor', () => {
     it('is deterministic and line-specific', () => {
         expect(getLineColor('100')).toBe(getLineColor('100'));
         expect(getLineColor('100')).not.toBe(getLineColor('101'));
-        expect(getLineColor('100')).toMatch(/^hsl\(/);
+    });
+
+    it('serves known lines from the committed palette (hex)', () => {
+        expect(getLineColor('100')).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('falls back to the stable hash hue for lines missing from the palette', () => {
+        expect(getLineColor('NO-SUCH-LINE')).toMatch(/^hsl\(/);
+        expect(getLineColor('NO-SUCH-LINE')).toBe(getLineColor('NO-SUCH-LINE'));
     });
 });

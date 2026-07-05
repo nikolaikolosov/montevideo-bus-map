@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { getTheme } from './theme.js';
+import { LINE_COLORS } from './line-colors.js';
 
 /**
  * Pre-built lookup indexes for O(1) access to routes and stops by key.
@@ -41,24 +42,26 @@ const variantLineMap = new Map();
 export const uniqueStopsData = [];
 
 /**
- * Returns a deterministic HSL color for any line ID.
+ * Returns the line's identity color for the active theme.
  *
- * Uses a djb2-style hash of the line ID string so that:
- *  - The same line ALWAYS gets the same color, in every context.
- *  - Adding or removing other lines never shifts any existing line's color.
- *  - Lines not present in routes data (e.g. from stops only) also get a stable color.
+ * Primary source: the committed palette in src/line-colors.js — built by
+ * scripts/assign_line_colors.mjs so that lines sharing a stop keep a minimum
+ * perceptual distance (ΔE OKLab) on BOTH basemaps, and existing lines never
+ * change color when route data is added or removed (brainstorm-004, metrics
+ * in qa/reports/line-colors-report.md; tests/js/line-colors.test.js gates it).
  *
- * Golden-ratio multiplication spreads the hue space evenly even for
- * numerically adjacent line IDs ("1", "2", "3" … don't cluster together).
- *
- * The hue is theme-independent (a line keeps its identity); saturation and
- * lightness come from CONFIG.LINE_COLOR_BY_THEME so lines hold contrast on
- * both the dark and the light basemap.
+ * Fallback for a line missing from the palette (fresh data before the assign
+ * script has run): the legacy djb2-hash hue — stable and theme-aware, but
+ * without the collision guarantee. The gap is caught by the stability test,
+ * never by a blank map.
  *
  * @param {string} lineId
- * @returns {string} CSS hsl() color
+ * @returns {string} CSS color (#rrggbb from the palette, hsl() fallback)
  */
 export function getLineColor(lineId) {
+    const entry = LINE_COLORS[lineId];
+    if (entry) return entry[getTheme()];
+
     // djb2 hash — fast, low-collision, deterministic
     let hash = 5381;
     for (let i = 0; i < lineId.length; i++) {
