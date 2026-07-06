@@ -268,11 +268,6 @@ export function initMap(onHome) {
     return map;
 }
 
-/** Returns the camera to the default city overview (home control, FAB). */
-export function resetCityView() {
-    map?.setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
-}
-
 // ---------------------------------------------------------------------------
 // Geolocation
 // ---------------------------------------------------------------------------
