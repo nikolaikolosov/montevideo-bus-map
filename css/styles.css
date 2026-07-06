@@ -195,8 +195,10 @@ body {
     background: var(--input-bg-hover);
 }
 
+/* Hover keeps the deepened shadow but no longer lifts the panel — the
+   2px translateY made the search field "jump" under the cursor
+   (brainstorm-009 addendum). */
 #ui-panel:hover {
-    transform: translateY(-2px);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 }
 
