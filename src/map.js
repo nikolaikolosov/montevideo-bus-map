@@ -14,6 +14,7 @@ import { getTheme } from './theme.js';
 import { t, tPlural } from './i18n.js';
 import {
     uniqueStopsData,
+    uniqueStopByCode,
     stopLinesMap,
     stopVariantsMap,
     stopsByVariant,
@@ -444,6 +445,26 @@ export function renderGlobalStops(onShowRoutes) {
             },
         },
     ).addTo(map);
+}
+
+/**
+ * Pans/zooms to a stop and opens its popup on the global-stops layer — the
+ * landing action for `#/parada/<code>` deep links and stop search picks
+ * (also the keyboard path to a popup: canvas markers are not focusable).
+ * The caller must have rendered the global stops first.
+ *
+ * @param {number} code - COD_UBIC_P
+ * @returns {boolean} false when the stop is unknown
+ */
+export function focusStop(code) {
+    const target = uniqueStopByCode.get(code);
+    if (!target || !map) return false;
+    const [lon, lat] = target.geometry.coordinates;
+    map.setView([lat, lon], Math.max(map.getZoom(), CONFIG.STOP_FOCUS_ZOOM));
+    appState.globalStopsLayer?.eachLayer((layer) => {
+        if (layer.feature?.properties?.COD_UBIC_P === code) layer.openPopup();
+    });
+    return true;
 }
 
 // ---------------------------------------------------------------------------

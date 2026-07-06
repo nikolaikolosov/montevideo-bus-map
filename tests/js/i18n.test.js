@@ -212,25 +212,25 @@ describe('russian plural edge cases (teens and hundreds)', () => {
 
 describe('applyTranslations robustness', () => {
     it('is idempotent and re-applies cleanly after a switch', () => {
-        document.body.innerHTML = '<p data-i18n="panel.selectLabel">x</p>';
+        document.body.innerHTML = '<p data-i18n="search.label">x</p>';
         applyTranslations();
-        expect(document.querySelector('p').textContent).toBe('Línea');
+        expect(document.querySelector('p').textContent).toBe('Buscar');
         applyTranslations();
-        expect(document.querySelector('p').textContent).toBe('Línea');
+        expect(document.querySelector('p').textContent).toBe('Buscar');
         setLang('ru');
         applyTranslations();
-        expect(document.querySelector('p').textContent).toBe('Линия');
+        expect(document.querySelector('p').textContent).toBe('Поиск');
         setLang('es');
         applyTranslations();
-        expect(document.querySelector('p').textContent).toBe('Línea');
+        expect(document.querySelector('p').textContent).toBe('Buscar');
     });
 
     it('scopes to the given root', () => {
         document.body.innerHTML =
-            '<div id="a"><p data-i18n="panel.selectLabel">x</p></div>' +
-            '<div id="b"><p data-i18n="panel.selectLabel">y</p></div>';
+            '<div id="a"><p data-i18n="search.label">x</p></div>' +
+            '<div id="b"><p data-i18n="search.label">y</p></div>';
         applyTranslations(document.getElementById('a'));
-        expect(document.querySelector('#a p').textContent).toBe('Línea');
+        expect(document.querySelector('#a p').textContent).toBe('Buscar');
         expect(document.querySelector('#b p').textContent).toBe('y');
     });
 });

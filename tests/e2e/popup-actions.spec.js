@@ -34,7 +34,9 @@ test('chip click renders exactly that line downstream from the stop', async ({ p
     expect(colors[0]).toBe(expected);
 
     // Stats panel reflects the single-line selection
-    await expect(page.locator('#routeSelect')).toHaveValue('102');
+    await expect(page.locator('#searchInput')).toHaveValue('Línea 102');
+    expect(new URL(page.url()).hash).toBe('#/parada/4772/linea/102');
+    await expect(page.locator('#contextText')).toContainText('4772');
     await expect(page.locator('#statVariants')).not.toHaveText('-');
 });
 
