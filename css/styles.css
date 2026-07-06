@@ -393,12 +393,23 @@ label {
     color: var(--text-main);
     cursor: pointer;
     background-clip: padding-box;
+    /* Match the zoom buttons' tap feedback: Leaflet gives `.leaflet-container a`
+       this same highlight, so a tap flashes identically (brainstorm-011).
+       The e2e asserts parity by reading both live, so this tracks Leaflet. */
+    -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
 }
 
 @media (hover: hover) {
     .home-control:hover {
         background-color: var(--input-bg-hover);
     }
+}
+
+/* Momentary press feedback (touch AND desktop click). Unlike :hover this does
+   not stick on touch — it clears on release, so it can't revive the PR #19
+   sticky-tint bug. */
+.home-control:active {
+    background-color: var(--input-bg-hover);
 }
 
 .home-control:focus-visible {
