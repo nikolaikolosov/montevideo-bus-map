@@ -259,3 +259,7 @@ node_modules/
 /.token-savior-cache.json
 /test-results/
 /playwright-report/
+
+# Throwaway probe scripts run from the repo root (module resolution needs node_modules)
+/tmp_*.mjs
+/tmp_*.js

@@ -137,8 +137,13 @@ body {
         transform 0.1s ease;
 }
 
-.theme-toggle:hover {
-    background: var(--input-bg-hover);
+/* Hover feedback only where a hover-capable pointer exists — on touch, CSS
+   :hover sticks after a tap and would leave these controls in their hover
+   state until the next tap elsewhere (brainstorm-010 issue 2). */
+@media (hover: hover) {
+    .theme-toggle:hover {
+        background: var(--input-bg-hover);
+    }
 }
 
 .theme-toggle:focus-visible {
@@ -181,8 +186,10 @@ body {
         color 0.2s ease;
 }
 
-.lang-btn:hover {
-    background: var(--input-bg-hover);
+@media (hover: hover) {
+    .lang-btn:hover {
+        background: var(--input-bg-hover);
+    }
 }
 
 .lang-btn:focus-visible {
@@ -293,9 +300,11 @@ label {
     cursor: pointer;
 }
 
-.search-clear:hover {
-    background: var(--input-bg-hover);
-    color: var(--text-main);
+@media (hover: hover) {
+    .search-clear:hover {
+        background: var(--input-bg-hover);
+        color: var(--text-main);
+    }
 }
 
 .search-clear:focus-visible {
@@ -307,9 +316,11 @@ label {
     color: var(--text-muted);
 }
 
-.search-box input:hover {
-    border-color: var(--text-muted);
-    background-color: var(--input-bg-hover);
+@media (hover: hover) {
+    .search-box input:hover {
+        border-color: var(--text-muted);
+        background-color: var(--input-bg-hover);
+    }
 }
 
 .search-box input:focus,
@@ -384,8 +395,10 @@ label {
     background-clip: padding-box;
 }
 
-.home-control:hover {
-    background-color: var(--input-bg-hover);
+@media (hover: hover) {
+    .home-control:hover {
+        background-color: var(--input-bg-hover);
+    }
 }
 
 .home-control:focus-visible {
@@ -419,9 +432,11 @@ label {
     white-space: nowrap;
 }
 
-.context-reset:hover {
-    color: var(--accent-hover);
-    text-decoration: underline;
+@media (hover: hover) {
+    .context-reset:hover {
+        color: var(--accent-hover);
+        text-decoration: underline;
+    }
 }
 
 .context-reset:focus-visible {
@@ -716,8 +731,19 @@ label {
         padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
     }
 
+    /* Sit the language/theme icons level with the title and give the header
+       row equal breathing room above (panel padding) and below (to the search
+       field) — brainstorm-010 issue 1. Guarded by mobile-panel.spec.js. */
+    .panel-header {
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
     h1 {
         font-size: 1.05rem;
+        /* The subtitle it spaced is hidden here; the dead margin would push
+           the title off the row's centre. */
+        margin-bottom: 0;
     }
 
     p.subtitle {

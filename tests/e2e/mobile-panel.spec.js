@@ -60,16 +60,78 @@ test('home control sits on the zoom buttons’ vertical axis', async ({ page }) 
     expect(aligned).toBe(true);
 });
 
-test('home control returns to all stops and the city overview', async ({ page }) => {
+test('home control reveals all stops WITHOUT moving the camera', async ({ page }) => {
+    // brainstorm-010 issue 3: pressing "show all stops" must feel like the
+    // stops appearing at the same position and zoom the rider was looking at,
+    // NOT a jump to the whole-city overview.
     await openMap(page, { theme: 'dark' });
     await page.evaluate(() => window.__mvdSelectLine('405'));
     await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
 
+    // A deliberate neighbourhood view, far from CONFIG city overview (zoom 12).
+    await page.evaluate(() => {
+        window.__mvdMap.setView([-34.9, -56.19], 15, { animate: false });
+    });
+    const before = await page.evaluate(() => {
+        const c = window.__mvdMap.getCenter();
+        return { z: window.__mvdMap.getZoom(), lat: c.lat, lng: c.lng };
+    });
+
     await page.click('.home-control');
     await page.waitForFunction(() => window.__mvdGetRenderState().stops > 4000);
+
     expect(new URL(page.url()).hash).toBe('#/');
-    const zoom = await page.evaluate(() => window.__mvdMap.getZoom());
-    expect(zoom).toBe(12); // CONFIG.MAP_ZOOM — city overview restored
+    const after = await page.evaluate(() => {
+        const c = window.__mvdMap.getCenter();
+        return { z: window.__mvdMap.getZoom(), lat: c.lat, lng: c.lng };
+    });
+    expect(after.z).toBe(before.z);
+    expect(Math.abs(after.lat - before.lat)).toBeLessThan(1e-4);
+    expect(Math.abs(after.lng - before.lng)).toBeLessThan(1e-4);
+});
+
+test('the home control keeps its opaque colour on tap (no sticky hover)', async ({ page }) => {
+    // brainstorm-010 issue 2: on touch (hover:none) the :hover rule must not
+    // apply, so the button never turns into its translucent-white hover state.
+    await openMap(page, { theme: 'dark' });
+    expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true);
+
+    const base = await page.evaluate(
+        () => getComputedStyle(document.querySelector('.home-control')).backgroundColor,
+    );
+    expect(base).toBe('rgba(15, 23, 42, 0.95)'); // opaque panel base, not a hover tint
+
+    await page.hover('.home-control');
+    const afterHover = await page.evaluate(
+        () => getComputedStyle(document.querySelector('.home-control')).backgroundColor,
+    );
+    expect(afterHover).toBe(base);
+});
+
+test('header icons sit level with the title and the row is evenly spaced', async ({ page }) => {
+    // brainstorm-010 issue 1.
+    await openMap(page, { theme: 'dark' });
+    const g = await page.evaluate(() => {
+        const cy = (s) => {
+            const b = document.querySelector(s).getBoundingClientRect();
+            return (b.top + b.bottom) / 2;
+        };
+        const panel = document.getElementById('ui-panel').getBoundingClientRect();
+        const header = document.querySelector('.panel-header').getBoundingClientRect();
+        const search = document.querySelector('.search-box').getBoundingClientRect();
+        return {
+            title: cy('.title-link'),
+            lang: cy('.lang-switcher'),
+            theme: cy('.theme-toggle'),
+            above: header.top - panel.top,
+            below: search.top - header.bottom,
+        };
+    });
+    // Icons vertically centred on the title.
+    expect(Math.abs(g.lang - g.title)).toBeLessThan(2);
+    expect(Math.abs(g.theme - g.title)).toBeLessThan(2);
+    // Header row evenly spaced between the panel top and the search field.
+    expect(Math.abs(g.above - g.below)).toBeLessThan(3);
 });
 
 test('clear × in the field and the title link both go home', async ({ page }) => {
