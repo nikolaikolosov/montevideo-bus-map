@@ -32,6 +32,7 @@ import {
     renderGlobalStops,
     renderRoutes,
     focusStop,
+    resetCityView,
     locateUser,
     applyMapTheme,
     getRenderState,
@@ -271,8 +272,12 @@ async function initApp() {
         lastGeneratedAt = generatedAt;
         renderDataFreshness(generatedAt);
 
-        // Initialise Leaflet map
-        initMap();
+        // Initialise Leaflet map. The home control returns to the all-stops
+        // view AND the city overview camera (brainstorm-009 ideas 18 + 25).
+        initMap(() => {
+            router.go({ view: 'all' });
+            resetCityView();
+        });
 
         // Search over lines and stops — the primary entry to both jobs.
         const searchIndex = buildSearchIndex(sortedLines, uniqueStopsData);

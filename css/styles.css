@@ -195,9 +195,24 @@ body {
     background: var(--input-bg-hover);
 }
 
+/* Hover keeps the deepened shadow but no longer lifts the panel — the
+   2px translateY made the search field "jump" under the cursor
+   (brainstorm-009 addendum). */
 #ui-panel:hover {
-    transform: translateY(-2px);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* The title is a home link (brainstorm-009 idea 20): logo-tap = all stops. */
+.title-link {
+    color: inherit;
+    -webkit-text-fill-color: inherit;
+    text-decoration: none;
+}
+
+.title-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 h1 {
@@ -240,7 +255,7 @@ label {
     color: var(--text-main);
     font-family: 'Inter', sans-serif;
     font-size: 1rem;
-    padding: 12px 16px;
+    padding: 12px 38px 12px 40px;
     border-radius: 8px;
     outline: none;
     transition:
@@ -249,8 +264,43 @@ label {
         box-shadow 0.2s ease;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z'%3E%3C/path%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 12px center;
+    background-position: left 12px center;
     background-size: 18px;
+}
+
+/* The custom clear button owns the × — hide the native WebKit one. */
+.search-box input::-webkit-search-decoration,
+.search-box input::-webkit-search-cancel-button,
+.search-box input::-webkit-search-results-button,
+.search-box input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    display: none;
+}
+
+.search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.search-clear:hover {
+    background: var(--input-bg-hover);
+    color: var(--text-main);
+}
+
+.search-clear:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 
 .search-box input::placeholder {
@@ -317,6 +367,30 @@ label {
     color: var(--text-muted);
     font-size: 0.75rem;
     white-space: nowrap;
+}
+
+/* "Show all stops" map control — sits under the zoom buttons */
+.home-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    background: var(--panel-bg-fallback);
+    color: var(--text-main);
+    cursor: pointer;
+    background-clip: padding-box;
+}
+
+.home-control:hover {
+    background-color: var(--input-bg-hover);
+}
+
+.home-control:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 
 /* Downstream context bar — "Desde: PARADA (código)" + reset */
@@ -627,20 +701,77 @@ label {
 
 /* Responsive Mobile Layout */
 @media (max-width: 600px) {
+    /* Panel diet (brainstorm-009): the sheet must leave ~84% of the screen
+       to the map — subtitle and the visible label go, paddings tighten,
+       stats collapse into one row. Guarded by tests/e2e/mobile-panel.spec.js. */
     #ui-panel {
         top: auto;
         bottom: 0;
         left: 0;
         width: 100%;
-        border-radius: 20px 20px 0 0;
+        border-radius: 16px 16px 0 0;
         border-bottom: none;
         border-left: none;
         border-right: none;
-        padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
     }
 
     h1 {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
+    }
+
+    p.subtitle {
+        display: none;
+    }
+
+    .control-group {
+        gap: 0;
+    }
+
+    .control-group label {
+        /* Visually hidden, still announced (placeholder + aria carry the UI). */
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .search-box input {
+        padding-top: 9px;
+        padding-bottom: 9px;
+    }
+
+    #searchList {
+        top: auto;
+        bottom: calc(100% + 6px);
+        max-height: 45vh;
+    }
+
+    .route-info {
+        margin-top: 10px;
+        padding-top: 8px;
+        display: none;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .route-info.active {
+        display: flex;
+    }
+
+    .stat-row {
+        margin-bottom: 0;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        font-size: 0.72rem;
+    }
+
+    .data-freshness {
+        margin-top: 8px;
+        font-size: 0.68rem;
     }
 
     .leaflet-control-zoom {

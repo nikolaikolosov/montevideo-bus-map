@@ -201,7 +201,38 @@ export function applyMapTheme() {
  * Creates and configures the Leaflet map instance.
  * @returns {L.Map}
  */
-export function initMap() {
+/**
+ * Adds the "show all stops" map control under the zoom buttons (brainstorm-009
+ * idea 18): the visible, map-native way back to the home view — the slot where
+ * mobile map apps keep their view-reset controls.
+ * @param {() => void} onHome
+ */
+function addHomeControl(onHome) {
+    const HomeControl = L.Control.extend({
+        onAdd() {
+            const btn = L.DomUtil.create('button', 'home-control');
+            btn.type = 'button';
+            btn.innerHTML =
+                '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">' +
+                '<circle cx="6" cy="6" r="2.4" fill="currentColor"/>' +
+                '<circle cx="18" cy="6" r="2.4" fill="currentColor"/>' +
+                '<circle cx="6" cy="18" r="2.4" fill="currentColor"/>' +
+                '<circle cx="18" cy="18" r="2.4" fill="currentColor"/>' +
+                '<circle cx="12" cy="12" r="2.4" fill="currentColor"/></svg>';
+            btn.setAttribute('aria-label', t('map.showAllAria'));
+            btn.title = t('map.showAllAria');
+            // Picked up by applyTranslations on language switches.
+            btn.setAttribute('data-i18n-aria', 'map.showAllAria');
+            btn.setAttribute('data-i18n-title', 'map.showAllAria');
+            L.DomEvent.disableClickPropagation(btn);
+            L.DomEvent.on(btn, 'click', onHome);
+            return btn;
+        },
+    });
+    new HomeControl({ position: 'topright' }).addTo(map);
+}
+
+export function initMap(onHome) {
     const touch = isCoarsePointer();
 
     map = L.map('map', {
@@ -214,6 +245,7 @@ export function initMap() {
     }).setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
 
     L.control.zoom({ position: 'topright' }).addTo(map);
+    if (onHome) addHomeControl(onHome);
 
     baseTileLayer = L.tileLayer(CONFIG.TILE_URLS[getTheme()], {
         attribution:
@@ -234,6 +266,11 @@ export function initMap() {
     window.__mvdMap = map;
 
     return map;
+}
+
+/** Returns the camera to the default city overview (home control, FAB). */
+export function resetCityView() {
+    map?.setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
 }
 
 // ---------------------------------------------------------------------------
