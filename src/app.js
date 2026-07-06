@@ -8,22 +8,30 @@
  *  - Wire up UI events
  *  - Orchestrate rendering calls
  *
+ * Navigation model (design/ux-review-001.md P1): the hash URL is the source
+ * of truth. UI events (search picks, popup chips, reset buttons) call
+ * router.go(); the single onRoute listener renders. Back/forward replay
+ * states, every view is shareable.
+ *
  * All heavy logic lives in the dedicated modules (data, map, ui, utils).
  */
 
 import { CONFIG } from './config.js';
-import { debounce, isCoarsePointer } from './utils.js';
+import { isCoarsePointer } from './utils.js';
 import {
     buildIndexes,
     getSortedLines,
+    uniqueStopsData,
     uniqueStopByCode,
     stopLinesMap,
     stopVariantsMap,
+    getStopLineVariants,
 } from './data.js';
 import {
     initMap,
     renderGlobalStops,
     renderRoutes,
+    focusStop,
     locateUser,
     applyMapTheme,
     getRenderState,
@@ -31,10 +39,14 @@ import {
 } from './map.js';
 import { initTheme, getTheme, setThemeOverride, onThemeChange } from './theme.js';
 import { initLang, setLang, onLangChange, applyTranslations, t } from './i18n.js';
+import { buildSearchIndex } from './search.js';
+import * as router from './router.js';
 import {
     hideLoader,
     showError,
-    populateRouteSelect,
+    initSearchBox,
+    setSearchDisplay,
+    renderContextBar,
     updateStatsPanel,
     renderDataFreshness,
     initThemeToggle,
@@ -93,73 +105,117 @@ async function loadData() {
 }
 
 // ---------------------------------------------------------------------------
-// Route display helpers
+// State → render
 // ---------------------------------------------------------------------------
 
-/** Shared callback passed into popups so they can trigger route display. */
+/** The route state currently on screen (for language re-labelling). */
+let currentState = { view: 'all' };
+
+/** Popup callback: chips and "Ver todos" navigate; the router renders. */
 function handleShowRoutes(linesArr, variantsArr, sourceFeature) {
-    const { variantCount, stopCount } = renderRoutes({
-        lineIds: linesArr,
-        variantsArr,
-        sourceFeature,
-        onShowRoutes: handleShowRoutes,
-    });
-
-    updateStatsPanel({
-        show: true,
-        variantCount: linesArr.length === 1 ? variantCount : null,
-        stopCount,
-        selectedValue: linesArr.length === 1 ? linesArr[0] : '',
-    });
+    const stop = sourceFeature?.properties?.COD_UBIC_P;
+    if (stop != null) {
+        router.go({
+            view: 'downstream',
+            stop,
+            line: linesArr.length === 1 ? linesArr[0] : null,
+        });
+    } else if (linesArr.length === 1) {
+        router.go({ view: 'line', line: linesArr[0] });
+    }
 }
 
-function handleSelectLine(lineId) {
-    const { variantCount, stopCount } = renderRoutes({
-        lineIds: [lineId],
-        onShowRoutes: handleShowRoutes,
-    });
+const sortLines = (arr) =>
+    [...arr].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-    updateStatsPanel({
-        show: true,
-        variantCount,
-        stopCount,
-        selectedValue: lineId,
-    });
+const stopDisplayName = (feature) => {
+    const { CALLE = '', ESQUINA = '' } = feature.properties;
+    return ESQUINA && ESQUINA !== 'Desconocida' ? `${CALLE} y ${ESQUINA}` : CALLE;
+};
+
+/** Renders one route state. The only caller is the router. */
+function renderForState(state) {
+    closeMapPopup();
+
+    // Stale deep links (a line/stop gone after a data update) land safely home.
+    if (state.view === 'line' && !stateLineExists(state.line)) state = { view: 'all' };
+    if ((state.view === 'stop' || state.view === 'downstream') && !uniqueStopByCode.has(state.stop))
+        state = { view: 'all' };
+    currentState = state;
+
+    switch (state.view) {
+        case 'line': {
+            const { variantCount, stopCount } = renderRoutes({
+                lineIds: [state.line],
+                onShowRoutes: handleShowRoutes,
+            });
+            updateStatsPanel({ show: true, variantCount, stopCount });
+            setSearchDisplay(t('panel.lineOption', { id: state.line }));
+            renderContextBar(null);
+            break;
+        }
+        case 'stop': {
+            renderGlobalStops(handleShowRoutes);
+            updateStatsPanel({ show: false });
+            const feature = uniqueStopByCode.get(state.stop);
+            setSearchDisplay(stopDisplayName(feature));
+            renderContextBar(null);
+            focusStop(state.stop);
+            break;
+        }
+        case 'downstream': {
+            const feature = uniqueStopByCode.get(state.stop);
+            const single = state.line !== null;
+            const lineIds = single ? [state.line] : sortLines(stopLinesMap.get(state.stop) ?? []);
+            const variantsArr = single
+                ? getStopLineVariants(state.stop, state.line)
+                : Array.from(stopVariantsMap.get(state.stop) ?? []);
+            const { variantCount, stopCount } = renderRoutes({
+                lineIds,
+                variantsArr,
+                sourceFeature: feature,
+                onShowRoutes: handleShowRoutes,
+            });
+            updateStatsPanel({
+                show: true,
+                variantCount: single ? variantCount : null,
+                stopCount,
+            });
+            setSearchDisplay(single ? t('panel.lineOption', { id: state.line }) : '');
+            renderContextBar({ name: stopDisplayName(feature), code: state.stop, single }, () =>
+                single
+                    ? router.go({ view: 'line', line: state.line })
+                    : router.go({ view: 'stop', stop: state.stop }),
+            );
+            break;
+        }
+        default: {
+            renderGlobalStops(handleShowRoutes);
+            updateStatsPanel({ show: false });
+            setSearchDisplay('');
+            renderContextBar(null);
+        }
+    }
 }
 
-function handleShowAllStops() {
-    renderGlobalStops(handleShowRoutes);
-    updateStatsPanel({ show: false });
-}
+let lineSet = new Set();
+const stateLineExists = (line) => lineSet.has(line);
 
 /**
- * Console/debug hook: triggers "Ver rutas" for a stop by its code, exactly as
- * clicking the button in the stop's popup would. Used for scripted visual
- * verification; harmless in production.
- * @param {number} stopCode - COD_UBIC_P
- * @returns {boolean} true if the stop exists and routes were rendered
- */
-/**
- * Debug/verification hooks (pair with __mvdShowStopRoutes below):
- * __mvdSelectLine renders a line exactly as picking it in the dropdown would
- * (without the UI debounce); __mvdGetRenderState returns a deterministic
- * snapshot of the rendered layers for the golden render-sweep e2e test.
+ * Console/debug hooks (scripted verification; harmless in production):
+ * __mvdSelectLine renders a line exactly as picking it in the search box
+ * would; __mvdShowStopRoutes mirrors a popup's "Ver todos" tap;
+ * __mvdGetRenderState returns a deterministic snapshot of the rendered
+ * layers for the golden render-sweep e2e test.
  */
 window.__mvdSelectLine = (lineId) => {
-    handleSelectLine(lineId);
-    const select = document.getElementById('routeSelect');
-    if (select) select.value = lineId;
+    router.go({ view: 'line', line: lineId });
 };
 window.__mvdGetRenderState = getRenderState;
 
 window.__mvdShowStopRoutes = (stopCode) => {
-    const stopFeature = uniqueStopByCode.get(stopCode);
-    if (!stopFeature) return false;
-    const linesArr = Array.from(stopLinesMap.get(stopCode) ?? []).sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }),
-    );
-    const variantsArr = Array.from(stopVariantsMap.get(stopCode) ?? []);
-    handleShowRoutes(linesArr, variantsArr, stopFeature);
+    if (!uniqueStopByCode.has(stopCode)) return false;
+    router.go({ view: 'downstream', stop: stopCode, line: null });
     return true;
 };
 
@@ -169,8 +225,6 @@ window.__mvdShowStopRoutes = (stopCode) => {
 
 /** Kept for language switches: the freshness line re-renders localized. */
 let lastGeneratedAt = null;
-/** Guards language-switch re-population before the data is indexed. */
-let dataReady = false;
 
 async function initApp() {
     try {
@@ -185,15 +239,11 @@ async function initApp() {
             updateLangSwitcher();
             updateThemeToggle(getTheme());
             renderDataFreshness(lastGeneratedAt);
-            if (dataReady) {
-                const select = document.getElementById('routeSelect');
-                const selected = select?.value;
-                populateRouteSelect(getSortedLines());
-                if (select && selected) select.value = selected;
-            }
-            // An open popup keeps its old-language DOM; popups regenerate
-            // their content on open, so just close it.
+            // Re-label the state-dependent widgets in the new language; the
+            // map layers themselves are language-free. An open popup keeps
+            // its old-language DOM; popups regenerate on open, so close it.
             closeMapPopup();
+            relabelForLang();
         });
 
         // Theme next, so the loader/panel and the initial tiles are correct.
@@ -212,7 +262,10 @@ async function initApp() {
 
         // Build O(1) lookup indexes (runs once, not on every interaction)
         buildIndexes(routesData, stopsData);
-        dataReady = true;
+        const sortedLines = getSortedLines();
+        lineSet = new Set(sortedLines);
+        // Debug/verification hook: the full line list (render-sweep e2e).
+        window.__mvdLines = sortedLines;
 
         // Show when the data was generated (manual-update workflow)
         lastGeneratedAt = generatedAt;
@@ -221,31 +274,26 @@ async function initApp() {
         // Initialise Leaflet map
         initMap();
 
-        // Populate the route selector dropdown
-        const sortedLines = getSortedLines();
-        populateRouteSelect(sortedLines);
+        // Search over lines and stops — the primary entry to both jobs.
+        const searchIndex = buildSearchIndex(sortedLines, uniqueStopsData);
+        initSearchBox({
+            search: (q) => searchIndex.search(q),
+            lines: sortedLines,
+            onPick: (entry) => {
+                if (entry.type === 'line') router.go({ view: 'line', line: entry.id });
+                else if (entry.type === 'stop') router.go({ view: 'stop', stop: entry.code });
+                else router.go({ view: 'all' });
+            },
+        });
 
-        // Wire up select change with debounce to avoid expensive rerenders
-        const select = document.getElementById('routeSelect');
-        select.addEventListener(
-            'change',
-            debounce((e) => {
-                const val = e.target.value;
-                if (val === 'ALL_STOPS') {
-                    handleShowAllStops();
-                } else {
-                    handleSelectLine(val);
-                }
-            }, CONFIG.SELECT_CHANGE_DEBOUNCE_MS),
-        );
+        // URL is the source of truth: render the deep-linked state (or home)
+        // and follow back/forward from here on.
+        const initial = router.start(renderForState);
 
-        // Default view — all stops
-        select.value = 'ALL_STOPS';
-        handleShowAllStops();
-
-        // On mobile, centre the map on the user's current location.
+        // On mobile, centre the map on the user's current location — but only
+        // on the home view (never yank the camera away from a deep link).
         // (Asks for permission; silently keeps the city view if denied.)
-        if (isCoarsePointer()) locateUser();
+        if (initial.view === 'all' && isCoarsePointer()) locateUser();
 
         hideLoader();
     } catch (err) {
@@ -253,6 +301,23 @@ async function initApp() {
         const msg =
             err.name === 'AbortError' ? t('error.timeout') : err.message || t('error.unknown');
         showError(msg);
+    }
+}
+
+/** Refreshes search display + context bar texts after a language switch. */
+function relabelForLang() {
+    const s = currentState;
+    if (s.view === 'line') {
+        setSearchDisplay(t('panel.lineOption', { id: s.line }));
+    } else if (s.view === 'downstream' && uniqueStopByCode.has(s.stop)) {
+        const feature = uniqueStopByCode.get(s.stop);
+        const single = s.line !== null;
+        setSearchDisplay(single ? t('panel.lineOption', { id: s.line }) : '');
+        renderContextBar({ name: stopDisplayName(feature), code: s.stop, single }, () =>
+            single
+                ? router.go({ view: 'line', line: s.line })
+                : router.go({ view: 'stop', stop: s.stop }),
+        );
     }
 }
 

@@ -22,11 +22,7 @@ test('render manifest of all lines matches the golden', async ({ page }) => {
     test.setTimeout(600_000);
     await openMap(page, { theme: 'dark' });
 
-    const lines = await page.evaluate(() =>
-        [...document.querySelectorAll('#routeSelect option')]
-            .map((o) => o.value)
-            .filter((v) => v && v !== 'ALL_STOPS'),
-    );
+    const lines = await page.evaluate(() => window.__mvdLines);
     expect(lines).toHaveLength(140);
 
     const manifest = {};

@@ -9,17 +9,24 @@ import { openMap, openStopPopup } from './helpers.js';
 test('switching to Russian localizes panel, popup and <html lang>', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
 
-    await expect(page.locator('label[for="routeSelect"]')).toHaveText('Línea');
+    await expect(page.locator('label[for="searchInput"]')).toHaveText('Buscar');
 
     await page.click('.lang-btn[data-lang="ru"]');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-    await expect(page.locator('label[for="routeSelect"]')).toHaveText('Линия');
+    await expect(page.locator('label[for="searchInput"]')).toHaveText('Поиск');
+    await expect(page.locator('#searchInput')).toHaveAttribute(
+        'placeholder',
+        'Линия или остановка…',
+    );
     await expect(page.locator('.subtitle')).toHaveText('Интерактивная карта маршрутов');
     await expect(page.locator('.lang-btn[data-lang="ru"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#routeSelect option[value="ALL_STOPS"]')).toHaveText(
+    // The browsable default list of the search box localizes too.
+    await page.focus('#searchInput');
+    await expect(page.locator('#searchList [role="option"]').first()).toHaveText(
         '📍 Показать все остановки',
     );
+    await page.keyboard.press('Escape');
 
     // Popups regenerate their content in the active language on open.
     await openStopPopup(page, 4772);
@@ -32,12 +39,12 @@ test('the choice persists across reloads and English works too', async ({ page }
     // persisted user choice is exactly what this test verifies.
     await openMap(page, { theme: 'dark', lang: false });
     await page.click('.lang-btn[data-lang="en"]');
-    await expect(page.locator('label[for="routeSelect"]')).toHaveText('Line');
+    await expect(page.locator('label[for="searchInput"]')).toHaveText('Search');
 
     await page.reload();
     await page.waitForFunction(() => document.getElementById('loader').style.display === 'none');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('label[for="routeSelect"]')).toHaveText('Line');
+    await expect(page.locator('label[for="searchInput"]')).toHaveText('Search');
     await expect(page.locator('.subtitle')).toHaveText('Interactive route explorer');
 });
 
@@ -46,19 +53,19 @@ test('full es→en→ru→es cycle keeps every surface consistent', async ({ pag
 
     const surfaces = {
         es: {
-            label: 'Línea',
+            label: 'Buscar',
             subtitle: 'Explorador interactivo de recorridos',
             title: 'Montevideo Transit — recorridos de ómnibus de Montevideo',
             freshness: /Datos al /,
         },
         en: {
-            label: 'Line',
+            label: 'Search',
             subtitle: 'Interactive route explorer',
             title: 'Montevideo Transit — Montevideo bus routes',
             freshness: /Data as of /,
         },
         ru: {
-            label: 'Линия',
+            label: 'Поиск',
             subtitle: 'Интерактивная карта маршрутов',
             title: 'Montevideo Transit — маршруты автобусов Монтевидео',
             freshness: /Данные на /,
@@ -69,7 +76,7 @@ test('full es→en→ru→es cycle keeps every surface consistent', async ({ pag
         await page.click(`.lang-btn[data-lang="${lang}"]`);
         const s = surfaces[lang];
         await expect(page.locator('html')).toHaveAttribute('lang', lang);
-        await expect(page.locator('label[for="routeSelect"]')).toHaveText(s.label);
+        await expect(page.locator('label[for="searchInput"]')).toHaveText(s.label);
         await expect(page.locator('.subtitle')).toHaveText(s.subtitle);
         await expect(page).toHaveTitle(s.title);
         await expect(page.locator('#dataFreshness')).toHaveText(s.freshness);
@@ -85,25 +92,25 @@ test('full es→en→ru→es cycle keeps every surface consistent', async ({ pag
 test('switching language closes an open popup and keeps the selected line', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
 
-    // Select a line via the dropdown, then switch language: the selection
-    // must survive the option re-population.
+    // Select a line via the search box, then switch language: the displayed
+    // selection must re-label in the new language (state survives).
     await page.evaluate(() => {
         window.__mvdSelectLine('100');
     });
-    await expect(page.locator('#routeSelect')).toHaveValue('100');
+    await expect(page.locator('#searchInput')).toHaveValue('Línea 100');
+    expect(new URL(page.url()).hash).toBe('#/linea/100');
 
     await page.click('.lang-btn[data-lang="en"]');
-    await expect(page.locator('#routeSelect')).toHaveValue('100');
-    await expect(page.locator('#routeSelect option[value="100"]')).toHaveText('Line 100');
+    await expect(page.locator('#searchInput')).toHaveValue('Line 100');
+    expect(new URL(page.url()).hash).toBe('#/linea/100');
 
     // Back to the global stops view; open a stop popup and switch language:
     // the stale-language popup closes, reopening renders the new language.
     await page.click('.lang-btn[data-lang="es"]');
     await page.evaluate(() => {
-        document.getElementById('routeSelect').value = 'ALL_STOPS';
-        document.getElementById('routeSelect').dispatchEvent(new Event('change'));
+        location.hash = '#/';
     });
-    await page.waitForTimeout(600); // select-change debounce + render
+    await page.waitForFunction(() => window.__mvdGetRenderState().stops > 1000);
     await openStopPopup(page, 4018);
     await expect(page.locator('.draw-lines-btn')).toHaveText('Ver todos los recorridos');
 

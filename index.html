@@ -61,13 +61,20 @@
         <p class="subtitle" data-i18n="app.subtitle">Explorador interactivo de recorridos</p>
 
         <div class="control-group">
-            <label for="routeSelect" data-i18n="panel.selectLabel">Línea</label>
-            <select id="routeSelect" aria-label="Elegí una línea de ómnibus"
-                data-i18n-aria="panel.selectAria">
-                <option value="" disabled selected data-i18n="panel.selectPlaceholder">Elegí una
-                    línea…</option>
-                <!-- Options populated by JS -->
-            </select>
+            <label for="searchInput" data-i18n="search.label">Buscar</label>
+            <div class="search-box">
+                <input id="searchInput" type="text" role="combobox" autocomplete="off"
+                    spellcheck="false" aria-expanded="false" aria-controls="searchList"
+                    aria-autocomplete="list" placeholder="Línea o parada…"
+                    data-i18n-placeholder="search.placeholder"
+                    aria-label="Buscá una línea o una parada" data-i18n-aria="search.aria">
+                <ul id="searchList" role="listbox" hidden></ul>
+            </div>
+        </div>
+
+        <div id="contextBar" class="context-bar" hidden>
+            <span id="contextText"></span>
+            <button type="button" id="contextReset" class="context-reset"></button>
         </div>
 
         <div id="routeInfo" class="route-info" aria-live="polite">

@@ -2,7 +2,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     renderDataFreshness,
-    populateRouteSelect,
+    initSearchBox,
+    setSearchDisplay,
+    renderContextBar,
     updateThemeToggle,
     initThemeToggle,
 } from '../../src/ui.js';
@@ -84,14 +86,120 @@ describe('theme toggle', () => {
     });
 });
 
-describe('populateRouteSelect', () => {
-    it('prepends the ALL_STOPS option and lists lines in order', () => {
-        document.body.innerHTML = '<select id="routeSelect"></select>';
-        populateRouteSelect(['7', '100']);
-        const options = [...document.querySelectorAll('#routeSelect option')];
-        expect(options[0].value).toBe('ALL_STOPS');
-        expect(options.map((o) => o.value)).toEqual(['ALL_STOPS', '7', '100']);
-        expect(options[2].textContent).toBe('Línea 100');
+describe('search combobox', () => {
+    const STOP_ENTRY = { type: 'stop', code: 4772, name: 'BUENOS AIRES', esquina: 'ITUZAINGO' };
+
+    const mount = (results = []) => {
+        document.body.innerHTML = `
+            <div class="search-box">
+                <input id="searchInput" role="combobox" aria-expanded="false"
+                       aria-controls="searchList">
+                <ul id="searchList" role="listbox" hidden></ul>
+            </div>`;
+        const onPick = vi.fn();
+        initSearchBox({ search: () => results, lines: ['7', '100'], onPick });
+        return { input: document.getElementById('searchInput'), onPick };
+    };
+
+    const type = (input, value) => {
+        input.value = value;
+        input.dispatchEvent(new Event('input'));
+    };
+    const key = (input, k) =>
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+
+    it('opens a browsable default list on focus: all-stops + every line', () => {
+        const { input } = mount();
+        input.dispatchEvent(new Event('focus'));
+        const opts = [...document.querySelectorAll('#searchList [role="option"]')];
+        expect(input.getAttribute('aria-expanded')).toBe('true');
+        expect(opts).toHaveLength(3);
+        expect(opts[0].textContent).toBe(t('panel.allStops'));
+        expect(opts[1].textContent).toContain('Línea 7');
+    });
+
+    it('renders query results with stop sub-labels and picks on click', () => {
+        const { input, onPick } = mount([STOP_ENTRY]);
+        type(input, 'buenos');
+        const opt = document.querySelector('#searchList [role="option"]');
+        expect(opt.textContent).toContain('BUENOS AIRES y ITUZAINGO');
+        expect(opt.textContent).toContain('4772');
+        opt.click();
+        expect(onPick).toHaveBeenCalledWith(STOP_ENTRY);
+        expect(document.getElementById('searchList').hidden).toBe(true);
+    });
+
+    it('is keyboard-operable: arrows set aria-activedescendant, Enter picks', () => {
+        const { input, onPick } = mount([{ type: 'line', id: '7' }, STOP_ENTRY]);
+        type(input, '7');
+        key(input, 'ArrowDown');
+        expect(input.getAttribute('aria-activedescendant')).toBe('search-opt-0');
+        key(input, 'ArrowDown');
+        expect(input.getAttribute('aria-activedescendant')).toBe('search-opt-1');
+        key(input, 'Enter');
+        expect(onPick).toHaveBeenCalledWith(STOP_ENTRY);
+    });
+
+    it('Enter with no highlight picks the first result; Escape closes', () => {
+        const { input, onPick } = mount([{ type: 'line', id: '7' }]);
+        type(input, '7');
+        key(input, 'Enter');
+        expect(onPick).toHaveBeenCalledWith({ type: 'line', id: '7' });
+        type(input, '7');
+        key(input, 'Escape');
+        expect(document.getElementById('searchList').hidden).toBe(true);
+        expect(input.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('shows a disabled no-results row', () => {
+        const { input } = mount([]);
+        type(input, 'zzz');
+        const empty = document.querySelector('#searchList .search-empty');
+        expect(empty.textContent).toBe(t('search.noResults'));
+    });
+
+    it('setSearchDisplay reflects and clears the selection', () => {
+        const { input } = mount();
+        setSearchDisplay('Línea 104');
+        expect(input.value).toBe('Línea 104');
+        setSearchDisplay('');
+        expect(input.value).toBe('');
+    });
+});
+
+describe('context bar', () => {
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div id="contextBar" class="context-bar" hidden>
+                <span id="contextText"></span>
+                <button type="button" id="contextReset"></button>
+            </div>`;
+    });
+
+    it('shows origin stop and the right reset label per mode', () => {
+        renderContextBar({ name: 'BUENOS AIRES y ITUZAINGO', code: 4772, single: true });
+        const bar = document.getElementById('contextBar');
+        expect(bar.hidden).toBe(false);
+        expect(document.getElementById('contextText').textContent).toBe(
+            'Desde: BUENOS AIRES y ITUZAINGO (4772)',
+        );
+        expect(document.getElementById('contextReset').textContent).toBe(t('context.wholeLine'));
+
+        renderContextBar({ name: 'X', code: 1, single: false });
+        expect(document.getElementById('contextReset').textContent).toBe(t('context.backToStop'));
+    });
+
+    it('fires the latest reset handler only, and hides on null', () => {
+        const first = vi.fn();
+        const second = vi.fn();
+        renderContextBar({ name: 'X', code: 1, single: true }, first);
+        renderContextBar({ name: 'X', code: 1, single: true }, second);
+        document.getElementById('contextReset').click();
+        expect(first).not.toHaveBeenCalled();
+        expect(second).toHaveBeenCalledTimes(1);
+
+        renderContextBar(null);
+        expect(document.getElementById('contextBar').hidden).toBe(true);
     });
 });
 
@@ -124,18 +232,23 @@ describe('localized UI helpers (i18n)', () => {
         expect(btn.getAttribute('aria-label')).toBe('Переключить на тёмную тему');
     });
 
-    it('populateRouteSelect re-populates without duplicating and localizes options', () => {
-        document.body.innerHTML =
-            '<select id="routeSelect"><option value="" disabled selected>…</option></select>';
-        populateRouteSelect(['7', '100']);
+    it('search default list and context bar speak the active language', () => {
+        document.body.innerHTML = `
+            <div class="search-box">
+                <input id="searchInput" role="combobox" aria-controls="searchList">
+                <ul id="searchList" role="listbox" hidden></ul>
+            </div>
+            <div id="contextBar" hidden><span id="contextText"></span>
+                <button id="contextReset"></button></div>`;
+        initSearchBox({ search: () => [], lines: ['100'], onPick: () => {} });
         setLang('ru');
-        populateRouteSelect(['7', '100']); // language-switch path repopulates
-        const options = [...document.querySelectorAll('#routeSelect option')];
-        // placeholder + ALL_STOPS + two lines — no duplicates from the rerun
-        expect(options).toHaveLength(4);
-        expect(options[1].textContent).toBe('📍 Показать все остановки');
-        expect(options[3].textContent).toBe('Линия 100');
-        // the disabled placeholder survives (applyTranslations owns its text)
-        expect(options[0].disabled).toBe(true);
+        document.getElementById('searchInput').dispatchEvent(new Event('focus'));
+        const opts = [...document.querySelectorAll('#searchList [role="option"]')];
+        expect(opts[0].textContent).toBe('📍 Показать все остановки');
+        expect(opts[1].textContent).toContain('Линия 100');
+
+        renderContextBar({ name: 'X', code: 1, single: true });
+        expect(document.getElementById('contextText').textContent).toBe('От: X (1)');
+        expect(document.getElementById('contextReset').textContent).toBe('Вся линия');
     });
 });

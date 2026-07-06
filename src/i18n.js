@@ -36,9 +36,13 @@ const STRINGS = {
         'error.timeout': 'La descarga de datos superó el tiempo límite. Verificá tu conexión.',
         'error.unknown': 'Error desconocido al cargar los datos.',
         'error.badFormat': 'Los datos descargados tienen un formato inesperado.',
-        'panel.selectLabel': 'Línea',
-        'panel.selectAria': 'Elegí una línea de ómnibus',
-        'panel.selectPlaceholder': 'Elegí una línea…',
+        'search.label': 'Buscar',
+        'search.aria': 'Buscá una línea o una parada',
+        'search.placeholder': 'Línea o parada…',
+        'search.noResults': 'Sin resultados',
+        'context.from': 'Desde: {name}',
+        'context.wholeLine': 'Toda la línea',
+        'context.backToStop': 'Volver a la parada',
         'panel.allStops': '📍 Ver todas las paradas',
         'panel.lineOption': 'Línea {id}',
         'panel.statVariants': 'Variantes de recorrido',
@@ -70,9 +74,13 @@ const STRINGS = {
         'error.timeout': 'The data download timed out. Check your connection.',
         'error.unknown': 'Unknown error while loading the data.',
         'error.badFormat': 'The downloaded data has an unexpected format.',
-        'panel.selectLabel': 'Line',
-        'panel.selectAria': 'Choose a bus line',
-        'panel.selectPlaceholder': 'Choose a line…',
+        'search.label': 'Search',
+        'search.aria': 'Search for a line or a stop',
+        'search.placeholder': 'Line or stop…',
+        'search.noResults': 'No results',
+        'context.from': 'From: {name}',
+        'context.wholeLine': 'Whole line',
+        'context.backToStop': 'Back to the stop',
         'panel.allStops': '📍 Show all stops',
         'panel.lineOption': 'Line {id}',
         'panel.statVariants': 'Route variants',
@@ -104,9 +112,13 @@ const STRINGS = {
         'error.timeout': 'Загрузка данных превысила лимит времени. Проверьте соединение.',
         'error.unknown': 'Неизвестная ошибка при загрузке данных.',
         'error.badFormat': 'Загруженные данные имеют неожиданный формат.',
-        'panel.selectLabel': 'Линия',
-        'panel.selectAria': 'Выберите автобусную линию',
-        'panel.selectPlaceholder': 'Выберите линию…',
+        'search.label': 'Поиск',
+        'search.aria': 'Найдите линию или остановку',
+        'search.placeholder': 'Линия или остановка…',
+        'search.noResults': 'Ничего не найдено',
+        'context.from': 'От: {name}',
+        'context.wholeLine': 'Вся линия',
+        'context.backToStop': 'К остановке',
         'panel.allStops': '📍 Показать все остановки',
         'panel.lineOption': 'Линия {id}',
         'panel.statVariants': 'Вариантов маршрута',
@@ -240,6 +252,9 @@ export function applyTranslations(root = document) {
     }
     for (const el of root.querySelectorAll('[data-i18n-title]')) {
         el.title = t(el.getAttribute('data-i18n-title'));
+    }
+    for (const el of root.querySelectorAll('[data-i18n-placeholder]')) {
+        el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
     }
     document.title = t('app.title');
 }

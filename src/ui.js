@@ -5,6 +5,7 @@
 
 import { CONFIG } from './config.js';
 import { t, getLang, LOCALE_TAGS } from './i18n.js';
+import { getLineColor } from './data.js';
 
 // ---------------------------------------------------------------------------
 // Loader & error states
@@ -128,31 +129,175 @@ export function renderDataFreshness(value) {
 }
 
 // ---------------------------------------------------------------------------
-// Dropdown population
+// Search combobox (design/ux-review-001.md R1)
 // ---------------------------------------------------------------------------
 
 /**
- * Populates the route selector with sorted line options.
- * @param {string[]} sortedLines
+ * Wires the line/stop search combobox (WAI-ARIA combobox + listbox).
+ *
+ * The empty query shows a browsable default list — "all stops" plus every
+ * line — preserving the old dropdown's discoverability; typing filters via
+ * the search index. Fully keyboard-operable: ↓/↑ move, Enter picks, Esc
+ * closes. This is also the app's keyboard path to stop popups (canvas
+ * markers are not focusable).
+ *
+ * @param {object} options
+ * @param {(q: string) => import('./search.js').SearchEntry[]} options.search
+ * @param {string[]} options.lines - all line ids (default browse list)
+ * @param {(entry: {type: string, id?: string, code?: number}) => void} options.onPick
  */
-export function populateRouteSelect(sortedLines) {
-    const select = document.getElementById('routeSelect');
+export function initSearchBox({ search, lines, onPick }) {
+    const input = document.getElementById('searchInput');
+    const list = document.getElementById('searchList');
+    if (!input || !list) return;
 
-    // Drop previously generated options (language switch repopulates), keep
-    // the placeholder (translated via data-i18n).
-    for (const opt of [...select.querySelectorAll('option:not([disabled])')]) opt.remove();
+    let entries = [];
+    let active = -1;
 
-    const clearOpt = document.createElement('option');
-    clearOpt.value = 'ALL_STOPS';
-    clearOpt.textContent = t('panel.allStops');
-    select.appendChild(clearOpt);
+    const close = () => {
+        list.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        input.removeAttribute('aria-activedescendant');
+        active = -1;
+    };
 
-    sortedLines.forEach((linea) => {
-        const opt = document.createElement('option');
-        opt.value = linea;
-        opt.textContent = t('panel.lineOption', { id: linea });
-        select.appendChild(opt);
+    const optionRow = (entry, i) => {
+        const li = document.createElement('li');
+        li.id = `search-opt-${i}`;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', 'false');
+        li.dataset.index = i;
+        if (entry.type === 'all') {
+            li.textContent = t('panel.allStops');
+        } else if (entry.type === 'line') {
+            const dot = document.createElement('span');
+            dot.className = 'search-dot';
+            dot.style.background = getLineColor(entry.id);
+            li.appendChild(dot);
+            li.appendChild(document.createTextNode(t('panel.lineOption', { id: entry.id })));
+        } else {
+            const name = document.createElement('span');
+            name.textContent =
+                entry.esquina && entry.esquina !== 'Desconocida'
+                    ? `${entry.name} y ${entry.esquina}`
+                    : entry.name;
+            const sub = document.createElement('span');
+            sub.className = 'search-sub';
+            sub.textContent = t('popup.stop', { cod: entry.code });
+            li.append(name, sub);
+        }
+        li.addEventListener('mousedown', (e) => e.preventDefault()); // keep input focus
+        li.addEventListener('click', () => {
+            close();
+            onPick(entry);
+        });
+        return li;
+    };
+
+    const render = () => {
+        const q = input.value.trim();
+        entries =
+            q.length === 0
+                ? [{ type: 'all' }, ...lines.map((id) => ({ type: 'line', id }))]
+                : search(q);
+        list.textContent = '';
+        if (entries.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'search-empty';
+            li.setAttribute('role', 'option');
+            li.setAttribute('aria-disabled', 'true');
+            li.textContent = t('search.noResults');
+            list.appendChild(li);
+        } else {
+            entries.forEach((entry, i) => list.appendChild(optionRow(entry, i)));
+        }
+        list.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        setActive(-1);
+    };
+
+    const setActive = (i) => {
+        const opts = list.querySelectorAll('[role="option"]:not(.search-empty)');
+        if (active >= 0 && opts[active]) opts[active].setAttribute('aria-selected', 'false');
+        active = i;
+        if (i >= 0 && opts[i]) {
+            opts[i].setAttribute('aria-selected', 'true');
+            input.setAttribute('aria-activedescendant', opts[i].id);
+            opts[i].scrollIntoView?.({ block: 'nearest' });
+        } else {
+            input.removeAttribute('aria-activedescendant');
+        }
+    };
+
+    input.addEventListener('input', render);
+    input.addEventListener('focus', render);
+    input.addEventListener('keydown', (e) => {
+        if (list.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            render();
+            e.preventDefault();
+            return;
+        }
+        if (list.hidden) return;
+        if (e.key === 'ArrowDown') {
+            setActive(active + 1 >= entries.length ? 0 : active + 1);
+            e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+            setActive(active - 1 < 0 ? entries.length - 1 : active - 1);
+            e.preventDefault();
+        } else if (e.key === 'Enter') {
+            const entry = entries[active >= 0 ? active : 0];
+            if (entry) {
+                close();
+                onPick(entry);
+            }
+            e.preventDefault();
+        } else if (e.key === 'Escape') {
+            close();
+        } else if (e.key === 'Tab') {
+            close();
+        }
     });
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !list.contains(e.target)) close();
+    });
+}
+
+/**
+ * Reflects the current selection in the search input ('' clears it).
+ * @param {string} text
+ */
+export function setSearchDisplay(text) {
+    const input = document.getElementById('searchInput');
+    if (input) input.value = text;
+}
+
+// ---------------------------------------------------------------------------
+// Downstream context bar (design/ux-review-001.md R3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Shows where a downstream view starts and offers the way back — without it,
+ * a rendered tail is indistinguishable from a whole line.
+ *
+ * @param {{name: string, code: number, single: boolean}|null} info - null hides
+ * @param {() => void} [onReset] - reset handler (re-wired on every render)
+ */
+export function renderContextBar(info, onReset) {
+    const bar = document.getElementById('contextBar');
+    if (!bar) return;
+    const text = document.getElementById('contextText');
+    const reset = document.getElementById('contextReset');
+    if (!info) {
+        bar.hidden = true;
+        return;
+    }
+    text.textContent = t('context.from', { name: `${info.name} (${info.code})` });
+    reset.textContent = info.single ? t('context.wholeLine') : t('context.backToStop');
+    // Replace the node to drop the previous listener.
+    const fresh = reset.cloneNode(true);
+    reset.replaceWith(fresh);
+    if (onReset) fresh.addEventListener('click', onReset);
+    bar.hidden = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -165,14 +310,8 @@ export function populateRouteSelect(sortedLines) {
  * @param {boolean} options.show
  * @param {number|null} [options.variantCount] - pass null to hide the variants row
  * @param {number} [options.stopCount]
- * @param {string|null} [options.selectedValue] - value to set on the select element
  */
-export function updateStatsPanel({
-    show,
-    variantCount = null,
-    stopCount = 0,
-    selectedValue = null,
-}) {
+export function updateStatsPanel({ show, variantCount = null, stopCount = 0 }) {
     const routeInfo = document.getElementById('routeInfo');
     if (!show) {
         routeInfo.classList.remove('active');
@@ -193,9 +332,4 @@ export function updateStatsPanel({
 
     const statStops = document.getElementById('statStops');
     if (statStops) statStops.textContent = stopCount;
-
-    if (selectedValue !== null) {
-        const select = document.getElementById('routeSelect');
-        if (select) select.value = selectedValue;
-    }
 }
