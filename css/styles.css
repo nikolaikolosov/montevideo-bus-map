@@ -779,6 +779,12 @@ label {
         margin-right: 15px !important;
     }
 
+    /* Keep the home control on the zoom buttons' vertical axis — they share
+       the 15px right margin the rule above gives the zoom control. */
+    .home-control {
+        margin-right: 15px !important;
+    }
+
     .popup-content h3 {
         font-size: 0.9rem;
     }
