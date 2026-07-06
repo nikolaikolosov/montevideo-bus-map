@@ -70,6 +70,15 @@ export function initThemeToggle(onToggle) {
     if (btn) btn.addEventListener('click', onToggle);
 }
 
+/**
+ * Wires the error retry button.
+ * @param {() => void} onRetry
+ */
+export function initErrorRetry(onRetry) {
+    const btn = document.getElementById('errorRetry');
+    if (btn) btn.addEventListener('click', onRetry);
+}
+
 // ---------------------------------------------------------------------------
 // Language switcher
 // ---------------------------------------------------------------------------

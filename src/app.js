@@ -53,6 +53,7 @@ import {
     updateThemeToggle,
     initLangSwitcher,
     updateLangSwitcher,
+    initErrorRetry,
 } from './ui.js';
 
 // ---------------------------------------------------------------------------
@@ -256,6 +257,8 @@ async function initApp() {
             updateThemeToggle(theme);
             applyMapTheme();
         });
+
+        initErrorRetry(() => location.reload());
 
         // Load datasets in parallel
         const [routesData, stopsData, generatedAt] = await loadData();

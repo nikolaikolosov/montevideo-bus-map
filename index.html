@@ -8,6 +8,11 @@
             content="Explorador interactivo de recorridos de ómnibus de Montevideo"
         />
         <meta name="theme-color" content="#0f172a" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' https://unpkg.com https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data: https://*.basemaps.cartocdn.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; base-uri 'none'; object-src 'none';"
+        />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
         <link
             rel="icon"
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🚌</text></svg>"
@@ -52,8 +57,8 @@
             <p id="error-message">No se pudieron cargar los datos del sistema.</p>
             <button
                 type="button"
+                id="errorRetry"
                 class="btn"
-                onclick="location.reload()"
                 aria-label="Reintentá la carga de datos"
                 data-i18n="error.retry"
                 data-i18n-aria="error.retryAria"
