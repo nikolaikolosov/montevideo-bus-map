@@ -50,6 +50,16 @@ test('the suggestion list opens ABOVE the bottom sheet on mobile', async ({ page
     expect(above).toBe(true);
 });
 
+test('home control sits on the zoom buttons’ vertical axis', async ({ page }) => {
+    await openMap(page, { theme: 'dark' });
+    const aligned = await page.evaluate(() => {
+        const zoom = document.querySelector('.leaflet-control-zoom').getBoundingClientRect();
+        const home = document.querySelector('.home-control').getBoundingClientRect();
+        return Math.abs(zoom.right - home.right) < 0.5;
+    });
+    expect(aligned).toBe(true);
+});
+
 test('home control returns to all stops and the city overview', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
     await page.evaluate(() => window.__mvdSelectLine('405'));
