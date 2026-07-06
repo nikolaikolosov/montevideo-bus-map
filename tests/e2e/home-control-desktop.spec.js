@@ -25,6 +25,35 @@ test('desktop keeps the home-control hover feedback', async ({ page }) => {
     expect(hovered).not.toBe(base); // hover tint still applies where a pointer exists
 });
 
+test('the home control shows momentary press feedback that does not stick', async ({ page }) => {
+    // brainstorm-011: a press must change the background, and release must
+    // revert it (a sticky tint was the PR #19 bug — guarded here on desktop
+    // via :active, complementing the mobile no-stick-on-hover test).
+    await openMap(page, { theme: 'dark' });
+    await page.mouse.move(640, 400); // neutral
+    const rest = await page.evaluate(
+        () => getComputedStyle(document.querySelector('.home-control')).backgroundColor,
+    );
+
+    const box = await page.evaluate(() => {
+        const b = document.querySelector('.home-control').getBoundingClientRect();
+        return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    });
+    await page.mouse.move(box.x, box.y);
+    await page.mouse.down();
+    const held = await page.evaluate(
+        () => getComputedStyle(document.querySelector('.home-control')).backgroundColor,
+    );
+    await page.mouse.up();
+    await page.mouse.move(640, 400);
+    const after = await page.evaluate(
+        () => getComputedStyle(document.querySelector('.home-control')).backgroundColor,
+    );
+
+    expect(held).not.toBe(rest); // pressed → feedback
+    expect(after).toBe(rest); // released → back to base, no stick
+});
+
 test('desktop home control preserves position and zoom', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
     await page.evaluate(() => window.__mvdSelectLine('405'));

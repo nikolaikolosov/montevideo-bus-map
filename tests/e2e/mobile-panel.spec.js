@@ -108,6 +108,19 @@ test('the home control keeps its opaque colour on tap (no sticky hover)', async 
     expect(afterHover).toBe(base);
 });
 
+test('the home control flashes the same tap highlight as the zoom buttons', async ({ page }) => {
+    // brainstorm-011: on mobile the dots control must acknowledge a press
+    // exactly like the zoom +/- buttons above it. Asserted by parity (reads
+    // both live) rather than a hardcoded colour, so it tracks Leaflet.
+    await openMap(page, { theme: 'dark' });
+    const th = await page.evaluate(() => {
+        const c = (s) => getComputedStyle(document.querySelector(s)).webkitTapHighlightColor;
+        return { home: c('.home-control'), zoomIn: c('.leaflet-control-zoom-in') };
+    });
+    expect(th.home).toBe(th.zoomIn);
+    expect(th.home).not.toBe('rgba(0, 0, 0, 0)'); // not the transparent no-feedback default
+});
+
 test('header icons sit level with the title and the row is evenly spaced', async ({ page }) => {
     // brainstorm-010 issue 1.
     await openMap(page, { theme: 'dark' });
