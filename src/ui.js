@@ -150,9 +150,18 @@ export function initSearchBox({ search, lines, onPick }) {
     const input = document.getElementById('searchInput');
     const list = document.getElementById('searchList');
     if (!input || !list) return;
+    const clear = document.getElementById('searchClear');
 
     let entries = [];
     let active = -1;
+
+    const syncClear = () => {
+        if (clear) clear.hidden = input.value.length === 0;
+    };
+    syncClear();
+    clear?.addEventListener('click', () => {
+        onPick({ type: 'all' });
+    });
 
     const close = () => {
         list.hidden = true;
@@ -229,7 +238,10 @@ export function initSearchBox({ search, lines, onPick }) {
         }
     };
 
-    input.addEventListener('input', render);
+    input.addEventListener('input', () => {
+        syncClear();
+        render();
+    });
     input.addEventListener('focus', render);
     input.addEventListener('keydown', (e) => {
         if (list.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
@@ -237,7 +249,14 @@ export function initSearchBox({ search, lines, onPick }) {
             e.preventDefault();
             return;
         }
-        if (list.hidden) return;
+        if (list.hidden) {
+            // Second Escape (list already closed): clear the selection, go home.
+            if (e.key === 'Escape' && input.value.length > 0) {
+                onPick({ type: 'all' });
+                e.preventDefault();
+            }
+            return;
+        }
         if (e.key === 'ArrowDown') {
             setActive(active + 1 >= entries.length ? 0 : active + 1);
             e.preventDefault();
@@ -269,6 +288,8 @@ export function initSearchBox({ search, lines, onPick }) {
 export function setSearchDisplay(text) {
     const input = document.getElementById('searchInput');
     if (input) input.value = text;
+    const clear = document.getElementById('searchClear');
+    if (clear) clear.hidden = text.length === 0;
 }
 
 // ---------------------------------------------------------------------------

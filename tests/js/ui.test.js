@@ -94,6 +94,7 @@ describe('search combobox', () => {
             <div class="search-box">
                 <input id="searchInput" role="combobox" aria-expanded="false"
                        aria-controls="searchList">
+                <button type="button" id="searchClear" hidden>×</button>
                 <ul id="searchList" role="listbox" hidden></ul>
             </div>`;
         const onPick = vi.fn();
@@ -164,6 +165,32 @@ describe('search combobox', () => {
         expect(input.value).toBe('Línea 104');
         setSearchDisplay('');
         expect(input.value).toBe('');
+    });
+
+    it('shows the clear button only when the field has text; click goes home', () => {
+        const { input, onPick } = mount([{ type: 'line', id: '7' }]);
+        const clear = document.getElementById('searchClear');
+        expect(clear.hidden).toBe(true);
+
+        type(input, '7');
+        expect(clear.hidden).toBe(false);
+
+        clear.click();
+        expect(onPick).toHaveBeenCalledWith({ type: 'all' });
+
+        setSearchDisplay('Línea 104');
+        expect(clear.hidden).toBe(false);
+        setSearchDisplay('');
+        expect(clear.hidden).toBe(true);
+    });
+
+    it('Escape with a closed list clears the selection to home', () => {
+        const { input, onPick } = mount([{ type: 'line', id: '7' }]);
+        type(input, '7');
+        key(input, 'Escape'); // first: closes the list
+        expect(onPick).not.toHaveBeenCalled();
+        key(input, 'Escape'); // second: clears to home
+        expect(onPick).toHaveBeenCalledWith({ type: 'all' });
     });
 });
 
