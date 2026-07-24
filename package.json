@@ -10,6 +10,7 @@
         "test:e2e:update": "playwright test --update-snapshots",
         "verify:routes": "vitest run tests/js/route-invariants.test.js",
         "verify:colors": "vitest run tests/js/line-colors.test.js",
+        "verify:journey": "node scripts/measure_journey_model.mjs",
         "verify:scales": "node scripts/derive_geometry_scales.mjs",
         "verify:oracles": "node scripts/verify_route_oracles.mjs",
         "triage:oracles": "node scripts/triage_route_oracles.mjs",

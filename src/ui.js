@@ -4,7 +4,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { t, getLang, LOCALE_TAGS } from './i18n.js';
+import { t, tPlural, getLang, LOCALE_TAGS } from './i18n.js';
 import { getLineColor } from './data.js';
 
 // ---------------------------------------------------------------------------
@@ -328,6 +328,239 @@ export function renderContextBar(info, onReset) {
     reset.replaceWith(fresh);
     if (onReset) fresh.addEventListener('click', onReset);
     bar.hidden = false;
+}
+
+// ---------------------------------------------------------------------------
+// Journey panel (stop → stop itinerary)
+// ---------------------------------------------------------------------------
+
+/**
+ * Localized duration: minutes below an hour, "h + min" above.
+ * Rounded to whole minutes — the underlying numbers are estimates, printing
+ * seconds would claim a precision the data does not have.
+ * @param {number} seconds
+ * @returns {string}
+ */
+export function formatDuration(seconds) {
+    const totalMinutes = Math.max(1, Math.round(seconds / 60));
+    if (totalMinutes < 60) return t('journey.minutes', { n: totalMinutes });
+    return t('journey.hoursMinutes', {
+        h: Math.floor(totalMinutes / 60),
+        m: totalMinutes % 60,
+    });
+}
+
+/** Distance rounded the way a rider reads it (10 m steps under 1 km). */
+const formatWalk = (meters) => t('journey.walkTotal', { m: Math.round(meters / 10) * 10 });
+
+/** One-line summary of an itinerary: duration · transfers · walking. */
+function optionSummary(option) {
+    const parts = [
+        `≈ ${formatDuration(option.seconds)}`,
+        tPlural('journey.transfers', option.transfers),
+    ];
+    if (option.walkMeters >= 10) parts.push(formatWalk(option.walkMeters));
+    return parts.join(' · ');
+}
+
+/** <li> for one walking leg. */
+function walkLegRow(leg, stopName) {
+    const li = document.createElement('li');
+    li.className = 'journey-leg journey-leg-walk';
+
+    const icon = document.createElement('span');
+    icon.className = 'journey-leg-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '🚶';
+
+    const body = document.createElement('div');
+    const main = document.createElement('p');
+    main.className = 'journey-leg-main';
+    main.textContent = t('journey.legWalk', {
+        m: Math.round(leg.meters / 10) * 10,
+        stop: stopName(leg.toCode),
+    });
+    const sub = document.createElement('p');
+    sub.className = 'journey-leg-sub';
+    sub.textContent = `≈ ${formatDuration(leg.seconds)}`;
+    body.append(main, sub);
+
+    li.append(icon, body);
+    return li;
+}
+
+/** <li> for one ride leg: line chip, board, ride length, alight. */
+function rideLegRow(leg, stopName) {
+    const li = document.createElement('li');
+    li.className = 'journey-leg journey-leg-ride';
+
+    const chip = document.createElement('span');
+    chip.className = 'line-chip journey-leg-chip';
+    chip.textContent = leg.line;
+    const color = getLineColor(leg.line);
+    chip.style.borderColor = color;
+    chip.style.color = color;
+
+    const body = document.createElement('div');
+    const board = document.createElement('p');
+    board.className = 'journey-leg-main';
+    board.textContent = t('journey.legBoard', { stop: stopName(leg.fromCode) });
+
+    const detail = document.createElement('p');
+    detail.className = 'journey-leg-sub';
+    const bits = [];
+    if (leg.headsign) bits.push(t('journey.towards', { headsign: leg.headsign }));
+    bits.push(tPlural('journey.legStops', Math.max(0, leg.stopCodes.length - 1)));
+    bits.push(`≈ ${formatDuration(leg.seconds)}`);
+    detail.textContent = bits.join(' · ');
+
+    const alight = document.createElement('p');
+    alight.className = 'journey-leg-main';
+    alight.textContent = t('journey.legAlight', { stop: stopName(leg.toCode) });
+
+    body.append(board, detail, alight);
+    li.append(chip, body);
+    return li;
+}
+
+/**
+ * Renders the journey panel: endpoints, the alternatives as a tablist, and the
+ * legs of the selected one.
+ *
+ * Called on every plan state change (the router is the single source of truth
+ * — R7), so it fully rebuilds its own subtree instead of patching it.
+ *
+ * @param {object} model
+ * @param {boolean} model.visible
+ * @param {string} model.originName      - '' when not picked yet
+ * @param {string} model.destinationName - '' when not picked yet
+ * @param {string} model.message         - hint or error, '' for none
+ * @param {import('./journey.js').JourneyOption[]} model.options
+ * @param {number} model.activeIndex
+ * @param {(code: number) => string} model.stopName
+ * @param {{onSelectOption?: (index: number) => void}} [handlers]
+ */
+export function renderJourneyPanel(model, handlers = {}) {
+    const panel = document.getElementById('journeyPanel');
+    if (!panel) return;
+    if (!model.visible) {
+        panel.hidden = true;
+        return;
+    }
+    panel.hidden = false;
+
+    document.getElementById('journeyOrigin').textContent = model.originName || '—';
+    document.getElementById('journeyDestination').textContent = model.destinationName || '—';
+
+    // Each end is its own "pick this one again" control: with an itinerary on
+    // screen only its own stops are on the map, so without this the rider
+    // would have to throw the whole trip away to move one end.
+    for (const [id, name, key] of [
+        ['journeyEditOrigin', model.originName, 'changeOrigin'],
+        ['journeyEditDestination', model.destinationName, 'changeDestination'],
+    ]) {
+        const button = document.getElementById(id);
+        if (!button) continue;
+        button.disabled = !name;
+        button.setAttribute('aria-label', t(`journey.${key}Aria`));
+        button.title = name ? t(`journey.${key}Aria`) : '';
+    }
+
+    const message = document.getElementById('journeyMessage');
+    message.textContent = model.message ?? '';
+    message.hidden = !model.message;
+
+    // Swapping only means something once both ends are known.
+    const swap = document.getElementById('journeySwap');
+    if (swap) swap.disabled = !(model.originName && model.destinationName);
+
+    const tabs = document.getElementById('journeyOptions');
+    const legs = document.getElementById('journeyLegs');
+    const note = document.getElementById('journeyNote');
+    tabs.textContent = '';
+    legs.textContent = '';
+
+    const options = model.options ?? [];
+    if (options.length === 0) {
+        tabs.hidden = true;
+        note.hidden = true;
+        return;
+    }
+
+    const active = Math.min(Math.max(model.activeIndex ?? 0, 0), options.length - 1);
+
+    // A single itinerary has nothing to switch between: no tablist is built,
+    // and the leg list drops the tabpanel role it would otherwise orphan.
+    const hasAlternatives = options.length > 1;
+    tabs.hidden = !hasAlternatives;
+    legs.setAttribute('role', hasAlternatives ? 'tabpanel' : 'list');
+    if (hasAlternatives) legs.setAttribute('aria-labelledby', `journey-opt-${active}`);
+    else legs.removeAttribute('aria-labelledby');
+
+    const tabButtons = [];
+    (hasAlternatives ? options : []).forEach((option, i) => {
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.id = `journey-opt-${i}`;
+        tab.className = `journey-option${i === active ? ' active' : ''}`;
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-selected', String(i === active));
+        tab.setAttribute('aria-controls', 'journeyLegs');
+        tab.tabIndex = i === active ? 0 : -1;
+        tab.setAttribute(
+            'aria-label',
+            t('journey.optionAria', { n: i + 1, summary: optionSummary(option) }),
+        );
+
+        const time = document.createElement('span');
+        time.className = 'journey-option-time';
+        time.textContent = `≈ ${formatDuration(option.seconds)}`;
+        const meta = document.createElement('span');
+        meta.className = 'journey-option-meta';
+        meta.textContent = tPlural('journey.transfers', option.transfers);
+        tab.append(time, meta);
+
+        tab.addEventListener('click', () => handlers.onSelectOption?.(i));
+        tab.addEventListener('keydown', (e) => {
+            const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+            if (!step) return;
+            e.preventDefault();
+            const next = (i + step + options.length) % options.length;
+            tabButtons[next].focus();
+            handlers.onSelectOption?.(next);
+        });
+        tabButtons.push(tab);
+        tabs.appendChild(tab);
+    });
+
+    for (const leg of options[active].legs) {
+        legs.appendChild(
+            leg.type === 'walk' ? walkLegRow(leg, model.stopName) : rideLegRow(leg, model.stopName),
+        );
+    }
+
+    // Waiting is a modelled penalty, not a leg — say so instead of hiding it
+    // inside the total.
+    const wait = options[active].waitSeconds ?? 0;
+    note.textContent =
+        wait > 0
+            ? `${t('journey.approx')} ${t('journey.waitNote', { n: Math.round(wait / 60) })}`
+            : t('journey.approx');
+    note.hidden = false;
+}
+
+/**
+ * Wires the journey panel's persistent controls. Called once.
+ * @param {{onClear: () => void, onSwap: () => void,
+ *          onChangeOrigin: () => void, onChangeDestination: () => void}} handlers
+ */
+export function initJourneyControls({ onClear, onSwap, onChangeOrigin, onChangeDestination }) {
+    document.getElementById('journeyClear')?.addEventListener('click', onClear);
+    document.getElementById('journeySwap')?.addEventListener('click', onSwap);
+    document.getElementById('journeyEditOrigin')?.addEventListener('click', onChangeOrigin);
+    document
+        .getElementById('journeyEditDestination')
+        ?.addEventListener('click', onChangeDestination);
 }
 
 // ---------------------------------------------------------------------------

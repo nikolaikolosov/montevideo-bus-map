@@ -16,6 +16,10 @@ describe('parseHash / buildHash', () => {
         ['#/parada/4772', { view: 'stop', stop: 4772 }],
         ['#/parada/4772/todas', { view: 'downstream', stop: 4772, line: null }],
         ['#/parada/4772/linea/102', { view: 'downstream', stop: 4772, line: '102' }],
+        ['#/viaje/desde/4772', { view: 'journey', from: 4772, to: null, option: 0 }],
+        ['#/viaje/hasta/4018', { view: 'journey', from: null, to: 4018, option: 0 }],
+        ['#/viaje/4772/4018', { view: 'journey', from: 4772, to: 4018, option: 0 }],
+        ['#/viaje/4772/4018/opcion/3', { view: 'journey', from: 4772, to: 4018, option: 2 }],
     ];
 
     it.each(cases)('parses %s', (hash, state) => {
@@ -34,6 +38,24 @@ describe('parseHash / buildHash', () => {
         expect(parseHash('#/parada/abc')).toEqual({ view: 'all' });
         expect(parseHash('#/parada/1/linea')).toEqual({ view: 'all' });
         expect(parseHash('#/x/y/z')).toEqual({ view: 'all' });
+        expect(parseHash('#/viaje')).toEqual({ view: 'all' });
+        expect(parseHash('#/viaje/4772')).toEqual({ view: 'all' });
+        expect(parseHash('#/viaje/4772/abc')).toEqual({ view: 'all' });
+        expect(parseHash('#/viaje/desde')).toEqual({ view: 'all' });
+        expect(parseHash('#/viaje/desde/4772/opcion/2')).toEqual({ view: 'all' });
+        expect(parseHash('#/viaje/4772/4018/variante/2')).toEqual({ view: 'all' });
+        expect(parseHash('#/viaje/4772/4018/opcion/0')).toEqual({ view: 'all' });
+    });
+
+    it('drops the option segment for the first (best) itinerary', () => {
+        expect(buildHash({ view: 'journey', from: 1, to: 2, option: 0 })).toBe('#/viaje/1/2');
+        expect(buildHash({ view: 'journey', from: 1, to: 2, option: 1 })).toBe(
+            '#/viaje/1/2/opcion/2',
+        );
+    });
+
+    it('sends an empty journey selection home', () => {
+        expect(buildHash({ view: 'journey', from: null, to: null, option: 0 })).toBe('#/');
     });
 });
 

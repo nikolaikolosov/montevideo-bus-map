@@ -56,6 +56,59 @@ export const CONFIG = {
     // Data freshness label turns amber when the dataset is older than this.
     FRESHNESS_WARN_DAYS: 45,
 
+    // --- Journey planning (stop → stop with transfers, see journey.js) -------
+    // The feed carries NO timetable (no trips, no headways, no run times), so
+    // every duration below is an explicit, documented ESTIMATE — the planner
+    // ranks itineraries, it does not promise arrival times. The UI labels
+    // results as approximate for exactly this reason.
+    //
+    // In-vehicle speed: Montevideo urban bus average including traffic and
+    // signals, excluding stop dwell (which is added per stop below).
+    JOURNEY_BUS_SPEED_KMH: 20,
+    // Dwell added for every stop the bus serves along a ride leg.
+    JOURNEY_DWELL_SECONDS: 15,
+    // Walking speed for transfer/access legs.
+    JOURNEY_WALK_SPEED_KMH: 4.5,
+    // Straight-line stop-to-stop distance underestimates the path actually
+    // travelled. Two different corrections:
+    //  - bus: MEASURED on the committed data — the traced route length between
+    //    consecutive stops over all 59,745 stop pairs is 1.054 × the straight
+    //    line (median 1.00, p95 1.36; method + numbers in
+    //    qa/reports/journey-planner-report.md). Stops are ~270 m apart, so the
+    //    ride between two of them is nearly straight.
+    //  - walk: no measurement possible from this data. 1.3 is the textbook
+    //    rectilinear-grid detour (4/π ≈ 1.27 for uniformly distributed
+    //    directions), which is what central Montevideo is.
+    JOURNEY_BUS_DETOUR_FACTOR: 1.05,
+    JOURNEY_WALK_DETOUR_FACTOR: 1.3,
+    // Cost of every boarding (first one included): the unknown wait. With no
+    // headway data this is a flat penalty — it also encodes "a transfer is
+    // worse than staying seated", which is what keeps itineraries sane.
+    JOURNEY_BOARD_PENALTY_SECONDS: 300,
+    // Farthest a transfer/access walk may be (meters, straight line). 400 m
+    // yields ~53k directed footpath edges over the 4901 committed stops.
+    JOURNEY_WALK_MAX_M: 400,
+    // Search rounds. Round k allows k ride legs, so 4 rounds = up to 3
+    // transfers — beyond that an itinerary is not a realistic suggestion.
+    JOURNEY_MAX_ROUNDS: 4,
+    // How many itineraries the panel offers, and how much slower than the
+    // best one an alternative may be before it is dropped.
+    JOURNEY_MAX_OPTIONS: 4,
+    JOURNEY_OPTION_SLACK_RATIO: 1.6,
+    JOURNEY_OPTION_SLACK_SECONDS: 600,
+    // Journey rendering. The casing is a wide stroke drawn under the coloured
+    // ride line in the basemap's own background colour, so a line keeps its
+    // identity colour readable where it runs over dense street geometry.
+    JOURNEY_RIDE_WEIGHT: 6,
+    JOURNEY_CASING_WEIGHT: 10,
+    JOURNEY_WALK_WEIGHT: 3,
+    JOURNEY_WALK_DASH: '1 7',
+    JOURNEY_COLORS_BY_THEME: {
+        dark: { casing: '#0f172a', walk: '#cbd5e1' },
+        light: { casing: '#ffffff', walk: '#334155' },
+    },
+    JOURNEY_FIT_MAX_ZOOM: 16,
+
     // --- Theme (light/dark by real sunrise/sunset, see theme.js) ---
     // Basemap per theme (same CARTO CDN, same attribution).
     TILE_URLS: {

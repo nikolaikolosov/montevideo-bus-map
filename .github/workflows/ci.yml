@@ -25,6 +25,10 @@ jobs:
       # the gate (whitelist: qa/route-geometry-whitelist.json; report:
       # qa/reports/route-geometry-oracles-report.md)
       - run: npm run verify:oracles
+      # Journey cost-model drift check: the planner's detour factor vs what
+      # the committed traces actually measure, plus network reachability
+      # (report: qa/reports/journey-planner-report.md)
+      - run: npm run verify:journey
 
   data-pipeline:
     runs-on: ubuntu-latest

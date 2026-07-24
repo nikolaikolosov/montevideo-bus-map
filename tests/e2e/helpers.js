@@ -67,17 +67,50 @@ export async function renderStopRoutes(page, stopCode) {
     await page.waitForTimeout(300);
 }
 
-/** Opens the Leaflet popup of a stop in the current (global) view. */
-export async function openStopPopup(page, stopCode) {
-    await page.evaluate((cod) => {
-        let target = null;
-        window.__mvdMap.eachLayer((l) => {
-            if (l.feature?.properties?.COD_UBIC_P === cod) target = l;
-        });
-        if (!target) throw new Error(`stop layer ${cod} not found`);
-        target.openPopup();
-    }, stopCode);
+/**
+ * Plans a stop-to-stop journey exactly as the popup buttons would and waits
+ * for the itinerary to be drawn and the camera to settle (renderJourney ends
+ * with an animated fitBounds — same trap as renderLine).
+ */
+export async function planJourney(page, from, to, option = 0) {
+    const found = await page.evaluate(
+        ([f, t, o]) => window.__mvdPlanJourney(f, t, o),
+        [from, to, option],
+    );
+    if (!found) throw new Error(`stop ${from} or ${to} not found`);
+    await page.waitForSelector('#journeyPanel:not([hidden])');
+    await page.waitForFunction(
+        () => !window.__mvdMap._animatingZoom && !window.__mvdMap._panAnim?._inProgress,
+    );
+}
+
+/**
+ * Opens the Leaflet popup of a stop in the current (global) view.
+ *
+ * `center: true` re-frames the map on the stop first. Leaflet's autoPan only
+ * knows about the map viewport, but `#ui-panel` floats ON TOP of it, so a
+ * popup anchored in the top-left corner opens underneath the panel and is not
+ * clickable. Pass it whenever the test interacts with the popup's controls.
+ */
+export async function openStopPopup(page, stopCode, { center = false } = {}) {
+    await page.evaluate(
+        ([cod, recentre]) => {
+            let target = null;
+            window.__mvdMap.eachLayer((l) => {
+                if (l.feature?.properties?.COD_UBIC_P === cod) target = l;
+            });
+            if (!target) throw new Error(`stop layer ${cod} not found`);
+            if (recentre) window.__mvdMap.setView(target.getLatLng(), 16, { animate: false });
+            target.openPopup();
+        },
+        [stopCode, center],
+    );
     await page.waitForSelector('.popup-content');
+    // Leaflet fades a closing popup out over ~200 ms before detaching its
+    // node, so right after a re-open two popups can coexist in the DOM and
+    // every selector inside one of them matches twice. Wait for the old one
+    // to actually go.
+    await page.waitForFunction(() => document.querySelectorAll('.leaflet-popup').length === 1);
 }
 
 /** Fixed camera for corridor scenes (no animation → deterministic pixels). */
