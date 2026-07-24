@@ -390,12 +390,18 @@ describe('planJourney (real data)', () => {
     });
 
     it('reaches most of the network from a central stop', () => {
-        // A planner that silently fails on half the city is useless; pin the
-        // coverage so a regression in the boarding rule is visible.
-        const targets = graph.codes.filter((_, i) => i % 17 === 0);
+        // A planner that silently fails on half the city is useless; pin
+        // the coverage so a regression in the boarding rule is visible.
+        //
+        // Every 41st stop (~120 plans), not every 17th: at ~3 ms a plan the
+        // denser sweep sits right at vitest's 5 s default and timed out on
+        // a CI runner. The exhaustive stride-17 sweep still runs — in
+        // scripts/measure_journey_model.mjs, outside any per-test timeout.
+        const targets = graph.codes.filter((_, i) => i % 41 === 0);
+        expect(targets.length).toBeGreaterThan(100);
         const reached = targets.filter(
             (code) => code === 4772 || planJourney(4772, code).status === 'ok',
         ).length;
         expect(reached / targets.length).toBeGreaterThan(0.9);
-    });
+    }, 30_000);
 });
