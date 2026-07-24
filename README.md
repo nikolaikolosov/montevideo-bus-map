@@ -4,6 +4,14 @@
 
 A map of Montevideo bus lines and stops, available at [https://nikolaikolosov.github.io/montevideo-bus-map/](https://nikolaikolosov.github.io/montevideo-bus-map/).
 
+Search a line or a stop, see every line through a stop and where it goes from
+there, and plan a **trip between two stops** — tap "Desde acá" on one stop and
+"Hasta acá" on another to get itineraries with transfers, ranked fewest-changes
+against fastest. The source data has no schedules (see below), so trip times are
+modelled estimates and the app says so; the design of that model is
+[ADR-001](architecture/ADR-001-journey-planner.md), its evidence
+[qa/reports/journey-planner-report.md](qa/reports/journey-planner-report.md).
+
 ## Updating the data (manual, by design)
 
 The map renders two generated files: `routes.json` and `stops.json`
@@ -36,8 +44,10 @@ Pushing to `main` triggers the GitHub Pages deploy.
 ```bash
 npm install        # dev tooling (the app itself is a buildless static site)
 npm test           # Vitest unit tests
+npm run test:e2e   # Playwright: interaction flows + pixel scenes
 npm run lint       # ESLint
 npm run format     # Prettier
+npm run verify:journey   # journey cost-model drift check + evidence report
 pip install -r requirements-dev.txt
 python -m pytest   # pipeline tests
 python scripts/validate_data.py  # contract check on the committed data

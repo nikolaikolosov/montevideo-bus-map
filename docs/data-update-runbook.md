@@ -67,22 +67,34 @@ data's generation date ("Datos: …"), turning amber after 45 days
    re-derive the constant per `architecture/contracts/route-geometry-contract.md` and
    review the render diffs (golden + baselines will change).
 
-5. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas".
-   The panel's "Datos: …" date must show today.
+5. Re-check the journey cost model (the planner charges straight-line distance
+   × a factor measured from the traces; a new feed can move it):
 
-6. Commit and push (push to `main` **is** the production deploy — GitHub Pages
+   ```bash
+   npm run verify:journey   # regenerates qa/reports/journey-planner-report.md
+   ```
+
+   A FAILed assertion means either the detour factor drifted past 5 % (update
+   `CONFIG.JOURNEY_BUS_DETOUR_FACTOR` to the measured value, per ADR-001) or the
+   network lost reachability (investigate the feed before shipping).
+
+6. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas",
+   then plan a trip with "Desde acá" / "Hasta acá". The panel's "Datos: …" date
+   must show today.
+
+7. Commit and push (push to `main` **is** the production deploy — GitHub Pages
    rebuilds automatically; CI validates the data again on the push):
 
    ```bash
-   git add routes.json stops.json src/line-colors.js qa/reports/line-colors-report.md qa/reports/geometry-scales-report.md
+   git add routes.json stops.json src/line-colors.js qa/reports/line-colors-report.md qa/reports/geometry-scales-report.md qa/reports/journey-planner-report.md
    git commit -m "Update bus routes and stops data from API"
    git push
    ```
 
-   `./update_and_push.sh` does steps 1 + 5 in one go (it only commits when the
-   data actually changed) — run steps 3–4 first when the line set changed.
+   `./update_and_push.sh` does steps 1 + 6 in one go (it only commits when the
+   data actually changed) — run steps 3–5 first when the line set changed.
 
-7. Verify: <https://nikolaikolosov.github.io/montevideo-bus-map/> shows the new
+8. Verify: <https://nikolaikolosov.github.io/montevideo-bus-map/> shows the new
    date in "Datos: …" (allow a couple of minutes for the Pages build; hard-refresh
    to skip the browser cache).
 

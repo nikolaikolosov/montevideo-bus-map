@@ -12,6 +12,7 @@ import { buildSections, buildJoints } from './bundling.js';
 import { OffsetPolyline, OffsetJoint } from './offsetline.js';
 import { getTheme } from './theme.js';
 import { t, tPlural } from './i18n.js';
+import { rideLegGeometry } from './journey-geometry.js';
 import {
     uniqueStopsData,
     uniqueStopByCode,
@@ -114,6 +115,12 @@ function updateMapStyles() {
     if (appState.currentStopsLayer?.setStyle) {
         appState.currentStopsLayer.setStyle(stopStyle);
     }
+    // Journey beads live in a plain LayerGroup (mixed with the A/B pins), so
+    // they are restyled individually.
+    const beadStyle = journeyBeadStyle(zoom, touch);
+    appState.currentStopsLayer?.eachLayer?.((l) => {
+        if (l._journeyBead) l.setStyle(beadStyle);
+    });
 
     // 2. Update route parallel offsets
     if (appState.currentRouteLayer) {
@@ -188,6 +195,11 @@ export function applyMapTheme() {
     if (!last) return;
     if (last.type === 'global') {
         renderGlobalStops(last.args.onShowRoutes);
+    } else if (last.type === 'journey') {
+        // Re-colour only — a theme flip must not re-frame the itinerary (R8).
+        renderJourney({ ...last.args, fit: false });
+    } else if (last.type === 'journey-endpoints') {
+        renderJourneyEndpoints(last.args);
     } else {
         renderRoutes(last.args);
     }
@@ -359,6 +371,65 @@ export function clearLayers() {
 // ---------------------------------------------------------------------------
 
 /**
+ * Journey-planning wiring for stop popups. Registered once by app.js instead
+ * of threaded through every render signature: popup content is regenerated on
+ * each open, so the buttons always reflect the current plan state.
+ *
+ * @type {{role: (code: number) => 'origin'|'destination'|'none',
+ *         onPickOrigin: (code: number) => void,
+ *         onPickDestination: (code: number) => void,
+ *         onClearRole: (code: number) => void}|null}
+ */
+let journeyHandlers = null;
+
+/** @param {typeof journeyHandlers} handlers - null disables the popup buttons */
+export function setJourneyPopupHandlers(handlers) {
+    journeyHandlers = handlers;
+}
+
+/**
+ * The two journey buttons of a stop popup: "from here" / "to here".
+ *
+ * Both are always offered — a rider may pick the destination first. Tapping
+ * the role a stop already holds clears it, so the same control undoes itself
+ * (no separate "cancel" hidden elsewhere).
+ *
+ * @param {number} cod - COD_UBIC_P
+ * @returns {HTMLElement|null} null when no handlers are registered
+ */
+function buildJourneyActions(cod) {
+    if (!journeyHandlers) return null;
+    const role = journeyHandlers.role(cod);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'popup-journey';
+
+    const makeButton = (kind, active, onPick) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `btn btn-quiet journey-${kind}-btn${active ? ' active' : ''}`;
+        btn.textContent = active ? t(`journey.${kind}Clear`) : t(`journey.${kind}`);
+        btn.setAttribute(
+            'aria-label',
+            active ? t(`journey.${kind}ClearAria`) : t(`journey.${kind}Aria`),
+        );
+        btn.setAttribute('aria-pressed', String(active));
+        btn.addEventListener('click', () => {
+            if (active) journeyHandlers.onClearRole(cod);
+            else onPick(cod);
+            map?.closePopup();
+        });
+        return btn;
+    };
+
+    wrap.append(
+        makeButton('from', role === 'origin', journeyHandlers.onPickOrigin),
+        makeButton('to', role === 'destination', journeyHandlers.onPickDestination),
+    );
+    return wrap;
+}
+
+/**
  * Builds the popup DOM node for a stop feature.
  * Wires up the "Ver rutas" button via event delegation to avoid listener leaks.
  *
@@ -410,6 +481,9 @@ export function createStopPopup(feature, onShowRoutes) {
         onShowRoutes(linesArr, variantsArr, feature);
         map?.closePopup();
     });
+
+    const journeyActions = buildJourneyActions(cod);
+    if (journeyActions) div.appendChild(journeyActions);
 
     return div;
 }
@@ -927,4 +1001,244 @@ export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null
     const variantCount = new Set(cleanedRouteFeatures.map((f) => f.properties.DESC_VARIA)).size;
 
     return { variantCount, stopCount: stopFeatures.length };
+}
+
+// ---------------------------------------------------------------------------
+// Journey rendering (stop → stop itinerary, see journey.js)
+// ---------------------------------------------------------------------------
+
+/** Journey palette for the active theme. */
+const journeyColors = () => CONFIG.JOURNEY_COLORS_BY_THEME[getTheme()];
+
+/**
+ * Size of the per-stop beads along a ride leg, by zoom — the same
+ * zoom-tiered treatment the plain stop layer gets (getStopStyleForZoom), for
+ * the same reason: at city zoom the stops of a route are a few pixels apart
+ * and full-size markers turn the leg into a bead necklace.
+ *
+ * @param {number} zoom
+ * @param {boolean} isTouch
+ * @returns {object} Leaflet path style
+ */
+function journeyBeadStyle(zoom, isTouch) {
+    if (zoom <= 13) return { radius: isTouch ? 2 : 1.5, weight: 1, opacity: 0.9, fillOpacity: 1 };
+    if (zoom <= 14) return { radius: isTouch ? 4 : 3, weight: 1.5, opacity: 1, fillOpacity: 1 };
+    return { radius: isTouch ? 6 : 4.5, weight: 2, opacity: 1, fillOpacity: 1 };
+}
+
+/**
+ * fitBounds padding that keeps an itinerary clear of the floating UI panel.
+ *
+ * Leaflet pads against the map viewport, but `#ui-panel` sits ON TOP of it —
+ * 320 px of it on desktop. Framing a cross-city trip with symmetric padding
+ * therefore hides the "A" end behind the panel, which is precisely the thing
+ * a journey view must show. Measured from the live element so it follows the
+ * desktop card / mobile bottom-sheet split without duplicating the breakpoint.
+ *
+ * @returns {{paddingTopLeft: number[], paddingBottomRight: number[]}}
+ */
+function journeyFitPadding() {
+    const [padX, padY] = CONFIG.FIT_BOUNDS_PADDING;
+    const rect = document.getElementById('ui-panel')?.getBoundingClientRect();
+    const size = map.getSize();
+    if (!rect?.width || !size.x || !size.y) {
+        return { paddingTopLeft: [padX, padY], paddingBottomRight: [padX, padY] };
+    }
+    // Never eat more than this share of the viewport: an over-padded fit
+    // zooms the whole city out to nothing. The mobile sheet gets the looser
+    // cap because it legitimately covers half the screen while an itinerary
+    // is listed, and the ends must still land in the strip above it.
+    const cap = (value, extent, share) => Math.min(value, extent * share);
+
+    if (rect.width > window.innerWidth * 0.8) {
+        // Bottom sheet (mobile): the panel covers the lower edge.
+        return {
+            paddingTopLeft: [padX, padY],
+            paddingBottomRight: [padX, cap(rect.height + padY, size.y, 0.62)],
+        };
+    }
+    return {
+        paddingTopLeft: [cap(rect.right + padX, size.x, 0.5), padY],
+        paddingBottomRight: [padX, padY],
+    };
+}
+
+/** [lon, lat] of a stop code, or null when the stop is unknown. */
+const stopLatLng = (code) => {
+    const feature = uniqueStopByCode.get(Number(code));
+    if (!feature) return null;
+    const [lon, lat] = feature.geometry.coordinates;
+    return [lat, lon];
+};
+
+/** A|B endpoint pin, or a small hollow dot for a transfer point. */
+function journeyMarker(latlng, kind, label) {
+    const endpoint = kind === 'origin' || kind === 'destination';
+    const size = endpoint ? 26 : 14;
+    return L.marker(latlng, {
+        icon: L.divIcon({
+            className: '',
+            html: `<div class="journey-marker journey-marker-${kind}">${escapeHTML(label ?? '')}</div>`,
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+        }),
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: endpoint ? 1200 : 1100,
+    });
+}
+
+/**
+ * Draws one itinerary: every ride leg in its line's identity colour along the
+ * recorded trace, every walk leg as a dashed connector, with A/B endpoints and
+ * a dot at each transfer.
+ *
+ * A ride leg whose trace cannot serve it (missing geometry — none in the
+ * committed data, but the contract allows it) is drawn as a dashed straight
+ * connector rather than an invented path, so an approximation never looks like
+ * a real recorded route.
+ *
+ * @param {object} options
+ * @param {import('./journey.js').JourneyOption} options.option
+ * @param {number} options.fromCode
+ * @param {number} options.toCode
+ * @param {Function} options.onShowRoutes - popup callback for the stop markers
+ * @param {boolean} [options.fit=true] - fit the camera to the itinerary
+ * @returns {{legCount: number, approximateLegs: number}}
+ */
+export function renderJourney({ option, fromCode, toCode, onShowRoutes, fit = true }) {
+    clearLayers();
+    appState.lastRender = {
+        type: 'journey',
+        args: { option, fromCode, toCode, onShowRoutes, fit },
+    };
+
+    const colors = journeyColors();
+    const routeLayer = L.featureGroup().addTo(map);
+    const stopsLayer = L.layerGroup().addTo(map);
+    appState.currentRouteLayer = routeLayer;
+    appState.currentStopsLayer = stopsLayer;
+
+    let approximateLegs = 0;
+
+    for (const leg of option.legs) {
+        if (leg.type === 'walk') {
+            const a = stopLatLng(leg.fromCode);
+            const b = stopLatLng(leg.toCode);
+            if (!a || !b) continue;
+            L.polyline([a, b], {
+                color: colors.walk,
+                weight: CONFIG.JOURNEY_WALK_WEIGHT,
+                opacity: 0.95,
+                lineCap: 'round',
+                dashArray: CONFIG.JOURNEY_WALK_DASH,
+                interactive: false,
+            }).addTo(routeLayer);
+            continue;
+        }
+
+        const traced = rideLegGeometry(leg.variantId, leg.boardIdx, leg.alightIdx);
+        const approximate = !traced;
+        if (approximate) approximateLegs++;
+
+        const latlngs = traced
+            ? traced.map(([lon, lat]) => [lat, lon])
+            : [stopLatLng(leg.fromCode), stopLatLng(leg.toCode)].filter(Boolean);
+        if (latlngs.length < 2) continue;
+
+        // Casing first (under), then the identity-coloured stroke.
+        L.polyline(latlngs, {
+            color: colors.casing,
+            weight: CONFIG.JOURNEY_CASING_WEIGHT,
+            opacity: 0.85,
+            lineCap: 'round',
+            lineJoin: 'round',
+            interactive: false,
+        }).addTo(routeLayer);
+
+        const ride = L.polyline(latlngs, {
+            color: getLineColor(leg.line),
+            weight: CONFIG.JOURNEY_RIDE_WEIGHT,
+            opacity: 1,
+            lineCap: 'round',
+            lineJoin: 'round',
+            dashArray: approximate ? CONFIG.JOURNEY_WALK_DASH : undefined,
+        }).addTo(routeLayer);
+        ride.bindPopup(() => {
+            const headsign = leg.headsign
+                ? `<p>${t('journey.towards', { headsign: escapeHTML(leg.headsign) })}</p>`
+                : '';
+            return `
+                <div class="popup-content">
+                    <h3>${t('section.title', { id: escapeHTML(leg.line) })}</h3>
+                    ${headsign}
+                    <p>${tPlural('journey.legStops', leg.stopCodes.length - 1)}</p>
+                </div>
+            `;
+        });
+
+        // Every stop the rider passes, so the leg can be followed on the map.
+        for (const code of leg.stopCodes) {
+            const feature = uniqueStopByCode.get(Number(code));
+            if (!feature) continue;
+            const [lon, lat] = feature.geometry.coordinates;
+            // Hollow beads: filled with the basemap's own background, stroked
+            // in the line's colour. Filled with the line colour instead they
+            // merge with the stroke and the leg reads as a dotted chain rather
+            // than a continuous ride. Sized by zoom for the same reason —
+            // stops are ~270 m apart, which is 17 px at zoom 13.
+            const marker = L.circleMarker([lat, lon], {
+                ...journeyBeadStyle(map.getZoom(), isCoarsePointer()),
+                color: getLineColor(leg.line),
+                fillColor: colors.casing,
+                pane: 'stopsPane',
+            }).addTo(stopsLayer);
+            marker._journeyBead = true;
+            marker.bindPopup(() => createStopPopup(feature, onShowRoutes), { maxWidth: 340 });
+        }
+    }
+
+    // Transfer dots: where one ride ends and the next begins.
+    option.legs.forEach((leg, i) => {
+        if (leg.type !== 'ride' || i === 0) return;
+        const latlng = stopLatLng(leg.fromCode);
+        if (latlng) journeyMarker(latlng, 'transfer').addTo(stopsLayer);
+    });
+
+    const origin = stopLatLng(fromCode);
+    const destination = stopLatLng(toCode);
+    if (origin) journeyMarker(origin, 'origin', 'A').addTo(stopsLayer);
+    if (destination) journeyMarker(destination, 'destination', 'B').addTo(stopsLayer);
+
+    if (fit && routeLayer.getLayers().length) {
+        map.fitBounds(routeLayer.getBounds(), {
+            ...journeyFitPadding(),
+            maxZoom: CONFIG.JOURNEY_FIT_MAX_ZOOM,
+        });
+    }
+
+    return { legCount: option.legs.length, approximateLegs };
+}
+
+/**
+ * Shows the two stops a rider has picked so far while the plan is still
+ * incomplete (only an origin, or only a destination). Keeps the home view's
+ * stop layer underneath so the second stop is still pickable.
+ *
+ * @param {{fromCode: number|null, toCode: number|null, onShowRoutes: Function}} options
+ */
+export function renderJourneyEndpoints({ fromCode, toCode, onShowRoutes }) {
+    renderGlobalStops(onShowRoutes);
+    // R8 — the camera stays put: the rider just tapped a stop, it is on screen.
+    const pins = L.layerGroup().addTo(map);
+    appState.currentStopsLayer = pins;
+    appState.lastRender = {
+        type: 'journey-endpoints',
+        args: { fromCode, toCode, onShowRoutes },
+    };
+
+    const origin = fromCode == null ? null : stopLatLng(fromCode);
+    const destination = toCode == null ? null : stopLatLng(toCode);
+    if (origin) journeyMarker(origin, 'origin', 'A').addTo(pins);
+    if (destination) journeyMarker(destination, 'destination', 'B').addTo(pins);
 }

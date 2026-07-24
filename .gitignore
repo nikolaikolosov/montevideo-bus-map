@@ -247,6 +247,9 @@ node_modules/
 # README and the code reference directly.
 /architecture/*
 !/architecture/contracts/
+# ADR-001 is linked from the README (journey-planner cost model) — a
+# private file behind a public link would just be a broken link.
+!/architecture/ADR-001-journey-planner.md
 /docs/*
 !/docs/data-update-runbook.md
 /qa/*

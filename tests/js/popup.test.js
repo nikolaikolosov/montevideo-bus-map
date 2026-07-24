@@ -9,7 +9,7 @@ import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { createStopPopup } from '../../src/map.js';
+import { createStopPopup, setJourneyPopupHandlers } from '../../src/map.js';
 import { t, tPlural, setLang } from '../../src/i18n.js';
 import {
     buildIndexes,
@@ -124,6 +124,83 @@ describe('createStopPopup (synthetic)', () => {
         expect(getStopLineVariants(1, '102').sort()).toEqual(['v1', 'v2']);
         expect(getStopLineVariants(1, '7')).toEqual(['v3']);
         expect(getStopLineVariants(999, '102')).toEqual([]);
+    });
+});
+
+describe('journey actions in the popup', () => {
+    const handlers = () => ({
+        role: vi.fn().mockReturnValue('none'),
+        onPickOrigin: vi.fn(),
+        onPickDestination: vi.fn(),
+        onClearRole: vi.fn(),
+    });
+
+    afterEach(() => setJourneyPopupHandlers(null));
+
+    it('offers both ends, so a rider can pick the destination first', () => {
+        setJourneyPopupHandlers(handlers());
+        const popup = createStopPopup(stopFeature(1), vi.fn());
+        const buttons = [...popup.querySelectorAll('.popup-journey button')];
+        expect(buttons.map((b) => b.textContent)).toEqual([t('journey.from'), t('journey.to')]);
+        expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+            t('journey.fromAria'),
+            t('journey.toAria'),
+        ]);
+        expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
+    });
+
+    it('reports the picked stop back with its code', () => {
+        const h = handlers();
+        setJourneyPopupHandlers(h);
+        createStopPopup(stopFeature(1), vi.fn()).querySelector('.journey-from-btn').click();
+        expect(h.onPickOrigin).toHaveBeenCalledWith(1);
+        createStopPopup(stopFeature(2), vi.fn()).querySelector('.journey-to-btn').click();
+        expect(h.onPickDestination).toHaveBeenCalledWith(2);
+        expect(h.onClearRole).not.toHaveBeenCalled();
+    });
+
+    it('turns the button of the stop that already holds the role into its undo', () => {
+        const h = handlers();
+        h.role.mockImplementation((cod) => (cod === 1 ? 'origin' : 'none'));
+        setJourneyPopupHandlers(h);
+
+        const popup = createStopPopup(stopFeature(1), vi.fn());
+        const from = popup.querySelector('.journey-from-btn');
+        expect(from.textContent).toBe(t('journey.fromClear'));
+        expect(from.getAttribute('aria-label')).toBe(t('journey.fromClearAria'));
+        expect(from.getAttribute('aria-pressed')).toBe('true');
+        expect(from.classList.contains('active')).toBe(true);
+        // The other end is untouched.
+        expect(popup.querySelector('.journey-to-btn').textContent).toBe(t('journey.to'));
+
+        from.click();
+        expect(h.onClearRole).toHaveBeenCalledWith(1);
+        expect(h.onPickOrigin).not.toHaveBeenCalled();
+    });
+
+    it('shows the destination role the same way', () => {
+        const h = handlers();
+        h.role.mockReturnValue('destination');
+        setJourneyPopupHandlers(h);
+        const popup = createStopPopup(stopFeature(1), vi.fn());
+        expect(popup.querySelector('.journey-to-btn').getAttribute('aria-pressed')).toBe('true');
+        expect(popup.querySelector('.journey-from-btn').getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('leaves the popup unchanged when journey planning is not wired', () => {
+        setJourneyPopupHandlers(null);
+        const popup = createStopPopup(stopFeature(1), vi.fn());
+        expect(popup.querySelector('.popup-journey')).toBeNull();
+        expect(popup.querySelector('.draw-lines-btn')).not.toBeNull();
+    });
+
+    it.each(['en', 'ru'])('labels the journey buttons in %s', (lang) => {
+        setJourneyPopupHandlers(handlers());
+        setLang(lang);
+        const popup = createStopPopup(stopFeature(1), vi.fn());
+        expect(popup.querySelector('.journey-from-btn').textContent).toBe(t('journey.from'));
+        expect(popup.querySelector('.journey-to-btn').textContent).toBe(t('journey.to'));
+        setLang('es');
     });
 });
 

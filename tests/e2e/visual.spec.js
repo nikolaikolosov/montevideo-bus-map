@@ -14,7 +14,14 @@
  * baselines are compared strictly.
  */
 import { test, expect } from '@playwright/test';
-import { openMap, renderLine, renderStopRoutes, setView, openStopPopup } from './helpers.js';
+import {
+    openMap,
+    renderLine,
+    renderStopRoutes,
+    setView,
+    openStopPopup,
+    planJourney,
+} from './helpers.js';
 
 // 18 de Julio / Ejido — the densest shared corridor in the network.
 const CORRIDOR_CENTER = [-34.9055, -56.187];
@@ -67,6 +74,11 @@ const scenes = [
     // i18n (brainstorm-006): pin the Cyrillic panel rendering — the hardest
     // script for platform font fallbacks. Popup covered by unit/e2e tests.
     { name: 'panel-ru-dark', theme: 'dark', lang: 'ru', popup: 4772 },
+    // Journey planner: a two-transfer itinerary across the city (ride strokes
+    // in line colours over their casings, dashed transfer walks, A/B pins)
+    // and the panel that itemises it, in both themes.
+    { name: 'journey-1000-1480-dark', theme: 'dark', journey: [1000, 1480] },
+    { name: 'journey-1000-1480-light', theme: 'light', journey: [1000, 1480] },
 ];
 
 for (const scene of scenes) {
@@ -74,6 +86,7 @@ for (const scene of scenes) {
         await openMap(page, { theme: scene.theme, lang: scene.lang });
         if (scene.line) await renderLine(page, scene.line);
         if (scene.stop) await renderStopRoutes(page, scene.stop);
+        if (scene.journey) await planJourney(page, ...scene.journey);
         if (scene.popup) await openStopPopup(page, scene.popup);
         if (scene.view) await setView(page, scene.view.center ?? CORRIDOR_CENTER, scene.view.zoom);
         await page.waitForTimeout(400); // let the canvas settle

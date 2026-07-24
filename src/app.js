@@ -31,12 +31,16 @@ import {
     initMap,
     renderGlobalStops,
     renderRoutes,
+    renderJourney,
+    renderJourneyEndpoints,
+    setJourneyPopupHandlers,
     focusStop,
     locateUser,
     applyMapTheme,
     getRenderState,
     closeMapPopup,
 } from './map.js';
+import { planJourney } from './journey.js';
 import { initTheme, getTheme, setThemeOverride, onThemeChange } from './theme.js';
 import { initLang, setLang, onLangChange, applyTranslations, t } from './i18n.js';
 import { buildSearchIndex } from './search.js';
@@ -54,6 +58,8 @@ import {
     initLangSwitcher,
     updateLangSwitcher,
     initErrorRetry,
+    renderJourneyPanel,
+    initJourneyControls,
 } from './ui.js';
 
 // ---------------------------------------------------------------------------
@@ -134,6 +140,112 @@ const stopDisplayName = (feature) => {
     return ESQUINA && ESQUINA !== 'Desconocida' ? `${CALLE} y ${ESQUINA}` : CALLE;
 };
 
+// ---------------------------------------------------------------------------
+// Journey planning (stop → stop, see journey.js)
+// ---------------------------------------------------------------------------
+
+/** Current journey endpoints, read from the route state (URL is the truth). */
+const journeySelection = () =>
+    currentState.view === 'journey'
+        ? { from: currentState.from, to: currentState.to }
+        : { from: null, to: null };
+
+/** Navigates to a journey state, falling back home when both ends are gone. */
+function goJourney(from, to, option = 0) {
+    if (from == null && to == null) router.go({ view: 'all' });
+    else router.go({ view: 'journey', from, to, option });
+}
+
+/** Popup wiring: the two "from here" / "to here" buttons on every stop. */
+const journeyPopupHandlers = {
+    role: (code) => {
+        const { from, to } = journeySelection();
+        if (from === code) return 'origin';
+        if (to === code) return 'destination';
+        return 'none';
+    },
+    onPickOrigin: (code) => {
+        const { to } = journeySelection();
+        goJourney(code, to === code ? null : to);
+    },
+    onPickDestination: (code) => {
+        const { from } = journeySelection();
+        goJourney(from === code ? null : from, code);
+    },
+    onClearRole: (code) => {
+        const { from, to } = journeySelection();
+        goJourney(from === code ? null : from, to === code ? null : to);
+    },
+};
+
+/**
+ * Renders the `journey` view: endpoints on the map plus the panel. With only
+ * one end picked it stays in "pick the other one" mode over the full stop
+ * layer; with both, it plans and draws the selected itinerary.
+ */
+function renderJourneyState(state, { redrawMap = true } = {}) {
+    const known = (code) => code != null && uniqueStopByCode.has(code);
+    // A deep link can carry a stop that a data update removed.
+    const stale =
+        (state.from != null && !known(state.from)) || (state.to != null && !known(state.to));
+    const from = known(state.from) ? state.from : null;
+    const to = known(state.to) ? state.to : null;
+
+    const nameOf = (code) => (known(code) ? stopDisplayName(uniqueStopByCode.get(code)) : '');
+    const panel = {
+        visible: true,
+        originName: nameOf(from),
+        destinationName: nameOf(to),
+        message: '',
+        options: [],
+        activeIndex: 0,
+        stopName: (code) => nameOf(code) || String(code),
+    };
+
+    updateStatsPanel({ show: false });
+    renderContextBar(null);
+    setSearchDisplay('');
+
+    const showEndpointsOnly = () => {
+        if (redrawMap) {
+            renderJourneyEndpoints({ fromCode: from, toCode: to, onShowRoutes: handleShowRoutes });
+        }
+    };
+
+    if (from == null || to == null) {
+        panel.message = stale
+            ? t('journey.unknownStop')
+            : t(from == null ? 'journey.pickOrigin' : 'journey.pickDestination');
+        renderJourneyPanel(panel);
+        showEndpointsOnly();
+        return;
+    }
+
+    const { status, options } = planJourney(from, to);
+    if (status !== 'ok' || options.length === 0) {
+        panel.message = t(status === 'same' ? 'journey.sameStop' : 'journey.noRoute');
+        renderJourneyPanel(panel);
+        showEndpointsOnly();
+        return;
+    }
+
+    const activeIndex = Math.min(Math.max(state.option ?? 0, 0), options.length - 1);
+    // Panel BEFORE map: the itinerary's fitBounds measures the panel to keep
+    // both ends clear of it, so the panel must already have its final size.
+    renderJourneyPanel(
+        { ...panel, options, activeIndex },
+        { onSelectOption: (index) => router.go({ view: 'journey', from, to, option: index }) },
+    );
+    if (redrawMap) {
+        renderJourney({
+            option: options[activeIndex],
+            fromCode: from,
+            toCode: to,
+            onShowRoutes: handleShowRoutes,
+        });
+    }
+}
+
 /** Renders one route state. The only caller is the router. */
 function renderForState(state) {
     closeMapPopup();
@@ -144,7 +256,12 @@ function renderForState(state) {
         state = { view: 'all' };
     currentState = state;
 
+    if (state.view !== 'journey') renderJourneyPanel({ visible: false });
+
     switch (state.view) {
+        case 'journey':
+            renderJourneyState(state);
+            break;
         case 'line': {
             const { variantCount, stopCount } = renderRoutes({
                 lineIds: [state.line],
@@ -220,6 +337,14 @@ window.__mvdShowStopRoutes = (stopCode) => {
     return true;
 };
 
+/** Journey hooks: plan a trip, and read the plan the panel is showing. */
+window.__mvdPlanJourney = (from, to, option = 0) => {
+    if (!uniqueStopByCode.has(from) || !uniqueStopByCode.has(to)) return false;
+    router.go({ view: 'journey', from, to, option });
+    return true;
+};
+window.__mvdGetJourney = (from, to) => planJourney(from, to);
+
 // ---------------------------------------------------------------------------
 // Initialisation
 // ---------------------------------------------------------------------------
@@ -279,6 +404,22 @@ async function initApp() {
         // were looking at (brainstorm-010 issue 3).
         initMap(() => router.go({ view: 'all' }));
 
+        // Journey planning: the popup buttons and the panel's own controls.
+        setJourneyPopupHandlers(journeyPopupHandlers);
+        initJourneyControls({
+            onClear: () => router.go({ view: 'all' }),
+            onSwap: () => {
+                const { from, to } = journeySelection();
+                if (from != null && to != null) {
+                    router.go({ view: 'journey', from: to, to: from, option: 0 });
+                }
+            },
+            // Dropping one end re-enters "pick that end" mode, which puts every
+            // stop back on the map — the trip is not thrown away.
+            onChangeOrigin: () => goJourney(null, journeySelection().to),
+            onChangeDestination: () => goJourney(journeySelection().from, null),
+        });
+
         // Search over lines and stops — the primary entry to both jobs.
         const searchIndex = buildSearchIndex(sortedLines, uniqueStopsData);
         initSearchBox({
@@ -314,6 +455,9 @@ function relabelForLang() {
     const s = currentState;
     if (s.view === 'line') {
         setSearchDisplay(t('panel.lineOption', { id: s.line }));
+    } else if (s.view === 'journey') {
+        // Panel only — a language switch must not re-frame the map (R8).
+        renderJourneyState(s, { redrawMap: false });
     } else if (s.view === 'downstream' && uniqueStopByCode.has(s.stop)) {
         const feature = uniqueStopByCode.get(s.stop);
         const single = s.line !== null;
