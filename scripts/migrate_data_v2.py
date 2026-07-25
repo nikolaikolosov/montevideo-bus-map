@@ -23,7 +23,7 @@ from fetch_api_data import (  # noqa: E402
     FORMAT_VERSION,
     build_routes_collection,
     log,
-    save,
+    save_all,
     validate_cross,
     validate_routes_collection,
     validate_stops_collection,
@@ -97,8 +97,7 @@ def main():
     validate_stops_collection(stops_v2)
     validate_cross(routes_v2, stops_v2)
 
-    save(routes_v2, "routes")
-    save(stops_v2, "stops")
+    save_all([(routes_v2, "routes"), (stops_v2, "stops")])
     log(f"v2 sizes: routes {os.path.getsize('routes.json'):,} B, "
         f"stops {os.path.getsize('stops.json'):,} B")
 
