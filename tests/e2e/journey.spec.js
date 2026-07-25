@@ -24,6 +24,36 @@ test('every stop popup offers both ends of a trip', async ({ page }) => {
     await expect(buttons.nth(0)).toHaveAccessibleName('Empezar el viaje en esta parada');
 });
 
+test('the journey buttons stay quieter than the popup primary action', async ({ page }) => {
+    // `.btn-quiet` is a modifier of `.btn`, so it has to WIN the cascade
+    // against `.btn`'s accent fill. Written as a bare single-class selector it
+    // only did so while it happened to sit later in the stylesheet — and it
+    // did not, so every quiet button shipped looking like a primary one.
+    await openMap(page, { theme: 'dark' });
+    await openStopPopup(page, ORIGIN, { center: true });
+
+    const fills = await page.evaluate(() => {
+        const of = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
+        return {
+            primary: of('.popup-content .draw-lines-btn'),
+            from: of('.journey-from-btn'),
+            to: of('.journey-to-btn'),
+            accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+        };
+    });
+    expect(fills.from).not.toBe(fills.primary);
+    expect(fills.to).toBe(fills.from);
+
+    // …and the end a stop already holds flips to the accent fill.
+    await page.locator('.journey-from-btn').click();
+    await openStopPopup(page, ORIGIN, { center: true });
+    const active = await page.evaluate(
+        () => getComputedStyle(document.querySelector('.journey-from-btn')).backgroundColor,
+    );
+    expect(active).not.toBe(fills.from);
+    await expect(page.locator('.journey-from-btn')).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('picking origin then destination plans the trip', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
 

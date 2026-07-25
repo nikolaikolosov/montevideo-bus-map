@@ -772,32 +772,36 @@ label {
 }
 
 /* Secondary action colour: the journey buttons must not outrank the popup's
-   primary "show all routes" call to action. */
-.btn-quiet {
+   primary "show all routes" call to action.
+   Selectors are written `.btn.btn-quiet`, not `.btn-quiet`: as a modifier of
+   .btn it has to beat .btn's own accent fill, and a bare single-class
+   selector only does that while it happens to sit LATER in the file. It did
+   not, so every quiet button shipped as a primary one until this was fixed. */
+.btn.btn-quiet {
     background: var(--input-bg);
     border: 1px solid var(--panel-border);
     color: var(--text-main);
 }
 
 @media (hover: hover) {
-    .btn-quiet:hover {
+    .btn.btn-quiet:hover {
         background: var(--input-bg-hover);
     }
 }
 
-.btn-quiet.active {
+.btn.btn-quiet.active {
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
 }
 
 @media (hover: hover) {
-    .btn-quiet.active:hover {
+    .btn.btn-quiet.active:hover {
         background: var(--accent-hover);
     }
 }
 
-.btn-quiet:focus-visible {
+.btn.btn-quiet:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
