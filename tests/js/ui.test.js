@@ -98,8 +98,16 @@ describe('search combobox', () => {
                 <ul id="searchList" role="listbox" hidden></ul>
             </div>`;
         const onPick = vi.fn();
-        initSearchBox({ search: () => results, lines: ['7', '100'], onPick });
-        return { input: document.getElementById('searchInput'), onPick };
+        const queries = [];
+        initSearchBox({
+            search: (q) => {
+                queries.push(q);
+                return results;
+            },
+            lines: ['7', '100'],
+            onPick,
+        });
+        return { input: document.getElementById('searchInput'), onPick, queries };
     };
 
     const type = (input, value) => {
@@ -165,6 +173,31 @@ describe('search combobox', () => {
         expect(input.value).toBe('Línea 104');
         setSearchDisplay('');
         expect(input.value).toBe('');
+    });
+
+    it('an untouched display label is not run as a query', () => {
+        // The field doubles as selection display and query box, and app.js writes
+        // a human label into it. Neither form matches the index — lines are
+        // indexed by bare id, stops as "CALLE ESQUINA" without the " y " — so
+        // reading it back as a query answered "Sin resultados" for a stop the
+        // rider had just picked, and hid the browse list behind a manual clear.
+        const { input, queries } = mount([]); // an index that matches nothing
+        setSearchDisplay('BUENOS AIRES y ITUZAINGO'); // after picking stop 4772
+        input.dispatchEvent(new Event('focus'));
+
+        expect(queries).toEqual([]);
+        expect(document.querySelector('.search-empty')).toBeNull();
+        const opts = [...document.querySelectorAll('#searchList [role="option"]')];
+        expect(opts).toHaveLength(3); // all-stops + both lines
+        expect(opts[0].textContent).toBe(t('panel.allStops'));
+    });
+
+    it('goes back to querying as soon as the label is edited', () => {
+        const { input, queries } = mount([{ type: 'line', id: '104' }]);
+        setSearchDisplay('Línea 104');
+        type(input, '104');
+        expect(queries).toEqual(['104']);
+        expect(document.querySelectorAll('#searchList [role="option"]')).toHaveLength(1);
     });
 
     it('shows the clear button only when the field has text; click goes home', () => {

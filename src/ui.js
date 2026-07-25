@@ -142,6 +142,17 @@ export function renderDataFreshness(value) {
 // ---------------------------------------------------------------------------
 
 /**
+ * The label the app last wrote into the search field via setSearchDisplay.
+ *
+ * That field does double duty — it shows the current selection AND takes the
+ * query — and the display label is not a query: lines are indexed by bare id
+ * ('104', not 'Línea 104') and stops as `normalize(CALLE + ' ' + ESQUINA)`,
+ * without the ' y ' the display name inserts. Reading it back as a query
+ * answered "Sin resultados" for a stop the rider had just picked.
+ */
+let searchDisplayText = '';
+
+/**
  * Wires the line/stop search combobox (WAI-ARIA combobox + listbox).
  *
  * The empty query shows a browsable default list — "all stops" plus every
@@ -213,7 +224,14 @@ export function initSearchBox({ search, lines, onPick }) {
     };
 
     const render = () => {
-        const q = input.value.trim();
+        const raw = input.value.trim();
+        // An untouched display label means "nothing typed yet", so re-focusing
+        // after a pick reopens the browsable default list (all stops + every
+        // line) instead of a dead "Sin resultados" row for a stop that plainly
+        // exists — which also left that list unreachable without clearing the
+        // field by hand. Any edit makes the text differ from the label and it
+        // becomes a real query again.
+        const q = raw === searchDisplayText.trim() ? '' : raw;
         entries =
             q.length === 0
                 ? [{ type: 'all' }, ...lines.map((id) => ({ type: 'line', id }))]
@@ -295,6 +313,7 @@ export function initSearchBox({ search, lines, onPick }) {
  * @param {string} text
  */
 export function setSearchDisplay(text) {
+    searchDisplayText = text; // see the note on searchDisplayText
     const input = document.getElementById('searchInput');
     if (input) input.value = text;
     const clear = document.getElementById('searchClear');
@@ -484,6 +503,12 @@ export function renderJourneyPanel(model, handlers = {}) {
     if (options.length === 0) {
         tabs.hidden = true;
         note.hidden = true;
+        // Reset the roles here too: coming from a multi-option itinerary the
+        // leg list would otherwise stay role="tabpanel" with aria-labelledby
+        // pointing at a tab button the line above has just deleted — an orphan
+        // tabpanel with no name and no owning tab.
+        legs.setAttribute('role', 'list');
+        legs.removeAttribute('aria-labelledby');
         return;
     }
 
@@ -526,8 +551,14 @@ export function renderJourneyPanel(model, handlers = {}) {
             if (!step) return;
             e.preventDefault();
             const next = (i + step + options.length) % options.length;
-            tabButtons[next].focus();
+            // Select FIRST, then focus the node that exists afterwards.
+            // onSelectOption routes through the router, which re-renders this
+            // panel synchronously and rebuilds every tab — so focusing
+            // tabButtons[next] before the call focused a node that was about to
+            // be discarded, activeElement fell back to <body>, and a keyboard
+            // rider was stranded after exactly one arrow press.
             handlers.onSelectOption?.(next);
+            document.getElementById(`journey-opt-${next}`)?.focus();
         });
         tabButtons.push(tab);
         tabs.appendChild(tab);

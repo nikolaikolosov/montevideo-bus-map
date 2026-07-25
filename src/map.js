@@ -177,6 +177,37 @@ export function getRenderState() {
 }
 
 /**
+ * Paint order of the route layers, one 'joint'|'strand' per entry, first
+ * painted first. Test hook — `getRenderState()` is compared against a golden
+ * manifest and must keep its shape, so depth lives here instead.
+ *
+ * Joints fill the corner wedges UNDER the strands (see renderRouteJoints), and
+ * nothing may leave a joint painted after one: reading the order is the only way
+ * to see that, since the canvas renderer keeps it in a private linked list
+ * (`_drawFirst` → `_order.next`, Leaflet 1.9.4, version-pinned by SRI in
+ * index.html) rather than in the DOM.
+ *
+ * @returns {Array<'joint'|'strand'>} empty when nothing is rendered
+ */
+export function getRouteDrawOrder() {
+    const order = [];
+    const group = appState.currentRouteLayer;
+    if (!group) return order;
+
+    let renderer = null;
+    group.eachLayer((l) => {
+        renderer = renderer ?? l._renderer;
+    });
+    if (!renderer?._drawFirst) return order;
+
+    for (let node = renderer._drawFirst; node; node = node.next) {
+        if (node.layer._jointFor) order.push('joint');
+        else if (node.layer._bundleSlot) order.push('strand');
+    }
+    return order;
+}
+
+/**
  * Applies the active theme to the map: swaps the basemap tiles and redraws
  * the current view so route lines, stops and labels pick up theme colors.
  * Safe to call before initMap() (no-op).
@@ -201,7 +232,12 @@ export function applyMapTheme() {
     } else if (last.type === 'journey-endpoints') {
         renderJourneyEndpoints(last.args);
     } else {
-        renderRoutes(last.args);
+        // Same rule as the journey branch above: a recolour must not move the
+        // camera (R8). renderRoutes ends in fitBounds whenever there is no
+        // source stop, so replaying a line view verbatim threw away whatever
+        // the rider had panned or zoomed to — and the theme also flips on its
+        // own at sunrise/sunset, so it could happen with no input at all.
+        renderRoutes({ ...last.args, fit: false });
     }
 }
 
@@ -298,6 +334,22 @@ let userLocationLayer = null;
 export function locateUser() {
     if (!map) return;
 
+    // Snapshot what the camera is allowed to be moved away from. The fix can
+    // land up to the full 10 s timeout later — a slowly answered permission
+    // prompt, a cold GPS — and app.js gates only the REQUEST on the initial
+    // view being home, never the answer. By the time it arrives the rider may
+    // have opened a line or panned the home view, and moving the camera then
+    // breaks the very "never yank the camera away from a deep link" rule the
+    // request is gated on. Comparing hash AND camera covers both: navigating
+    // away changes the hash, panning or zooming in place changes the camera.
+    const askedHash = location.hash;
+    const askedCenter = map.getCenter();
+    const askedZoom = map.getZoom();
+    const cameraUntouched = () =>
+        location.hash === askedHash &&
+        map.getZoom() === askedZoom &&
+        map.getCenter().equals(askedCenter, 1e-9);
+
     map.once('locationfound', (e) => {
         // Service-area gate (brainstorm-007): a visitor located outside
         // Montevideo keeps the default city overview — centring on them
@@ -310,7 +362,9 @@ export function locateUser() {
             return;
         }
 
-        map.setView(e.latlng, CONFIG.GEOLOCATION_MAX_ZOOM);
+        // The marker goes up either way — knowing where you are is useful on
+        // any view. Only the camera move is conditional.
+        if (cameraUntouched()) map.setView(e.latlng, CONFIG.GEOLOCATION_MAX_ZOOM);
 
         if (userLocationLayer) map.removeLayer(userLocationLayer);
 
@@ -790,7 +844,13 @@ function renderRouteLines(features) {
         for (const l of layersByLine.get(lineId) ?? []) {
             if (on) {
                 l.setStyle({ weight: CONFIG.ROUTE_HOVER_WEIGHT, opacity: 1 });
-                l.bringToFront();
+                // Strands only. A joint brought to the front stays there — the
+                // off-branch below restores weight and opacity but Leaflet has
+                // no "back where it was" — so one hover would leave this line's
+                // connectors drawn over every strand until the next full
+                // re-render: exactly the colored knot bringToBack() exists to
+                // prevent (see renderRouteJoints).
+                if (!l._jointFor) l.bringToFront();
             } else {
                 l.setStyle({ weight: l._baseWeight, opacity: CONFIG.ROUTE_OPACITY });
             }
@@ -945,9 +1005,16 @@ function renderHighlightStop(sourceFeature) {
  * @param {string[]|null} [options.variantsArr]
  * @param {object|null} [options.sourceFeature] - GeoJSON Feature of the source stop
  * @param {Function} options.onShowRoutes - callback for popup "Ver rutas" button
+ * @param {boolean} [options.fit] - frame the result; false when only re-colouring
  * @returns {{ variantCount: number, stopCount: number }}
  */
-export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null, onShowRoutes }) {
+export function renderRoutes({
+    lineIds,
+    variantsArr = null,
+    sourceFeature = null,
+    onShowRoutes,
+    fit = true,
+}) {
     clearLayers();
     appState.lastRender = {
         type: 'routes',
@@ -990,7 +1057,7 @@ export function renderRoutes({ lineIds, variantsArr = null, sourceFeature = null
     }
 
     // --- Fit bounds ---
-    if (!sourceFeature && appState.currentRouteLayer?.getLayers().length) {
+    if (fit && !sourceFeature && appState.currentRouteLayer?.getLayers().length) {
         map.fitBounds(appState.currentRouteLayer.getBounds(), {
             padding: CONFIG.FIT_BOUNDS_PADDING,
             maxZoom: CONFIG.FIT_BOUNDS_MAX_ZOOM,
@@ -1198,12 +1265,20 @@ export function renderJourney({ option, fromCode, toCode, onShowRoutes, fit = tr
         }
     }
 
-    // Transfer dots: where one ride ends and the next begins.
-    option.legs.forEach((leg, i) => {
-        if (leg.type !== 'ride' || i === 0) return;
-        const latlng = stopLatLng(leg.fromCode);
-        if (latlng) journeyMarker(latlng, 'transfer').addTo(stopsLayer);
-    });
+    // Transfer dots: where one ride ends and the next begins. Keyed on "a ride
+    // came before", not on the leg index — most itineraries open with an access
+    // walk, and testing `i === 0` put a transfer dot on the FIRST ride's
+    // boarding stop, so the map drew option.transfers + 1 dots while the panel
+    // itemised option.transfers.
+    let seenRide = false;
+    for (const leg of option.legs) {
+        if (leg.type !== 'ride') continue;
+        if (seenRide) {
+            const latlng = stopLatLng(leg.fromCode);
+            if (latlng) journeyMarker(latlng, 'transfer').addTo(stopsLayer);
+        }
+        seenRide = true;
+    }
 
     const origin = stopLatLng(fromCode);
     const destination = stopLatLng(toCode);

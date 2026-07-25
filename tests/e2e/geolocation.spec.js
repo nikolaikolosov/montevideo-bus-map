@@ -9,7 +9,7 @@
  *    leaves the default city overview untouched and shows no marker.
  */
 import { test, expect, devices } from '@playwright/test';
-import { openMap } from './helpers.js';
+import { openMap, renderLine, setView } from './helpers.js';
 
 // Pixel 7 profile: isMobile + hasTouch → (pointer: coarse) matches, which is
 // exactly the condition app.js uses to start locateUser.
@@ -64,6 +64,52 @@ test('a fix outside Montevideo keeps the default city overview', async ({ page, 
     expect(after.center.lng).toBeGreaterThan(-57); // nowhere near -58.38
 
     await expect(page.locator('.user-location-marker')).toHaveCount(0);
+});
+
+test('a late fix does not yank the camera off wherever the rider went', async ({
+    page,
+    context,
+}) => {
+    // app.js gates only the locate REQUEST on the initial view being home; the
+    // answer can arrive up to the full 10 s timeout later (a slowly answered
+    // permission prompt, a cold GPS), by which time the rider may be reading a
+    // line. Moving the camera then breaks the same "never yank the camera away
+    // from a deep link" rule the request is gated on.
+    await context.setGeolocation({ latitude: -34.9055, longitude: -56.187 });
+    await page.addInitScript(() => {
+        const real = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+        navigator.geolocation.getCurrentPosition = (ok, err, opts) => {
+            setTimeout(() => real(ok, err, opts), 2500);
+        };
+    });
+
+    await openMap(page, { theme: 'dark' });
+
+    // Rider moves on while the fix is still pending.
+    await renderLine(page, '100');
+    await setView(page, [-34.8875, -56.1046], 15);
+    const parked = await page.evaluate(() => ({
+        zoom: window.__mvdMap.getZoom(),
+        lat: window.__mvdMap.getCenter().lat,
+        lng: window.__mvdMap.getCenter().lng,
+        hash: location.hash,
+    }));
+    expect(parked.hash).toBe('#/linea/100');
+
+    // The marker still goes up — that is what proves the fix landed, so this
+    // test cannot pass by the geolocation round-trip never completing.
+    await expect(page.locator('.user-location-marker')).toHaveCount(1, { timeout: 15_000 });
+
+    const after = await page.evaluate(() => ({
+        zoom: window.__mvdMap.getZoom(),
+        lat: window.__mvdMap.getCenter().lat,
+        lng: window.__mvdMap.getCenter().lng,
+        hash: location.hash,
+    }));
+    expect(after.zoom, 'late fix moved the zoom').toBe(parked.zoom);
+    expect(after.lat, 'late fix moved the centre').toBeCloseTo(parked.lat, 6);
+    expect(after.lng, 'late fix moved the centre').toBeCloseTo(parked.lng, 6);
+    expect(after.hash).toBe(parked.hash);
 });
 
 test('desktop (fine pointer) never asks for geolocation', async ({ browser }) => {
