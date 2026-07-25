@@ -165,9 +165,15 @@ describe('renderJourneyPanel', () => {
         expect(tabs).toHaveLength(2);
         expect(tabs.map((b) => b.getAttribute('aria-selected'))).toEqual(['false', 'true']);
         expect(tabs.map((b) => b.tabIndex)).toEqual([-1, 0]);
-        expect(document.getElementById('journeyLegs').getAttribute('aria-labelledby')).toBe(
-            tabs[1].id,
-        );
+        const legs = document.getElementById('journeyLegs');
+        expect(legs.getAttribute('aria-labelledby')).toBe(tabs[1].id);
+        // aria-controls has to point at something that IS a tabpanel, or the
+        // pattern is invalid for a screen reader.
+        expect(tabs.map((b) => b.getAttribute('aria-controls'))).toEqual([
+            'journeyLegs',
+            'journeyLegs',
+        ]);
+        expect(legs.getAttribute('role')).toBe('tabpanel');
         // The panel shows the ACTIVE option's legs, not the first one's.
         expect(document.querySelectorAll('#journeyLegs li')).toHaveLength(2);
 
@@ -175,22 +181,94 @@ describe('renderJourneyPanel', () => {
         expect(onSelectOption).toHaveBeenCalledWith(0);
     });
 
-    it('moves between alternatives with the arrow keys', () => {
-        const onSelectOption = vi.fn();
+    it('re-renders a single itinerary over a tablist without leaving the role behind', () => {
+        const three = [
+            option([ride('1', 1, 5, 3, 600)], 900, 0),
+            option([ride('2', 1, 9, 3, 700)], 1100, 0),
+        ];
+        renderJourneyPanel(baseModel({ options: three }));
+        expect(document.getElementById('journeyLegs').getAttribute('role')).toBe('tabpanel');
+
+        renderJourneyPanel(baseModel({ options: [three[0]] }));
+        const legs = document.getElementById('journeyLegs');
+        expect(legs.getAttribute('role')).toBe('list');
+        expect(legs.hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('leaves no orphan tabpanel when the itinerary is dropped', () => {
+        // Rider had alternatives and then taps "change origin": options goes
+        // empty and the early return used to skip the role reset, so the leg list
+        // stayed role="tabpanel" with aria-labelledby pointing at a tab button
+        // that had just been deleted.
         renderJourneyPanel(
             baseModel({
                 options: [
                     option([ride('1', 1, 5, 3, 600)], 900, 0),
                     option([ride('2', 1, 9, 3, 700)], 1100, 0),
                 ],
+                activeIndex: 1,
+            }),
+        );
+        renderJourneyPanel(baseModel({ options: [], message: t('journey.pickDestination') }));
+
+        const legs = document.getElementById('journeyLegs');
+        expect(legs.getAttribute('role')).toBe('list');
+        expect(legs.hasAttribute('aria-labelledby')).toBe(false);
+        expect(document.getElementById('journeyOptions').hidden).toBe(true);
+    });
+
+    it('moves both ways between alternatives with the arrow keys', () => {
+        // THREE options on purpose: with two, (0+1)%2 and (0-1+2)%2 are both 1,
+        // so a single toHaveBeenLastCalledWith(1) could not tell ArrowLeft from
+        // ArrowRight and backward navigation could be deleted unnoticed.
+        const onSelectOption = vi.fn();
+        renderJourneyPanel(
+            baseModel({
+                options: [
+                    option([ride('1', 1, 5, 3, 600)], 900, 0),
+                    option([ride('2', 1, 9, 3, 700)], 1100, 0),
+                    option([ride('3', 1, 9, 2, 800)], 1300, 0),
+                ],
             }),
             { onSelectOption },
         );
         const tabs = [...document.querySelectorAll('#journeyOptions [role="tab"]')];
+        expect(tabs).toHaveLength(3);
         tabs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-        expect(onSelectOption).toHaveBeenCalledWith(1);
+        expect(onSelectOption).toHaveBeenLastCalledWith(1);
         tabs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
-        expect(onSelectOption).toHaveBeenLastCalledWith(1); // wraps to the last one
+        expect(onSelectOption).toHaveBeenLastCalledWith(2); // wraps to the last one
+    });
+
+    it('keeps the keyboard on the tablist when selecting re-renders it', () => {
+        // In the app onSelectOption routes through the router, which re-renders
+        // this panel synchronously and rebuilds every tab. Focusing the next tab
+        // BEFORE that call focused a node about to be discarded: activeElement
+        // fell back to <body> and a keyboard rider was stranded after exactly one
+        // arrow press, with no announcement of the newly selected tab either.
+        const options = [
+            option([ride('1', 1, 5, 3, 600)], 900, 0),
+            option([ride('2', 1, 9, 3, 700)], 1100, 0),
+            option([ride('3', 1, 9, 2, 800)], 1300, 0),
+        ];
+        const select = (i) =>
+            renderJourneyPanel(baseModel({ options, activeIndex: i }), { onSelectOption: select });
+        select(0);
+
+        const press = (key) =>
+            document.activeElement.dispatchEvent(
+                new KeyboardEvent('keydown', { key, bubbles: true }),
+            );
+
+        document.getElementById('journey-opt-0').focus();
+        press('ArrowRight');
+        expect(document.activeElement).toBe(document.getElementById('journey-opt-1'));
+        expect(document.activeElement.getAttribute('aria-selected')).toBe('true');
+        // A second press must still move — this is what "stranded" broke.
+        press('ArrowRight');
+        expect(document.activeElement).toBe(document.getElementById('journey-opt-2'));
+        press('ArrowLeft');
+        expect(document.activeElement).toBe(document.getElementById('journey-opt-1'));
     });
 
     it('builds no tablist for a single itinerary, and no orphan tabpanel', () => {
