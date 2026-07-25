@@ -38,6 +38,7 @@ import {
     locateUser,
     applyMapTheme,
     getRenderState,
+    getRouteDrawOrder,
     closeMapPopup,
 } from './map.js';
 import { planJourney } from './journey.js';
@@ -330,6 +331,8 @@ window.__mvdSelectLine = (lineId) => {
     router.go({ view: 'line', line: lineId });
 };
 window.__mvdGetRenderState = getRenderState;
+/** Paint order of the route layers ('joint'|'strand'): joints must stay under. */
+window.__mvdGetDrawOrder = getRouteDrawOrder;
 
 window.__mvdShowStopRoutes = (stopCode) => {
     if (!uniqueStopByCode.has(stopCode)) return false;

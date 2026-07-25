@@ -202,6 +202,35 @@ test('a deep-linked itinerary renders on load', async ({ page }) => {
     await expect(page.locator('#journeyLegs .line-chip').first()).toBeVisible();
 });
 
+test('the map draws exactly as many transfer dots as the panel reports', async ({ page }) => {
+    // The dot loop used to test the leg INDEX (`i === 0`) instead of "did a ride
+    // come before this one". Most itineraries open with an access walk, so the
+    // FIRST ride's boarding stop got a transfer dot too and the map showed
+    // transfers + 1 dots against the panel's transfers. Both pairs below start
+    // with a walk: 3976 → 928 is [walk, ride, walk, ride, walk] with 1 transfer,
+    // 4890 → 3904 is [walk, ride, ride, ride, walk] with 2.
+    await openMap(page, { theme: 'dark' });
+
+    for (const [from, to] of [
+        [3976, 928],
+        [4890, 3904],
+    ]) {
+        await page.goto(`/#/viaje/${from}/${to}`);
+        await page.waitForSelector('#journeyPanel:not([hidden])');
+        const plan = await page.evaluate(
+            ([f, t]) => {
+                const option = window.__mvdGetJourney(f, t).options[0];
+                return { transfers: option.transfers, kinds: option.legs.map((l) => l.type) };
+            },
+            [from, to],
+        );
+        // Guard the premise: if the planner stops opening with a walk here this
+        // test is no longer exercising the bug and must be re-pointed.
+        expect(plan.kinds[0], `${from}→${to} no longer starts with a walk`).toBe('walk');
+        await expect(page.locator('.journey-marker-transfer')).toHaveCount(plan.transfers);
+    }
+});
+
 test('a deep link to a stop that no longer exists asks for a new pick', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
     await page.goto('/#/viaje/999999/4018');
