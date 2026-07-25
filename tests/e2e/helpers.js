@@ -1,4 +1,5 @@
 /** Shared fixtures for the render e2e suites. */
+import { expect } from '@playwright/test';
 
 /**
  * Opens the map with a pinned theme and language, external network stubbed
@@ -113,7 +114,17 @@ export async function openStopPopup(page, stopCode, { center = false } = {}) {
     await page.waitForFunction(() => document.querySelectorAll('.leaflet-popup').length === 1);
 }
 
-/** Fixed camera for corridor scenes (no animation → deterministic pixels). */
+/**
+ * Fixed camera for corridor scenes (no animation → deterministic pixels), with
+ * the move verified against the map itself.
+ *
+ * The assertion is the point. Leaflet silently drops a setView issued during a
+ * zoom animation, which once left all three corridor-zoom scenes recording the
+ * plain fit-bounds camera instead of zoom 12/15/17, on both platforms (PR #6).
+ * Pixels are the wrong detector for that: the same line at two zoom levels
+ * differs by ~12k px, which sailed under the old 2 % budget. So a dropped camera
+ * move now fails here, on the camera, whatever the screenshot tolerance is.
+ */
 export async function setView(page, center, zoom) {
     await page.evaluate(
         ([c, z]) => {
@@ -122,4 +133,12 @@ export async function setView(page, center, zoom) {
         [center, zoom],
     );
     await page.waitForTimeout(300); // canvas redraw settle
+
+    const camera = await page.evaluate(() => {
+        const c = window.__mvdMap.getCenter();
+        return { zoom: window.__mvdMap.getZoom(), lat: c.lat, lng: c.lng };
+    });
+    expect(camera.zoom, 'setView zoom was dropped').toBe(zoom);
+    expect(camera.lat, 'setView latitude was dropped').toBeCloseTo(center[0], 4);
+    expect(camera.lng, 'setView longitude was dropped').toBeCloseTo(center[1], 4);
 }

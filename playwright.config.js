@@ -13,9 +13,20 @@ export default defineConfig({
     },
     expect: {
         toHaveScreenshot: {
-            // Canvas anti-aliasing wiggles a little between runs; real route
-            // regressions move whole polylines and blow far past this.
-            maxDiffPixelRatio: 0.02,
+            // An ABSOLUTE budget, because the ratio was measured against the
+            // wrong denominator: 2 % of a 1280×800 page is 20,480 px, while the
+            // map ink a scene actually contains is 774 px (stop-4018-downstream),
+            // 4,614 (corridor-zoom-12), 7,077 (journey-1000-1480) … 42,729
+            // (global-stops). Eight of thirteen measured scenes could therefore
+            // lose their ENTIRE route render and still match their baseline.
+            //
+            // With tiles and fonts blocked and animations disabled the canvas is
+            // deterministic: two full zero-tolerance runs of all 20 scenes each
+            // differed by 0 px.
+            // 120 px is that measurement plus room for anti-aliasing noise on a
+            // platform we cannot measure from here, and still 6× below the
+            // weakest scene's ink.
+            maxDiffPixels: 120,
             animations: 'disabled',
         },
     },

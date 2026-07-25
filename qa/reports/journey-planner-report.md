@@ -46,7 +46,7 @@ Montevideo is, and is documented as an assumption rather than evidence.
 | pattern-stop entries | 60834 |
 | footpath edges (directed, ≤ 400 m) | 52902 |
 | footpaths per stop mean / p95 / max | 10.8 / 21 / 44 |
-| graph build | 28 ms |
+| graph build | 33 ms |
 
 ## 3. Search behaviour on 200 sampled origin/destination pairs
 
@@ -54,19 +54,19 @@ Montevideo is, and is documented as an assumption rather than evidence.
 |---|---|
 | pairs sampled | 200 |
 | planned / no route | 200 / 0 |
-| plan time mean / max | 3.0 ms / 7 ms |
-| itineraries offered, mean | 1.66 |
-| transfers in the best itinerary, mean | 1.47 |
-| ride legs across all offered itineraries | 764 |
+| plan time mean / max | 3.4 ms / 8 ms |
+| itineraries offered, mean | 1.51 |
+| transfers in the best itinerary, mean | 1.31 |
+| ride legs across all offered itineraries | 668 |
 
 ### Drawn vs charged (ride legs)
 
 Length of the drawn slice ÷ the distance the planner charged for, over
-764 ride legs (0 leg(s) without drawable geometry).
+668 ride legs (0 leg(s) without drawable geometry).
 
 | metric | value |
 |---|---|
-| min / p05 / p50 / p95 / p99 / max | 0.95 / 0.95 / 0.99 / 1.10 / 1.25 / 2.02 |
+| min / p05 / p50 / p95 / p99 / max | 0.94 / 0.95 / 0.99 / 1.10 / 1.26 / 1.58 |
 
 The median is ~1.00 by construction (§1). The upper tail is real geometry, not
 slicing error: a two-stop hop where the bus goes around a block is genuinely

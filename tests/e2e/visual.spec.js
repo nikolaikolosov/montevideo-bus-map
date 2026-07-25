@@ -8,10 +8,17 @@
  * Cerro driveways, line 187's out-and-back spur, ida/vuelta double strands).
  *
  * Update baselines after an intentional visual change:
- *   npx playwright test visual --update-snapshots
+ *   npx playwright test visual --update-snapshots=all
+ * (`--update-snapshots` alone only rewrites baselines that already fail, so a
+ * change smaller than the tolerance is silently kept.)
  * CI runs with --update-snapshots=missing: the first run on a new platform
  * creates its baselines (uploaded as artifacts to be committed); existing
  * baselines are compared strictly.
+ *
+ * The comparison budget is absolute (playwright.config.js: maxDiffPixels) and
+ * sized against the ink a scene actually contains — see the note there. Scenes
+ * that command the camera assert it in setView() rather than trusting pixels to
+ * notice a dropped move.
  */
 import { test, expect } from '@playwright/test';
 import {
@@ -90,6 +97,15 @@ for (const scene of scenes) {
         if (scene.popup) await openStopPopup(page, scene.popup);
         if (scene.view) await setView(page, scene.view.center ?? CORRIDOR_CENTER, scene.view.zoom);
         await page.waitForTimeout(400); // let the canvas settle
-        await expect(page).toHaveScreenshot(`${scene.name}.png`);
+        await expect(page).toHaveScreenshot(`${scene.name}.png`, {
+            // The freshness label prints the dataset's generated_at date and
+            // turns amber FRESHNESS_WARN_DAYS after it, so an unmasked baseline
+            // rots twice over: every data update rewrites those ~300 px, and the
+            // colour flips on its own once the data is old enough. Neither has
+            // anything to do with route rendering, and both hid under the old
+            // 2 % budget — the committed baselines still said "27 de junio"
+            // against data generated on 6 July.
+            mask: [page.locator('#dataFreshness')],
+        });
     });
 }

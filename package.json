@@ -7,7 +7,7 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:e2e": "playwright test",
-        "test:e2e:update": "playwright test --update-snapshots",
+        "test:e2e:update": "playwright test --update-snapshots=all",
         "verify:routes": "vitest run tests/js/route-invariants.test.js",
         "verify:colors": "vitest run tests/js/line-colors.test.js",
         "verify:journey": "node scripts/measure_journey_model.mjs",
