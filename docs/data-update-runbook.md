@@ -30,6 +30,23 @@ data's generation date ("Datos: …"), turning amber after 45 days
    (`architecture/contracts/data-contract.md`). Any auth/network/contract problem
    exits non-zero with a message — old files stay in place on failure.
 
+   Two volume guards run after the contract checks, because a *partial* feed
+   satisfies the contract perfectly — `stop_times.txt` is the largest member of
+   the GTFS zip, so an upstream regeneration caught in flight yields intact
+   shapes with a few per cent of the stop patterns:
+
+   - patterns must cover ≥ 95 % of route variants, and
+   - no count may drop below 90 % of what is already committed on disk.
+
+   If a contraction is real (a chunk of the network genuinely retired), re-run
+   with `python fetch_api_data.py --allow-shrink`; the script logs what it waved
+   through. Do not reach for the flag to make an unexplained shrink go away.
+
+   Both files are published together: each is written to `<name>.json.tmp`,
+   flushed, and only renamed once both are complete, so a crash or a full disk
+   can no longer leave a truncated `routes.json` or a fresh routes file paired
+   with the previous stops file.
+
 2. Sanity-check the result:
 
    ```bash
@@ -106,3 +123,7 @@ data's generation date ("Datos: …"), turning amber after 45 days
 | `API_* are not set` | `.env` missing/incomplete | copy `.env.example`, fill values |
 | `Contract violation: …` | API changed its feed format | do NOT force-commit; open an issue, adjust the pipeline + contract + tests together |
 | `GTFS feed is missing …` | partial/broken download | retry; the session already retries transient 5xx |
+| `… route variants have no stop pattern (… > 5%)` | `stop_times.txt` truncated upstream — shapes fine, patterns mostly absent | retry later; the feed is mid-regeneration. Never bypass this one |
+| `… is …% of the … already on disk … refusing to overwrite good data` | the new dataset is a fraction of the committed one | investigate; if the contraction is genuine, re-run with `--allow-shrink` |
+| `unrelated staged changes present; refusing to commit` (wrapper) | something else was `git add`ed before running `update_and_push.sh` | `git restore --staged <path>` and re-run — the wrapper publishes data files only |
+| `on branch 'x', expected 'main'` (wrapper) | publishing from a feature branch | check out `main`, or set `TARGET_BRANCH` deliberately |

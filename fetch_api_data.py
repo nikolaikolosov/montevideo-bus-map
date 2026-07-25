@@ -86,8 +86,22 @@ SIMPLIFY_EPS_DEG = 0.00001
 BBOX_LON = (-57.0, -55.0)
 BBOX_LAT = (-35.5, -34.0)
 # Validation floors: a healthy feed is far above these; below = broken fetch.
+# They only catch a catastrophically empty feed, which is NOT the realistic
+# failure. stop_times.txt is by far the largest member of the GTFS zip, so an
+# upstream regeneration caught mid-flight yields shapes that are intact and stop
+# patterns that are a few per cent complete: 1083 route features (fine) against
+# 1002 unique stops and 61 patterns, which clears both floors and would overwrite
+# 4901 good stops. The two shares below close that gap — patterns must cover
+# nearly every route variant, and nothing may shrink far below what is already
+# committed on disk (validate_against_disk).
 MIN_ROUTE_FEATURES = 100
 MIN_UNIQUE_STOPS = 1000
+# Committed data: 1083 of 1083 variants carry a pattern, so the allowance here is
+# for a genuinely pattern-less variant upstream, not for a truncated feed.
+MAX_UNPATTERNED_SHARE = 0.05
+# How much of the previous run's volume must survive. A real network shrinks by
+# a line at a time; a broken fetch shrinks by an order of magnitude.
+MIN_RETAINED_SHARE = 0.9
 
 
 class FetchError(Exception):
@@ -558,26 +572,161 @@ def validate_stops_collection(collection):
 
 
 def validate_cross(routes_collection, stops_collection):
-    """Cross-file integrity: every stop pattern must reference a route variant."""
+    """Cross-file integrity: patterns and route variants must line up both ways."""
     route_variants = {f["properties"]["COD_VARIAN"] for f in routes_collection["features"]}
     pattern_variants = set(stops_collection["patterns"].keys())
     orphans = pattern_variants - route_variants
     _check(not orphans, f"{len(orphans)} pattern variants have no route geometry: "
                         f"{sorted(orphans)[:5]}...")
+
+    # The other direction used to be a warning only, which is what let a
+    # truncated stop_times.txt through: every pattern it DID produce was
+    # consistent, there were just 61 of them for 1083 variants. A handful of
+    # pattern-less variants is a data quirk; a large share is a broken fetch.
     unpatterned = route_variants - pattern_variants
+    share = len(unpatterned) / len(route_variants) if route_variants else 0
+    _check(
+        share <= MAX_UNPATTERNED_SHARE,
+        f"{len(unpatterned)} of {len(route_variants)} route variants have no stop pattern "
+        f"({share:.1%} > {MAX_UNPATTERNED_SHARE:.0%}) — the stop feed looks truncated",
+    )
     if unpatterned:
         log(f"Warning: {len(unpatterned)} route variants have no stop pattern.")
 
 
+def _disk_volumes(json_path):
+    """Feature and pattern counts of a dataset already on disk, or None.
+
+    Returns None for anything that is not a readable v2 collection — a first
+    run, a hand-deleted file, an already-corrupt file — because there is no
+    trustworthy baseline to compare against in those cases.
+    """
+    try:
+        with open(json_path, encoding="utf-8") as f:
+            collection = json.load(f)
+    except (OSError, ValueError):
+        return None
+    features = collection.get("features")
+    if not isinstance(features, list):
+        return None
+    patterns = collection.get("patterns")
+    return {
+        "features": len(features),
+        "patterns": len(patterns) if isinstance(patterns, dict) else None,
+    }
+
+
+def validate_against_disk(routes_collection, stops_collection, allow_shrink=False):
+    """Refuse to publish a dataset that is a fraction of the committed one.
+
+    The absolute floors and the contract checks all pass on a partial feed as
+    long as what it does contain is well formed, so the last line of defence is
+    the previous run: the data is updated manually and rarely (the API is
+    reachable only from Uruguay), which makes the committed files a reliable
+    baseline rather than a moving target.
+
+    `allow_shrink` (CLI: --allow-shrink) is the escape hatch for a genuine
+    network contraction, and it logs what it waved through.
+    """
+    routes_disk = _disk_volumes("routes.json")
+    stops_disk = _disk_volumes("stops.json")
+    comparisons = [
+        (
+            "routes.json features",
+            len(routes_collection["features"]),
+            routes_disk["features"] if routes_disk else None,
+        ),
+        (
+            "stops.json features",
+            len(stops_collection["features"]),
+            stops_disk["features"] if stops_disk else None,
+        ),
+        (
+            "stops.json patterns",
+            len(stops_collection["patterns"]),
+            stops_disk["patterns"] if stops_disk else None,
+        ),
+    ]
+
+    for label, new_count, old_count in comparisons:
+        if not old_count:  # no baseline (first run) or an empty/corrupt file
+            log(f"{label}: no usable baseline on disk — volume regression check skipped.")
+            continue
+        floor = old_count * MIN_RETAINED_SHARE
+        if new_count >= floor:
+            continue
+        message = (
+            f"{label}: {new_count} is {new_count / old_count:.1%} of the {old_count} already "
+            f"on disk (floor {MIN_RETAINED_SHARE:.0%}) — refusing to overwrite good data"
+        )
+        if not allow_shrink:
+            raise FetchError(message + ". Re-run with --allow-shrink if this is real.")
+        log(f"Warning: {message}; --allow-shrink was passed.")
+
+
 # --- Output -------------------------------------------------------------------
-def save(collection, basename):
-    json_path = f"{basename}.json"
-    log(f"Writing {json_path} ({len(collection['features'])} features)...")
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(collection, f, ensure_ascii=False, separators=(",", ":"))
+def _write_temp(collection, json_path):
+    """Serialise `collection` next to its destination and flush it to the disk.
+
+    Cleans up after itself on failure: json.dump can raise halfway through (a
+    non-serialisable value, a full disk), and the caller cannot remove a temp
+    file it was never handed the path to.
+    """
+    tmp_path = f"{json_path}.tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(collection, f, ensure_ascii=False, separators=(",", ":"))
+            f.flush()
+            os.fsync(f.fileno())
+    except BaseException:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
+    return tmp_path
 
 
-def main():
+def save_all(datasets):
+    """Write every dataset to a sibling temp file, then rename them all.
+
+    Two problems with writing straight to the destination. Opening it "w"
+    truncates the good file before a single byte of the new one exists, so a
+    disk-full, a Ctrl-C or any exception inside json.dump left a fragment the
+    browser cannot parse. And writing routes.json and stops.json as independent
+    operations meant a failure between them published fresh route variants
+    against the previous stop patterns — a mismatch nothing detects, since
+    validate_cross ran on the in-memory pair.
+
+    os.replace is atomic on POSIX and Windows, so a reader now sees either the
+    old file or the new one, never a fragment. The pair is not transactional —
+    nothing on a plain filesystem can make two renames one operation — but the
+    window shrinks from however long it takes to stream ~2 MB of JSON to the gap
+    between two renames, and a failure while WRITING can no longer damage
+    anything, because nothing has been replaced yet.
+
+    @param datasets: iterable of (collection, basename)
+    """
+    written = []
+    try:
+        for collection, basename in datasets:
+            json_path = f"{basename}.json"
+            log(f"Writing {json_path} ({len(collection['features'])} features)...")
+            written.append((_write_temp(collection, json_path), json_path))
+        for tmp_path, json_path in written:
+            os.replace(tmp_path, json_path)
+    finally:
+        for tmp_path, _ in written:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    allow_shrink = "--allow-shrink" in argv
+    if allow_shrink:
+        argv.remove("--allow-shrink")
+    if argv:
+        raise FetchError(f"Unknown argument(s): {' '.join(argv)}. Only --allow-shrink is accepted.")
+
     if not ROUTES_URL:
         raise FetchError("API_ROUTES_URL is not set.")
 
@@ -611,9 +760,10 @@ def main():
     validate_routes_collection(routes_collection)
     validate_stops_collection(stops_collection)
     validate_cross(routes_collection, stops_collection)
+    validate_against_disk(routes_collection, stops_collection, allow_shrink=allow_shrink)
 
-    save(routes_collection, "routes")
-    save(stops_collection, "stops")
+    # Both files or neither.
+    save_all([(routes_collection, "routes"), (stops_collection, "stops")])
     log("Done.")
 
 

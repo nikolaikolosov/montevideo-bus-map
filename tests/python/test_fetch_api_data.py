@@ -4,6 +4,7 @@ No network access: the GTFS feed is an in-memory zip fixture.
 """
 
 import io
+import json
 import os
 import sys
 import zipfile
@@ -13,6 +14,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from fetch_api_data import (  # noqa: E402
+    MIN_RETAINED_SHARE,
     FetchError,
     _coerce_code,
     build_routes_collection,
@@ -20,7 +22,9 @@ from fetch_api_data import (  # noqa: E402
     build_street_lookup,
     compact_coords,
     parse_gtfs,
+    save_all,
     simplify_dp,
+    validate_against_disk,
     validate_cross,
     validate_routes_collection,
     validate_stops_collection,
@@ -270,3 +274,111 @@ def test_cross_validator_rejects_orphan_pattern():
     stops["patterns"]["GHOST"] = {"linea": "9", "paradas": [[0, 1]]}
     with pytest.raises(FetchError, match="no route geometry"):
         validate_cross(routes, stops)
+
+
+def test_cross_validator_rejects_a_mostly_unpatterned_feed():
+    """A truncated stop_times.txt: shapes intact, almost no stop patterns.
+
+    Every pattern it does produce is consistent, so this used to pass with a
+    warning and overwrite the good stops.json.
+    """
+    routes, stops = good_collections()
+    kept = {k: stops["patterns"][k] for k in list(stops["patterns"])[:9]}  # 9 of 150
+    stops["patterns"] = kept
+    with pytest.raises(FetchError, match="no stop pattern"):
+        validate_cross(routes, stops)
+
+
+def test_cross_validator_tolerates_a_few_unpatterned_variants():
+    routes, stops = good_collections()
+    del stops["patterns"]["S0"]  # 1 of 150 — a data quirk, not a broken fetch
+    validate_cross(routes, stops)
+
+
+# --- volume regression vs the data already on disk -----------------------------
+
+
+def write_datasets(tmp_path, routes, stops):
+    (tmp_path / "routes.json").write_text(json.dumps(routes), encoding="utf-8")
+    (tmp_path / "stops.json").write_text(json.dumps(stops), encoding="utf-8")
+
+
+def test_disk_guard_rejects_a_fraction_of_the_committed_data(tmp_path, monkeypatch):
+    """The realistic broken fetch: a partial feed that passes every other check."""
+    monkeypatch.chdir(tmp_path)
+    routes, stops = good_collections()
+    write_datasets(tmp_path, routes, stops)
+
+    truncated = {k: stops["patterns"][k] for k in list(stops["patterns"])[:60]}
+    partial = dict(stops, features=stops["features"][:700], patterns=truncated)
+    with pytest.raises(FetchError, match="refusing to overwrite good data"):
+        validate_against_disk(routes, partial)
+
+
+def test_disk_guard_allows_a_normal_sized_update(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    routes, stops = good_collections()
+    write_datasets(tmp_path, routes, stops)
+
+    # A line retired: a few stops fewer, well inside the retained share.
+    shrunk = dict(stops, features=stops["features"][:1180])
+    assert 1180 / len(stops["features"]) > MIN_RETAINED_SHARE
+    validate_against_disk(routes, shrunk)
+
+
+def test_disk_guard_can_be_overridden_explicitly(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    routes, stops = good_collections()
+    write_datasets(tmp_path, routes, stops)
+    partial = dict(stops, features=stops["features"][:700])
+    validate_against_disk(routes, partial, allow_shrink=True)  # must not raise
+
+
+def test_disk_guard_skips_when_there_is_no_baseline(tmp_path, monkeypatch):
+    """First run, or a hand-deleted file: nothing trustworthy to compare with."""
+    monkeypatch.chdir(tmp_path)
+    routes, stops = good_collections()
+    validate_against_disk(routes, stops)  # no files on disk at all
+
+    (tmp_path / "routes.json").write_text("{ truncated", encoding="utf-8")
+    (tmp_path / "stops.json").write_text("", encoding="utf-8")
+    validate_against_disk(routes, stops)  # unparseable is not a baseline either
+
+
+# --- atomic publish -----------------------------------------------------------
+
+
+def test_save_all_publishes_both_files_and_leaves_no_temps(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    routes, stops = good_collections()
+    save_all([(routes, "routes"), (stops, "stops")])
+
+    assert json.loads((tmp_path / "routes.json").read_text(encoding="utf-8")) == routes
+    assert json.loads((tmp_path / "stops.json").read_text(encoding="utf-8")) == stops
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["routes.json", "stops.json"]
+
+
+def test_save_all_leaves_the_old_data_intact_when_a_write_fails(tmp_path, monkeypatch):
+    """A failure mid-publish must not damage what is already published.
+
+    Writing straight to the destination opened it "w" — truncating the good file
+    before a single new byte existed — and published the two files as independent
+    operations, so a failure between them left fresh routes against stale stops.
+    """
+    monkeypatch.chdir(tmp_path)
+    routes, stops = good_collections()
+    save_all([(routes, "routes"), (stops, "stops")])
+    names = ("routes.json", "stops.json")
+    before = {name: (tmp_path / name).read_text(encoding="utf-8") for name in names}
+
+    class Unserialisable:
+        pass
+
+    doomed = dict(stops, features=[*stops["features"], Unserialisable()])
+    with pytest.raises(TypeError):
+        save_all([(routes, "routes"), (doomed, "stops")])
+
+    # Neither file was replaced, and no fragment was left behind.
+    for name, text in before.items():
+        assert (tmp_path / name).read_text(encoding="utf-8") == text
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["routes.json", "stops.json"]

@@ -43,9 +43,34 @@ PYTHON="${PYTHON:-python3}"
 log "Fetching latest bus data..."
 "$PYTHON" fetch_api_data.py
 
-git add routes.json stops.json
+# Every git operation below is scoped to these paths with an explicit pathspec.
+# Without one, `git diff --staged --quiet` asked "is the index empty?" instead of
+# "did the data change?", and `git commit` committed whatever else happened to be
+# staged — publishing an unreviewed edit under the bot identity, with a message
+# claiming it is a data update, straight to GitHub Pages.
+DATA_FILES=(routes.json stops.json)
+BRANCH="${TARGET_BRANCH:-main}"
 
-if git diff --staged --quiet; then
+# Refuse to touch a dirty index rather than sweeping it into the bot commit.
+other_staged=$(git diff --staged --name-only -- . \
+    ':(exclude)routes.json' ':(exclude)stops.json')
+if [ -n "$other_staged" ]; then
+    log "ERROR: unrelated staged changes present; refusing to commit:"
+    printf '  %s\n' $other_staged
+    log "Unstage them (git restore --staged <path>) and re-run."
+    exit 1
+fi
+
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$current_branch" != "$BRANCH" ]; then
+    log "ERROR: on branch '$current_branch', expected '$BRANCH'."
+    log "Check out $BRANCH (or set TARGET_BRANCH) before publishing data."
+    exit 1
+fi
+
+git add -- "${DATA_FILES[@]}"
+
+if git diff --staged --quiet -- "${DATA_FILES[@]}"; then
     log "No changes to commit."
     exit 0
 fi
@@ -53,6 +78,6 @@ fi
 log "Committing and pushing updated data..."
 git -c user.name="montevideo-bus-bot" \
     -c user.email="montevideo-bus-bot@users.noreply.github.com" \
-    commit -m "Auto-update bus routes and stops data from API"
-git push
+    commit -m "Auto-update bus routes and stops data from API" -- "${DATA_FILES[@]}"
+git push origin "$BRANCH"
 log "Done."
