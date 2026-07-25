@@ -40,6 +40,14 @@
  * one hop of footpath relaxation. Complexity per round is O(pattern-stop
  * entries + footpath edges) ≈ 114k operations on the committed data.
  *
+ * The round keeps two label planes: `cur`, the real label, and `rideCost`, the
+ * arrivals produced by that round's pattern scan alone. Footpaths read their
+ * sources from `rideCost` and write only into `cur`, so a footpath can improve
+ * any stop — including one this round's rides also reached — while remaining
+ * structurally unable to become its own source. That is what keeps "walk, then
+ * walk again" out of the itineraries without discarding the last-400-m walk to
+ * the destination.
+ *
  * The module is Leaflet-free and DOM-free: it is pure graph work over the
  * indexes built by data.js, and is unit-tested directly (tests/js/journey.test.js).
  */
@@ -267,12 +275,23 @@ export function planJourney(fromCode, toCode) {
     const labels = [];
     /** parents[k][stop] = how that label was reached (null = origin). */
     const parents = [];
+    /**
+     * rideParents[k][stop] = the ride that put `stop` on board in round k, and
+     * nothing else — footpaths never write here. A walk source is therefore
+     * still resolvable back to its ride even after a later footpath of the same
+     * round has overwritten that stop's entry in `parents[k]`.
+     */
+    const rideParents = [new Array(n).fill(undefined)];
 
     const first = new Float64Array(n).fill(Infinity);
     first[from] = 0;
     const firstParents = new Array(n).fill(undefined);
     // Round 0 = walk-only reach (also the access legs for the first boarding).
-    relaxFootpaths(g, first, firstParents, [from], 0);
+    // The origin plays the part of the "ride plane" here: it is the only stop a
+    // round-0 footpath may start from.
+    const originCost = new Float64Array(n).fill(Infinity);
+    originCost[from] = 0;
+    relaxFootpaths(g, first, firstParents, [from], originCost, 0);
     labels.push(first);
     parents.push(firstParents);
 
@@ -280,6 +299,10 @@ export function planJourney(fromCode, toCode) {
         const prev = labels[k - 1];
         const cur = Float64Array.from(prev);
         const curParents = [...parents[k - 1]];
+        // This round's ride arrivals, kept apart from `cur` so the footpath hop
+        // below can improve any stop without ever becoming its own source.
+        const rideCost = new Float64Array(n).fill(Infinity);
+        const rideParentsK = new Array(n).fill(undefined);
         const improved = [];
 
         // Only variants reachable in the previous round can be boarded now.
@@ -307,16 +330,28 @@ export function planJourney(fromCode, toCode) {
                     // Target pruning: nothing slower than the best known
                     // destination label can be part of an answer (all costs
                     // are non-negative, so it can only get worse downstream).
-                    if (seated < cur[stop] && seated < cur[to]) {
-                        cur[stop] = seated;
-                        curParents[stop] = {
+                    // The ride plane is recorded even when it does NOT improve
+                    // the combined label: a stop a footpath already reached more
+                    // cheaply can still be ridden to, and only a ride arrival is
+                    // allowed to start the next footpath. Tying the two together
+                    // would silently drop that stop as a walk source.
+                    if (seated < rideCost[stop] && seated < cur[to]) {
+                        const parent = {
                             type: 'ride',
                             round: k,
                             patternIdx,
                             boardPos,
                             alightPos: i,
                         };
+                        rideCost[stop] = seated;
+                        rideParentsK[stop] = parent;
                         improved.push(stop);
+                        // rideCost[stop] >= cur[stop] always holds, so this is
+                        // the only place the label can be improved by a ride.
+                        if (seated < cur[stop]) {
+                            cur[stop] = seated;
+                            curParents[stop] = parent;
+                        }
                     }
                 }
 
@@ -332,9 +367,10 @@ export function planJourney(fromCode, toCode) {
             }
         }
 
-        relaxFootpaths(g, cur, curParents, improved, k);
+        relaxFootpaths(g, cur, curParents, improved, rideCost, k);
         labels.push(cur);
         parents.push(curParents);
+        rideParents.push(rideParentsK);
     }
 
     // --- Collect the Pareto set: one candidate per round that improved ---
@@ -346,7 +382,7 @@ export function planJourney(fromCode, toCode) {
         const cost = labels[k][to];
         if (cost === Infinity || cost >= bestSoFar) continue;
         bestSoFar = cost;
-        const option = reconstruct(g, parents, k, from, to);
+        const option = reconstruct(g, parents, rideParents, k, from, to);
         if (!option) continue;
         const key = option.legs
             .map((l) =>
@@ -373,29 +409,34 @@ export function planJourney(fromCode, toCode) {
 }
 
 /**
- * One hop of footpath relaxation over the stops improved in this round.
+ * One hop of footpath relaxation over the stops this round's rides reached.
  * A single hop is enough: the walk graph is a metric neighbourhood, so a
  * two-hop walk is either longer than the direct edge or outside the radius
  * a rider would accept anyway.
+ *
+ * Sources are read from `sourceCost` — the round's ride-arrival plane, which
+ * footpaths never write to — and improvements are written into `cost` for every
+ * neighbour, including stops this round's rides also reached. Splitting the two
+ * planes is what makes "walk, then walk again" structurally impossible (an
+ * 800 m chain the rider never agreed to) while still allowing the last ≤400 m
+ * walk onto a stop that some slower ride happens to serve as well.
+ *
+ * @param {JourneyGraph} g
+ * @param {Float64Array} cost        - the round's label plane (written)
+ * @param {Array} parentOf           - the round's parent plane (written)
+ * @param {number[]} sources         - nodes whose sourceCost is finite
+ * @param {Float64Array} sourceCost  - ride-only arrivals (read, never written)
+ * @param {number} round
  */
-function relaxFootpaths(g, cost, parentOf, seeds, round) {
-    // Read from a snapshot and never write onto a seed. Both guards exist for
-    // the same reason: without them a walk can land on a stop that is itself
-    // the source of another walk, and the itinerary comes out as "walk, then
-    // walk again" — two 400 m hops chained into an 800 m walk the rider never
-    // agreed to, with a total that no longer matches the sum of its legs.
-    // Costing a seed out of a strictly better footpath is a tiny loss of
-    // optimality; the next round can still use that stop.
-    const base = Float64Array.from(cost);
-    const protectedSeeds = new Set(seeds);
-
-    for (const s of protectedSeeds) {
+function relaxFootpaths(g, cost, parentOf, sources, sourceCost, round) {
+    for (const s of new Set(sources)) {
+        const departure = sourceCost[s];
+        if (departure === Infinity) continue;
         const neighbours = g.walkTo[s];
         const meters = g.walkM[s];
         for (let i = 0; i < neighbours.length; i++) {
             const target = neighbours[i];
-            if (protectedSeeds.has(target)) continue;
-            const candidate = base[s] + walkSeconds(meters[i]);
+            const candidate = departure + walkSeconds(meters[i]);
             if (candidate < cost[target]) {
                 cost[target] = candidate;
                 parentOf[target] = { type: 'walk', round, from: s, meters: meters[i] };
@@ -413,7 +454,7 @@ function relaxFootpaths(g, cost, parentOf, seeds, round) {
  *
  * @returns {JourneyOption|null} null if the chain is broken (never expected)
  */
-function reconstruct(g, parents, round, from, to) {
+function reconstruct(g, parents, rideParents, round, from, to) {
     /** @type {Array<RideLeg|WalkLeg>} */
     const legs = [];
     let node = to;
@@ -428,7 +469,16 @@ function reconstruct(g, parents, round, from, to) {
         if (parent.type === 'walk') {
             legs.push(walkLeg(g, parent.from, node, parent.meters));
             node = parent.from;
-            k = parent.round;
+            if (node === from) continue; // origin access walk — chain complete
+            // A footpath source is always a ride arrival of its own round, so
+            // resolve it in the ride-only plane: `parents[round][node]` may have
+            // been overwritten since by another footpath of that same round.
+            const via = rideParents[parent.round][node];
+            if (!via) return null;
+            const boarded = g.patterns[via.patternIdx];
+            legs.push(rideLeg(g, boarded, via.patternIdx, via.boardPos, via.alightPos));
+            node = boarded.stops[via.boardPos];
+            k = via.round - 1;
         } else {
             const pattern = g.patterns[parent.patternIdx];
             legs.push(rideLeg(g, pattern, parent.patternIdx, parent.boardPos, parent.alightPos));

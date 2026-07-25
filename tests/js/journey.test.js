@@ -55,6 +55,25 @@ const D = 900008;
 const FAR = 900009;
 /** Five-hop chain: c0 → c5, one line per hop, hops too long to walk. */
 const CHAIN = [900100, 900101, 900102, 900103, 900104, 900105];
+/**
+ * Egress-walk cluster. Line 7 runs J1 → J2 and stops 120 m short of J4; line 8
+ * crawls J1 → J3 → J4 the long way round. Both J2 and J4 are therefore reached
+ * by a ride in the SAME round, which is the configuration that used to lose the
+ * "ride the fast line, walk the last block" answer.
+ */
+const J1 = 900201;
+const J2 = 900202;
+const J3 = 900203;
+const J4 = 900204;
+/**
+ * Footpath-source cluster. S3 sits 100 m from line 9's terminus S2, so a
+ * round-1 footpath reaches it far more cheaply than line 10's round-2 ride ever
+ * could — and S4 is walkable only from S3 (450 m from S2, outside the radius).
+ */
+const S1 = 900301;
+const S2 = 900302;
+const S3 = 900303;
+const S4 = 900304;
 
 const syntheticStops = {
     type: 'FeatureCollection',
@@ -71,6 +90,14 @@ const syntheticStops = {
         at(D, 5000, 0), // clear of F's walk radius, so A→F must transfer
         at(FAR, 0, 500), // no service, beyond the walk radius
         ...CHAIN.map((cod, i) => at(cod, i * 1500, 20000)),
+        at(J1, 0, 70000),
+        at(J2, 2000, 70000),
+        at(J3, 0, 75000), // line 8's detour, unwalkable from anywhere
+        at(J4, 2000, 70120), // 120 m from J2 — and served by line 8
+        at(S1, 0, 100000),
+        at(S2, 3000, 100000),
+        at(S3, 3000, 100100), // 100 m from S2
+        at(S4, 3000, 100450), // 350 m from S3, 450 m from S2 — no service
     ],
     patterns: {
         p1: {
@@ -100,6 +127,35 @@ const syntheticStops = {
             paradas: [
                 [B, 1],
                 [D, 2],
+            ],
+        },
+        p7: {
+            linea: '7',
+            paradas: [
+                [J1, 1],
+                [J2, 2],
+            ],
+        },
+        p8: {
+            linea: '8',
+            paradas: [
+                [J1, 1],
+                [J3, 2],
+                [J4, 3],
+            ],
+        },
+        p9: {
+            linea: '9',
+            paradas: [
+                [S1, 1],
+                [S2, 2],
+            ],
+        },
+        p10: {
+            linea: '10',
+            paradas: [
+                [S2, 1],
+                [S3, 2],
             ],
         },
         ...Object.fromEntries(
@@ -188,6 +244,37 @@ describe('planJourney (synthetic network)', () => {
         expect(lines(options[0])).toEqual(['3']);
         expect(options[0].transfers).toBe(0);
         expect(options.every((o) => o.transfers === 0)).toBe(true);
+    });
+
+    it('walks the last block onto a stop a slower ride also serves', () => {
+        // Line 7 drops the rider 120 m short of J4; line 8 reaches J4 itself,
+        // the long way round. Both stops are ride-improved in the same round,
+        // so the fast answer exists only if a footpath may improve a stop this
+        // round's rides also reached (otherwise the 5 km crawl on line 8 wins).
+        const { status, options } = planJourney(J1, J4);
+        expect(status).toBe('ok');
+        const best = options[0];
+        expect(kinds(best)).toEqual(['ride', 'walk']);
+        expect(lines(best)).toEqual(['7']);
+        expect(best.transfers).toBe(0);
+        expect(best.legs[0].toCode).toBe(J2);
+        expect(best.walkMeters).toBeCloseTo(120 * CONFIG.JOURNEY_WALK_DETOUR_FACTOR, 5);
+        // Riding line 8 all the way is legal, just far worse — never the answer.
+        expect(best.rideMeters).toBeCloseTo(2000 * CONFIG.JOURNEY_BUS_DETOUR_FACTOR, 5);
+    });
+
+    it('a ride into a walk-reached stop still opens that stop’s footpaths', () => {
+        // A round-1 footpath puts S3 within ~100 s of S2, so line 10's round-2
+        // ride into S3 is dearer than the label already there. S4 hangs off S3
+        // alone, so it is reachable at all only while that dearer ride arrival
+        // still counts as a footpath source.
+        const { status, options } = planJourney(S1, S4);
+        expect(status).toBe('ok');
+        const best = options[0];
+        expect(kinds(best)).toEqual(['ride', 'ride', 'walk']);
+        expect(best.legs.at(-1).fromCode).toBe(S3);
+        expect(best.legs.at(-1).toCode).toBe(S4);
+        expect(best.walkMeters).toBeCloseTo(350 * CONFIG.JOURNEY_WALK_DETOUR_FACTOR, 5);
     });
 
     it('walks the whole way when the destination is close and unserved', () => {

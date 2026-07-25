@@ -74,6 +74,14 @@ Concretely:
   "no combination" rather than an itinerary nobody would ride.
 - **Walk legs are drawn straight.** There is no pedestrian network in the feed;
   a dashed straight line is honest about being a hint, not a path.
+- **One footpath hop per round, and only from a ride arrival.** A stop a walk
+  reached cannot itself start the next walk, so two 400 m hops never chain into
+  an 800 m walk nobody agreed to. The round keeps a ride-only label plane for
+  exactly this: footpath sources are read from it while improvements are written
+  to the real label, so the last-400 m walk onto a stop some slower ride also
+  serves is still found (a pattern the earlier "never write onto a seed" guard
+  discarded — 149 of 400 sampled pairs were up to 57 min slow, pinned now by two
+  synthetic cases in `tests/js/journey.test.js`).
 - The cost constants are dataset-calibrated and go stale with the data —
   mitigated by the CI drift gate (`npm run verify:journey`).
 
