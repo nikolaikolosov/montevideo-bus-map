@@ -27,15 +27,39 @@
  * )} RouteState
  */
 
+/**
+ * Percent-decodes one hash segment, or null when the escape is malformed.
+ *
+ * A hash is untrusted input: `decodeURIComponent` throws URIError on a
+ * truncated escape ("124%2", a bare "%"), and the only line id that needs
+ * encoding at all — "124 Sd" → `#/linea/124%20Sd` — is exactly the kind of link
+ * a chat client truncates. Letting that throw took the whole app down: it
+ * propagated out of start() into initApp's catch, which painted the "Error al
+ * cargar" overlay over an empty map, and the retry button reloaded the same URL
+ * into the same failure. A garbled escape is just a garbled hash and belongs on
+ * the same fail-safe path as `#/x/y/z`.
+ *
+ * @param {string} part
+ * @returns {string|null}
+ */
+const decodeSegment = (part) => {
+    try {
+        return decodeURIComponent(part);
+    } catch {
+        return null;
+    }
+};
+
 /** @param {string} hash - window.location.hash (with or without '#') */
 export function parseHash(hash) {
     const parts = String(hash ?? '')
         .replace(/^#\/?/, '')
         .split('/')
         .filter((p) => p.length > 0)
-        .map(decodeURIComponent);
+        .map(decodeSegment);
 
     if (parts.length === 0) return { view: 'all' };
+    if (parts.includes(null)) return { view: 'all' }; // malformed escape
     if (parts[0] === 'linea' && parts.length === 2) return { view: 'line', line: parts[1] };
     if (parts[0] === 'viaje' && (parts.length === 3 || parts.length === 5)) {
         const journey = parseJourney(parts);
