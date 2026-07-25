@@ -47,6 +47,32 @@ describe('parseHash / buildHash', () => {
         expect(parseHash('#/viaje/4772/4018/opcion/0')).toEqual({ view: 'all' });
     });
 
+    it('fails safe on a malformed percent-escape instead of throwing', () => {
+        // The one line id that needs encoding is "124 Sd" → #/linea/124%20Sd,
+        // so a chat client truncating that link is the realistic case. Before,
+        // decodeURIComponent threw URIError out of parseHash, and on cold load
+        // that reached initApp's catch and painted the error overlay over an
+        // empty map — with a retry button that reloaded into the same failure.
+        for (const hash of [
+            '#/linea/124%2',
+            '#/linea/124%',
+            '#/linea/%E0%A4%A',
+            '#/parada/%',
+            '#/parada/4772/linea/%C3',
+            '#/viaje/%/4018',
+            '#/%',
+        ]) {
+            expect(() => parseHash(hash), hash).not.toThrow();
+            expect(parseHash(hash), hash).toEqual({ view: 'all' });
+        }
+    });
+
+    it('still decodes the escapes that are valid', () => {
+        expect(parseHash('#/linea/124%20Sd')).toEqual({ view: 'line', line: '124 Sd' });
+        expect(parseHash('#/linea/G%C3%A9nova')).toEqual({ view: 'line', line: 'Génova' });
+        expect(parseHash('#/linea/100%25')).toEqual({ view: 'line', line: '100%' });
+    });
+
     it('drops the option segment for the first (best) itinerary', () => {
         expect(buildHash({ view: 'journey', from: 1, to: 2, option: 0 })).toBe('#/viaje/1/2');
         expect(buildHash({ view: 'journey', from: 1, to: 2, option: 1 })).toBe(
