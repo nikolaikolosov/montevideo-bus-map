@@ -1,5 +1,5 @@
 {
-  "_comment": "Reviewed exceptions for scripts/verify_route_oracles.mjs. real = genuine street/data geometry (evidence in reason); known-bug = accepted pipeline artifact awaiting the PR-2 mechanism upgrade. Regenerate candidates with --write-whitelist, review in the triage gallery, prune stale entries as fixes land.",
+  "_comment": "Reviewed exceptions for scripts/verify_route_oracles.mjs. real = genuine street/data geometry (evidence in reason); known-bug = accepted pipeline artifact awaiting the PR-2 mechanism upgrade. Regenerate candidates with --write-whitelist, review in the triage gallery, prune stale entries as fixes land. Entries re-keyed on 2026-07-26 carry that fact in their reason: they were accepted on numeric evidence (same artifact classes and magnitudes as the existing burn-down set) without a per-card gallery review.",
   "entries": [
     {
       "class": "WOBBLE",
@@ -24,39 +24,6 @@
       "reason": "Pipeline-introduced wobble {\"devM\":8.9}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
-      "class": "KINK",
-      "line": "17",
-      "lonLat": [
-        -56.279447,
-        -34.888966
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":73}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
-      "line": "21",
-      "lonLat": [
-        -56.082323,
-        -34.885565
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":77}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "SPIKE",
-      "line": "21",
-      "lonLat": [
-        -56.083603,
-        -34.88178
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced spike {\"turn\":180}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
       "class": "WOBBLE",
       "line": "64",
       "lonLat": [
@@ -66,17 +33,6 @@
       "radiusM": 30,
       "status": "known-bug",
       "reason": "Pipeline-introduced wobble {\"devM\":11.7}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
-      "line": "71",
-      "lonLat": [
-        -56.147825,
-        -34.8888
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":64}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
       "class": "WOBBLE",
@@ -110,17 +66,6 @@
       "radiusM": 30,
       "status": "known-bug",
       "reason": "Pipeline-introduced wobble {\"devM\":8.3}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
-      "line": "121",
-      "lonLat": [
-        -56.164362,
-        -34.897314
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":88}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
       "class": "WOBBLE",
@@ -167,39 +112,6 @@
       "reason": "Pipeline-introduced wobble {\"devM\":6.5}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
-      "class": "KINK",
-      "line": "163",
-      "lonLat": [
-        -56.135174,
-        -34.910842
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":64}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "SPIKE",
-      "line": "174",
-      "lonLat": [
-        -56.242101,
-        -34.788698
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced spike {\"turn\":180}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
-      "line": "185",
-      "lonLat": [
-        -56.279449,
-        -34.888965
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":73}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
       "class": "WOBBLE",
       "line": "186",
       "lonLat": [
@@ -223,28 +135,6 @@
     },
     {
       "class": "KINK",
-      "line": "306",
-      "lonLat": [
-        -56.279444,
-        -34.888965
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":72}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
-      "line": "306",
-      "lonLat": [
-        -56.171801,
-        -34.867018
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":65}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
       "line": "316",
       "lonLat": [
         -56.067804,
@@ -253,17 +143,6 @@
       "radiusM": 30,
       "status": "known-bug",
       "reason": "Pipeline-introduced kink {\"turn\":91}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
-      "line": "396",
-      "lonLat": [
-        -56.169004,
-        -34.823281
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":64}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
       "class": "WOBBLE",
@@ -387,28 +266,6 @@
       "reason": "Pipeline-introduced wobble {\"devM\":8.5}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
-      "class": "KINK",
-      "line": "L13",
-      "lonLat": [
-        -56.162036,
-        -34.806255
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":97}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "KINK",
-      "line": "L20",
-      "lonLat": [
-        -56.082445,
-        -34.885462
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":74}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
       "class": "WOBBLE",
       "line": "L77",
       "lonLat": [
@@ -418,6 +275,149 @@
       "radiusM": 30,
       "status": "known-bug",
       "reason": "Pipeline-introduced wobble {\"devM\":8}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
+    },
+    {
+      "class": "KINK",
+      "line": "21",
+      "lonLat": [
+        -56.083504,
+        -34.881768
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":135}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Same locus as the SPIKE {\"turn\":180} this change removed (9 m away), reduced in severity. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "WOBBLE",
+      "line": "60",
+      "lonLat": [
+        -56.073974,
+        -34.891649
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced wobble {\"devM\":8.5}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "WOBBLE",
+      "line": "64",
+      "lonLat": [
+        -56.07401,
+        -34.891674
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced wobble {\"devM\":7.9}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "DUPLICATE",
+      "line": "79",
+      "lonLat": [
+        -56.132468,
+        -34.854025
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced duplicate {\"latM\":11.4}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "163",
+      "lonLat": [
+        -56.163523,
+        -34.893557
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":68}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "192",
+      "lonLat": [
+        -56.150964,
+        -34.89376
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":74}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "316",
+      "lonLat": [
+        -56.068031,
+        -34.790914
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":87}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "WOBBLE",
+      "line": "329",
+      "lonLat": [
+        -56.17574,
+        -34.87188
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced wobble {\"devM\":6.3}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "409",
+      "lonLat": [
+        -56.25236,
+        -34.811561
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":82}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "494",
+      "lonLat": [
+        -56.263648,
+        -34.83831
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":90}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "D8",
+      "lonLat": [
+        -56.108904,
+        -34.828655
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":79}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "L3",
+      "lonLat": [
+        -56.252353,
+        -34.811571
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":86}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+    },
+    {
+      "class": "KINK",
+      "line": "L7",
+      "lonLat": [
+        -56.252331,
+        -34.811594
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "Pipeline-introduced kink {\"turn\":81}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
     }
   ]
 }

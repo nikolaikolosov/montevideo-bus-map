@@ -217,6 +217,41 @@ describe('meter-space measures', () => {
         expect(r.lat).toBeCloseTo(M_PER_DEG_LAT * 0.0001, 3);
     });
 
+    it('measures the lateral separation OVER the overlap, not at s2 ends (G-3)', () => {
+        // s2 starts 8.9 m from s1 and peels away to 44.4 m past s1's end. The
+        // mean of its raw ENDPOINT distances (26.6 m) describes a stretch where
+        // the strands no longer run together, which pushed genuine duplicates
+        // out of the oracle's 6–20 m "visible duplicate" band — measured on the
+        // committed data: a line-21 pair 9.6 m apart was reported as 22.1 m.
+        const s1 = [
+            [0, 0],
+            [0.001, 0],
+        ];
+        const s2 = [
+            [0.0002, 0.00008],
+            [0.005, 0.0004],
+        ];
+        const r = axialOverlapAndLateralM(s1, s2);
+        expect(r.overlap).toBeGreaterThan(70); // 73.6 m of shared axis
+        // Clipped to the overlap the mean separation is ~11.8 m, inside the band.
+        expect(r.lat).toBeGreaterThan(10);
+        expect(r.lat).toBeLessThan(14);
+    });
+
+    it('is unchanged for an s2 fully inside s1 at constant separation', () => {
+        // The clipping must not perturb the case the pipeline usually sees.
+        const s1 = [
+            [0, 0],
+            [0.001, 0],
+        ];
+        const s2 = [
+            [0.0002, 0.00008],
+            [0.0008, 0.00008],
+        ];
+        const r = axialOverlapAndLateralM(s1, s2);
+        expect(r.lat).toBeCloseTo(M_PER_DEG_LAT * 0.00008, 6);
+    });
+
     it('returns null without axial overlap or for a degenerate reference', () => {
         const s1 = [
             [0, 0],

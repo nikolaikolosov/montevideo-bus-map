@@ -54,6 +54,7 @@ const {
     turnAngleDeg,
     axisAngleDeg,
 } = await import('../src/geometry.js');
+const { smoothPath } = await import('../src/bundling.js');
 
 // --- Measurement parameters (method, committed with the report) ------------
 const SAMPLE_STEP_M = 75; // sample spacing along a trace
@@ -248,12 +249,41 @@ const assertThat = (ok, label) => {
 
 // Ladder ordering is structural: each stage may only move geometry by less
 // than what the next stage treats as identity.
+//
+// The smoothing rung is the EFFECTIVE displacement, not the per-pass constant.
+// smoothPath used to clamp each pass separately, so `passes` multiplied the
+// budget and the real rung sat at passes × MAX_SHIFT — 0.0002 against a 0.00022
+// cluster tolerance, i.e. 10 % of margin left, and a third pass would have
+// inverted the ladder without this assertion noticing. The clamp is cumulative
+// now (bundling.js smoothPath, clamped against the canonical node), so the two
+// agree; comparing the effective value keeps them that way if either moves.
+const smoothShiftEffective = CONFIG.BUNDLE_SMOOTH_MAX_SHIFT_DEG;
 assertThat(
     CLEAN_THRESHOLD_DEG < CONFIG.BUNDLE_SIMPLIFY_EPS_DEG &&
-        CONFIG.BUNDLE_SIMPLIFY_EPS_DEG < CONFIG.BUNDLE_SMOOTH_MAX_SHIFT_DEG &&
-        CONFIG.BUNDLE_SMOOTH_MAX_SHIFT_DEG < CONFIG.BUNDLE_TOLERANCE_DEG,
+        CONFIG.BUNDLE_SIMPLIFY_EPS_DEG < smoothShiftEffective &&
+        smoothShiftEffective < CONFIG.BUNDLE_TOLERANCE_DEG,
     'ladder ordering: clean < simplify-eps < smooth-shift < cluster-tolerance',
 );
+
+// The rung above is only the per-pass constant while the clamp is cumulative.
+// Pin that: if smoothPath ever goes back to per-pass clamping, the effective
+// displacement becomes passes × the constant and this fails.
+{
+    const seg = CONFIG.BUNDLE_SMOOTH_MAX_SEG_DEG;
+    const shift = CONFIG.BUNDLE_SMOOTH_MAX_SHIFT_DEG;
+    // A sawtooth whose flanks stay under maxSeg, so every vertex is eligible.
+    const step = seg / 4;
+    const sawtooth = Array.from({ length: 15 }, (_, i) => [i * step, i % 2 ? step : -step]);
+    const smoothed = smoothPath(sawtooth, CONFIG.BUNDLE_SMOOTH_PASSES, seg, shift);
+    const worst = Math.max(
+        ...sawtooth.map((p, i) => Math.hypot(smoothed[i][0] - p[0], smoothed[i][1] - p[1])),
+    );
+    assertThat(
+        worst <= shift * (1 + 1e-9),
+        `smoothing displacement ${(worst * M_PER_DEG_LAT).toFixed(2)} m ≤ budget ` +
+            `${(shift * M_PER_DEG_LAT).toFixed(2)} m after ${CONFIG.BUNDLE_SMOOTH_PASSES} passes`,
+    );
+}
 
 // Same-direction strands of one line are digitisation jitter of the SAME
 // street: Douglas–Peucker must dominate them. Measured P90 1.9 m vs eps

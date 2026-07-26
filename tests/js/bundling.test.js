@@ -84,6 +84,28 @@ describe('smoothPath (anti-sawtooth smoothing)', () => {
         expect(maxDev).toBeLessThan(2.5); // was 5 before smoothing
     });
 
+    it('bounds the TOTAL displacement, not the per-pass step (audit G-1)', () => {
+        // The clamp used to apply to each pass separately, so `passes`
+        // multiplied the budget: 2 passes moved a vertex up to 2 × maxShift.
+        // On the committed corridors 219 of 14,001 vertices ended up past the
+        // documented budget, the worst by 21.65 m against 11.11 m — and
+        // route_oracles.mjs derives CHORD_MAX_M = 30 from that very number.
+        const step = 15;
+        const saw = Array.from({ length: 15 }, (_, i) => [i * step, i % 2 ? 12 : -12]);
+        const maxShift = 10;
+        let moved = 0;
+        for (const passes of [1, 2, 3, 8]) {
+            const out = smoothPath(saw, passes, 100, maxShift);
+            for (let i = 0; i < saw.length; i++) {
+                const shift = Math.hypot(out[i][0] - saw[i][0], out[i][1] - saw[i][1]);
+                if (shift > 1e-12) moved++;
+                expect(shift, `passes=${passes} vertex ${i}`).toBeLessThanOrEqual(maxShift + 1e-9);
+            }
+        }
+        // Not vacuous: vertices really are being moved, the clamp just binds.
+        expect(moved).toBeGreaterThan(0);
+    });
+
     it('leaves straight lines and short paths untouched', () => {
         const straight = [
             [0, 0],

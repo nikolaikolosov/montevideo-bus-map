@@ -236,13 +236,31 @@ export function axialOverlapAndLateralM(s1, s2) {
     const u = [dx / L1, dy / L1];
     const proj = (p) => (p[0] - a1[0]) * u[0] + (p[1] - a1[1]) * u[1];
     const lat = (p) => Math.abs(-(p[0] - a1[0]) * u[1] + (p[1] - a1[1]) * u[0]);
-    const lo = Math.max(0, Math.min(proj(a2), proj(b2)));
-    const hi = Math.min(L1, Math.max(proj(a2), proj(b2)));
+    const pa = proj(a2);
+    const pb = proj(b2);
+    const lo = Math.max(0, Math.min(pa, pb));
+    const hi = Math.min(L1, Math.max(pa, pb));
     if (hi - lo <= 0) return null;
     const m = (lo + hi) / 2;
+
+    // Measure the separation OVER THE OVERLAP, not at s2's raw endpoints. Those
+    // endpoints are exactly the far-away points the doc comment below warns
+    // about: a strand that runs a few metres from s1 and then peels away
+    // reported the distance where it had already left, so the DUPLICATE oracle's
+    // 6–20 m "visible duplicate" band threw out real duplicates (measured: a
+    // line-21 pair with 173 m of axial overlap and 9.6 m of true separation was
+    // reported as 22.1 m) and let others in. Clip s2 to [lo, hi] first: it is a
+    // straight segment, so the two clipped points bracket the overlap and their
+    // mean is the mean over it.
+    const clip = (target) => {
+        if (pb === pa) return a2; // s2 is perpendicular to s1's axis (or a point)
+        const t = Math.min(1, Math.max(0, (target - pa) / (pb - pa)));
+        return [a2[0] + (b2[0] - a2[0]) * t, a2[1] + (b2[1] - a2[1]) * t];
+    };
+
     return {
         overlap: hi - lo,
-        lat: (lat(a2) + lat(b2)) / 2,
+        lat: (lat(clip(lo)) + lat(clip(hi))) / 2,
         mid: fromMeters([a1[0] + u[0] * m, a1[1] + u[1] * m]),
     };
 }
