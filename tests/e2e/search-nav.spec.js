@@ -115,6 +115,30 @@ test('a stale deep link (unknown line) fails safe to the home view', async ({ pa
     await expect(page.locator('#contextBar')).toBeHidden();
 });
 
+test('a downstream link whose line does not serve the stop degrades to the stop', async ({
+    page,
+}) => {
+    // Stop 4772 and line 2 both exist, but line 2 does not stop there — the shape
+    // of a shared link that outlived a re-routing. getStopLineVariants returns [],
+    // which getFilteredRouteFeatures reads as "these variants and no others", so
+    // the map came out empty (0 sections, 0 stops, one lone highlight dot) while
+    // the context bar and the search field still announced the line.
+    await openMap(page, { theme: 'dark' });
+    await page.goto('/#/parada/4772/linea/2');
+    await page.waitForFunction(() => window.__mvdGetRenderState().stops > 4000);
+
+    // Degraded to the stop view: full stop field, no context bar, no line label.
+    await expect(page.locator('#contextBar')).toBeHidden();
+    await expect(page.locator('#searchInput')).not.toHaveValue('Línea 2');
+    await expect(page.locator('#searchInput')).toHaveValue('BUENOS AIRES y ITUZAINGO');
+    // A pair that IS real still renders the downstream view, so the guard is not
+    // simply rejecting everything.
+    await page.goto('/#/parada/4772/linea/124');
+    await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
+    await expect(page.locator('#contextBar')).toBeVisible();
+    await expect(page.locator('#searchInput')).toHaveValue('Línea 124');
+});
+
 test('a truncated share link (malformed escape) fails safe, not to the error overlay', async ({
     page,
 }) => {

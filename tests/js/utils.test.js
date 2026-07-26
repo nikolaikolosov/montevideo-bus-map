@@ -5,6 +5,8 @@ import {
     truncateLineDownstream,
     debounce,
     isWithinBounds,
+    stopStreets,
+    UNKNOWN_STREET,
 } from '../../src/utils.js';
 import { CONFIG } from '../../src/config.js';
 
@@ -209,6 +211,57 @@ describe('isWithinBounds (geolocation service-area gate)', () => {
                     isWithinBounds(lat, lon, B),
                     `stop ${f.properties.COD_UBIC_P} outside CITY_BOUNDS`,
                 ).toBe(true);
+            }
+        });
+    });
+});
+
+describe('stopStreets', () => {
+    it('collapses the pipeline sentinel and blanks to null', () => {
+        // fetch_api_data.py writes the literal Spanish "Desconocida" when no
+        // street name resolves. Three call sites used to compare against it by
+        // hand and only two did, so the popup printed it verbatim — in English
+        // and Russian too.
+        expect(stopStreets({ CALLE: 'BUENOS AIRES', ESQUINA: 'ITUZAINGO' })).toEqual({
+            calle: 'BUENOS AIRES',
+            esquina: 'ITUZAINGO',
+        });
+        expect(stopStreets({ CALLE: 'AV ITALIA', ESQUINA: UNKNOWN_STREET })).toEqual({
+            calle: 'AV ITALIA',
+            esquina: null,
+        });
+        expect(stopStreets({ CALLE: UNKNOWN_STREET, ESQUINA: 'CIRC INT SIN DENOM' })).toEqual({
+            calle: null,
+            esquina: 'CIRC INT SIN DENOM',
+        });
+        expect(stopStreets({ CALLE: '  ', ESQUINA: '' })).toEqual({ calle: null, esquina: null });
+        expect(stopStreets({})).toEqual({ calle: null, esquina: null });
+        expect(stopStreets(undefined)).toEqual({ calle: null, esquina: null });
+    });
+
+    it('trims, because a padded name is still a name', () => {
+        expect(stopStreets({ CALLE: ' RIVERA ', ESQUINA: ' SOCA ' })).toEqual({
+            calle: 'RIVERA',
+            esquina: 'SOCA',
+        });
+    });
+
+    it('the sentinel is what the committed data actually carries', () => {
+        // If the pipeline ever changes the literal, this fails instead of the
+        // sentinel silently becoming a visible street name again.
+        return import('node:fs').then(({ readFileSync }) => {
+            const stops = JSON.parse(
+                readFileSync(new URL('../../stops.json', import.meta.url), 'utf8'),
+            );
+            const hits = stops.features.filter(
+                (f) =>
+                    f.properties.CALLE === UNKNOWN_STREET ||
+                    f.properties.ESQUINA === UNKNOWN_STREET,
+            );
+            expect(hits.length).toBeGreaterThan(0);
+            for (const f of hits) {
+                const { calle, esquina } = stopStreets(f.properties);
+                expect(calle === null || esquina === null).toBe(true);
             }
         });
     });

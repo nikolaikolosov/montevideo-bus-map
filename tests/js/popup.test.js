@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createStopPopup, setJourneyPopupHandlers } from '../../src/map.js';
 import { t, tPlural, setLang } from '../../src/i18n.js';
+import { UNKNOWN_STREET } from '../../src/utils.js';
 import {
     buildIndexes,
     getLineColor,
@@ -124,6 +125,34 @@ describe('createStopPopup (synthetic)', () => {
         expect(getStopLineVariants(1, '102').sort()).toEqual(['v1', 'v2']);
         expect(getStopLineVariants(1, '7')).toEqual(['v3']);
         expect(getStopLineVariants(999, '102')).toEqual([]);
+    });
+
+    it('never prints the pipeline sentinel, in any language', () => {
+        // The popup was the one path that did not special-case "Desconocida",
+        // so it rendered "at Desconocida" / "угол Desconocida" verbatim, and no
+        // path anywhere handled a sentinel CALLE.
+        for (const lang of ['es', 'en', 'ru']) {
+            setLang(lang);
+
+            const noCorner = createStopPopup(stopFeature(1, 'AV ITALIA', UNKNOWN_STREET), vi.fn());
+            expect(noCorner.textContent, lang).not.toContain(UNKNOWN_STREET);
+            expect(noCorner.querySelector('h3').textContent).toBe('AV ITALIA');
+            // The corner clause is dropped entirely, not filled with a placeholder.
+            expect(noCorner.querySelector('.popup-sub').textContent).not.toContain(
+                t('popup.corner', { esquina: '' }).replace('{esquina}', '').trim(),
+            );
+            expect(noCorner.querySelector('.popup-sub').textContent).toContain(
+                t('popup.stop', { cod: 1 }),
+            );
+
+            const noStreet = createStopPopup(
+                stopFeature(1, UNKNOWN_STREET, 'CIRC INT SIN DENOM'),
+                vi.fn(),
+            );
+            expect(noStreet.textContent, lang).not.toContain(UNKNOWN_STREET);
+            expect(noStreet.querySelector('h3').textContent).toBe(t('stop.unknownStreet'));
+        }
+        setLang('es');
     });
 });
 

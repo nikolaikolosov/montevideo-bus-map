@@ -5,6 +5,7 @@ import {
     truncateLineDownstream,
     isCoarsePointer,
     isWithinBounds,
+    stopStreets,
 } from './utils.js';
 import { appState, resetLayers } from './state.js';
 import { projectionCandidates, pointAt } from './geometry.js';
@@ -61,6 +62,14 @@ export function getLineOffset(idx, total, zoom, weight) {
 
 /**
  * Calculates a dynamic style (radius, weight, opacity) based on zoom level.
+ *
+ * `opacity` (the stroke) is part of the returned style on purpose. It used to be
+ * derived from fillOpacity at the two creation sites instead, which setStyle
+ * never touches, so the stroke stayed frozen at whatever the zoom was when the
+ * layer was built: the same view at the same zoom rendered differently depending
+ * on how the rider got there. Every style key the markers use has to be here for
+ * updateMapStyles to carry it.
+ *
  * @param {number} zoom
  * @param {boolean} isTouch
  * @returns {object} Leaflet style object
@@ -72,6 +81,7 @@ function getStopStyleForZoom(zoom, isTouch) {
             radius: isTouch ? 2 : 1.2,
             weight: 0.5,
             fillOpacity: 0.6,
+            opacity: 0.6,
         };
     }
     // Zoom 13 (Districts)
@@ -80,6 +90,7 @@ function getStopStyleForZoom(zoom, isTouch) {
             radius: isTouch ? 3.5 : 2,
             weight: 0.8,
             fillOpacity: 0.7,
+            opacity: 0.7,
         };
     }
     // Zoom 14 (Neighbourhoods)
@@ -88,6 +99,7 @@ function getStopStyleForZoom(zoom, isTouch) {
             radius: isTouch ? 6 : 4,
             weight: 1,
             fillOpacity: 0.8,
+            opacity: 0.8,
         };
     }
     // Zoom 15+ (Detailed View) — full size
@@ -95,6 +107,7 @@ function getStopStyleForZoom(zoom, isTouch) {
         radius: isTouch ? 12 : 8, // Larger at high zoom to encompass parallel lines
         weight: 1.5,
         fillOpacity: 0.9,
+        opacity: 0.9,
     };
 }
 
@@ -492,7 +505,8 @@ function buildJourneyActions(cod) {
  * @returns {HTMLElement}
  */
 export function createStopPopup(feature, onShowRoutes) {
-    const { CALLE = 'Desconocida', ESQUINA = 'Desconocida', COD_UBIC_P: cod } = feature.properties;
+    const { COD_UBIC_P: cod } = feature.properties;
+    const { calle, esquina } = stopStreets(feature.properties);
     const linesArr = stopLinesMap.has(cod)
         ? Array.from(stopLinesMap.get(cod)).sort((a, b) =>
               a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }),
@@ -503,9 +517,12 @@ export function createStopPopup(feature, onShowRoutes) {
 
     const div = document.createElement('div');
     div.className = 'popup-content';
+    // No corner clause at all when the cross street is unknown — printing the
+    // sentinel was worse than saying nothing, and worse still outside Spanish.
+    const corner = esquina ? `${t('popup.corner', { esquina: escapeHTML(esquina) })} · ` : '';
     div.innerHTML = `
-        <h3>${escapeHTML(CALLE)}</h3>
-        <p class="popup-sub">${t('popup.corner', { esquina: escapeHTML(ESQUINA) })} · ${t('popup.stop', { cod: escapeHTML(cod) })} · ${linesLabel}</p>
+        <h3>${escapeHTML(calle ?? t('stop.unknownStreet'))}</h3>
+        <p class="popup-sub">${corner}${t('popup.stop', { cod: escapeHTML(cod) })} · ${linesLabel}</p>
         <ul class="popup-lines" role="list"></ul>
         <button type="button" class="btn draw-lines-btn"
             aria-label="${t('popup.viewAllAria')}">${t('popup.viewAll')}</button>
@@ -596,7 +613,6 @@ export function renderGlobalStops(onShowRoutes) {
                     ...style,
                     fillColor: stopColors().fill,
                     color: stopColors().stroke,
-                    opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {
@@ -961,7 +977,6 @@ function renderStops(features, onShowRoutes) {
                     ...style,
                     fillColor: stopColors().fill,
                     color: stopColors().stroke,
-                    opacity: style.fillOpacity,
                     pane: 'stopsPane',
                 }),
             onEachFeature: (feature, layer) => {

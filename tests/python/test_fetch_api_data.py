@@ -153,14 +153,55 @@ def test_build_stops_collection_normalizes(parsed):
 
     codes = [f["properties"]["COD_UBIC_P"] for f in col["features"]]
     assert sorted(codes, key=str) == codes  # deterministic order
-    assert set(codes) == {1001, 1002, "ST3"}  # ST3 has no stop_code -> falls back to stop_id
+    # ST3 has no stop_code and a non-numeric stop_id. It used to be emitted as the
+    # string "ST3", which validate_stops_collection rejects outright, so a single
+    # such row upstream blocked the whole update; it now gets a stable negative
+    # surrogate and keeps its place in the pattern.
+    assert all(isinstance(c, int) for c in codes)
+    assert {c for c in codes if c > 0} == {1001, 1002}
+    surrogate = next(c for c in codes if c < 0)
+
     by_code = {f["properties"]["COD_UBIC_P"]: f for f in col["features"]}
     assert by_code[1001]["properties"]["CALLE"] == "18 DE JULIO"  # enriched
     assert by_code[1002]["properties"]["CALLE"] == "18 de Julio y Yaguaron"  # GTFS fallback
 
     assert col["patterns"]["S1"] == {"linea": "100", "paradas": [[1001, 1], [1002, 2]]}
     # STMISSING dropped; ordinals stay strictly increasing with a gap
-    assert col["patterns"]["S2"]["paradas"] == [[1002, 5], ["ST3", 9]]
+    assert col["patterns"]["S2"]["paradas"] == [[1002, 5], [surrogate, 9]]
+
+
+def test_build_stops_collection_output_passes_its_own_validator(parsed):
+    """The producer must not be able to emit what the validator rejects.
+
+    Nothing used to check the builder's output against the contract, which is how
+    the string COD_UBIC_P survived: the validator tests ran on hand-built
+    fixtures, never on what build_stops_collection actually produces.
+    """
+    _, occurrences, meta = parsed
+    col = build_stops_collection(occurrences, meta, {}, GENERATED_AT)
+    # The floors are sized for the real network, so check the per-feature rules
+    # rather than the volume: every COD_UBIC_P an int, unique, ordinals rising.
+    codes = [f["properties"]["COD_UBIC_P"] for f in col["features"]]
+    assert all(isinstance(c, int) for c in codes)
+    assert len(set(codes)) == len(codes)
+    for pattern in col["patterns"].values():
+        ordinals = [o for _, o in pattern["paradas"]]
+        assert ordinals == sorted(ordinals)
+        assert all(isinstance(c, int) for c, _ in pattern["paradas"])
+        assert {c for c, _ in pattern["paradas"]} <= set(codes)
+
+
+def test_surrogate_codes_are_stable_across_runs(parsed):
+    """Derived from the id, not from a counter — a new codeless stop upstream
+    must not renumber the existing ones (churned diffs, dead deep links)."""
+    def negatives(col):
+        return sorted(c for f in col["features"] if (c := f["properties"]["COD_UBIC_P"]) < 0)
+
+    _, occurrences, meta = parsed
+    first = build_stops_collection(occurrences, meta, {}, GENERATED_AT)
+    second = build_stops_collection(occurrences, meta, {}, GENERATED_AT)
+    assert negatives(first) == negatives(second)
+    assert len(negatives(first)) == 1  # only ST3 in the fixture
 
 
 def test_build_routes_collection_sorted_and_versioned(parsed):
