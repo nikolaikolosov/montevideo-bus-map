@@ -17,7 +17,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { isCoarsePointer } from './utils.js';
+import { isCoarsePointer, stopStreets } from './utils.js';
 import {
     buildIndexes,
     getSortedLines,
@@ -137,8 +137,9 @@ const sortLines = (arr) =>
     [...arr].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
 const stopDisplayName = (feature) => {
-    const { CALLE = '', ESQUINA = '' } = feature.properties;
-    return ESQUINA && ESQUINA !== 'Desconocida' ? `${CALLE} y ${ESQUINA}` : CALLE;
+    const { calle, esquina } = stopStreets(feature.properties);
+    if (calle && esquina) return `${calle} y ${esquina}`;
+    return calle ?? esquina ?? t('stop.unknownStreet');
 };
 
 // ---------------------------------------------------------------------------
@@ -255,6 +256,21 @@ function renderForState(state) {
     if (state.view === 'line' && !stateLineExists(state.line)) state = { view: 'all' };
     if ((state.view === 'stop' || state.view === 'downstream') && !uniqueStopByCode.has(state.stop))
         state = { view: 'all' };
+    // A downstream link also names a line, and the PAIR has to be real: the stop
+    // and the line can both exist while that line does not serve that stop —
+    // #/parada/4772/linea/2, or any shared link that outlived a re-routing.
+    // getStopLineVariants then returns [], which getFilteredRouteFeatures reads
+    // as an explicit "these variants and no others", so the map came out empty
+    // while the context bar and the search field still announced the line.
+    // Degrade to what we do know: the stop.
+    if (
+        state.view === 'downstream' &&
+        state.line !== null &&
+        uniqueStopByCode.has(state.stop) &&
+        !stopLinesMap.get(state.stop)?.has(state.line)
+    ) {
+        state = { view: 'stop', stop: state.stop };
+    }
     currentState = state;
 
     if (state.view !== 'journey') renderJourneyPanel({ visible: false });

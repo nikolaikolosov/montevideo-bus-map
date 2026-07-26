@@ -1,9 +1,9 @@
 /**
  * Things that must NOT change when something unrelated happens.
  *
- * Both cases here are audit findings whose symptom is a side effect: the render
- * is correct, and then an action that should only recolour or only highlight
- * quietly moves the camera or the draw order instead.
+ * Every case here is an audit finding whose symptom is a side effect: the render
+ * is correct, and then an action that should only recolour, only highlight or
+ * only rescale quietly moves the camera, the draw order or half a style instead.
  */
 import { test, expect } from '@playwright/test';
 import { openMap, renderLine, renderStopRoutes, setView } from './helpers.js';
@@ -42,6 +42,52 @@ test('a theme flip recolours the line view without re-framing it', async ({ page
     expect(after.lng, 'theme flip moved the centre').toBeCloseTo(before.lng, 6);
     // The recolour itself still happened, so this is not passing by not rendering.
     expect(after.sections).toBe(before.sections);
+});
+
+test('stop markers carry the same style at a zoom however the rider got there', async ({
+    page,
+}) => {
+    // getStopStyleForZoom returned no `opacity`, and both marker factories set
+    // it from fillOpacity at CREATION instead. setStyle never touches a key the
+    // style object does not carry, so the stroke stayed frozen at the zoom the
+    // layer was built at: zooming 12 → 17 left stroke 0.6 against fill 0.9,
+    // while re-rendering the same view at 17 produced 0.9/0.9. Same view, same
+    // zoom, two different renderings depending on the route taken.
+    const strokeAndFill = () =>
+        page.evaluate(() => {
+            let sample = null;
+            window.__mvdMap.eachLayer((l) => {
+                if (!sample && l.feature?.properties?.COD_UBIC_P && !l._journeyBead) sample = l;
+            });
+            return sample
+                ? {
+                      zoom: window.__mvdMap.getZoom(),
+                      opacity: sample.options.opacity,
+                      fillOpacity: sample.options.fillOpacity,
+                  }
+                : null;
+        });
+
+    await openMap(page, { theme: 'dark' });
+    await page.waitForFunction(() => window.__mvdGetRenderState().stops > 4000);
+    const atHome = await strokeAndFill();
+    expect(atHome, 'no stop marker to sample').not.toBeNull();
+    expect(atHome.zoom).toBe(12);
+    expect(atHome.fillOpacity).toBe(0.6);
+    expect(atHome.opacity).toBe(0.6);
+
+    // Zoomed in on the SAME layer: setStyle has to carry the stroke too, so the
+    // two must move together instead of the stroke staying behind at 0.6.
+    await setView(page, [-34.9055, -56.187], 17);
+    const zoomedIn = await strokeAndFill();
+    expect(zoomedIn.fillOpacity).toBe(0.9);
+    expect(zoomedIn.opacity, 'stroke opacity was left at the build-time zoom').toBe(0.9);
+
+    // And back out again — nothing is one-way.
+    await setView(page, [-34.9055, -56.187], 12);
+    const zoomedOut = await strokeAndFill();
+    expect(zoomedOut.opacity).toBe(0.6);
+    expect(zoomedOut.fillOpacity).toBe(0.6);
 });
 
 test('hovering a line does not lift its joints above the strands', async ({ page }) => {

@@ -56,6 +56,7 @@ const STRINGS = {
         'lang.groupAria': 'Cambiar idioma',
         'map.aria': 'Mapa interactivo de recorridos de ómnibus',
         'popup.corner': 'esq. {esquina}',
+        'stop.unknownStreet': 'Calle sin nombre',
         'popup.stop': 'Parada {cod}',
         'popup.lines': { zero: 'sin líneas', one: '1 línea', other: '{n} líneas' },
         'popup.viewAll': 'Ver todos los recorridos',
@@ -136,6 +137,7 @@ const STRINGS = {
         'lang.groupAria': 'Change language',
         'map.aria': 'Interactive bus route map',
         'popup.corner': 'at {esquina}',
+        'stop.unknownStreet': 'Unnamed street',
         'popup.stop': 'Stop {cod}',
         'popup.lines': { zero: 'no lines', one: '1 line', other: '{n} lines' },
         'popup.viewAll': 'Show all routes',
@@ -212,6 +214,7 @@ const STRINGS = {
         'lang.groupAria': 'Сменить язык',
         'map.aria': 'Интерактивная карта автобусных маршрутов',
         'popup.corner': 'угол {esquina}',
+        'stop.unknownStreet': 'Улица без названия',
         'popup.stop': 'Остановка {cod}',
         'popup.lines': {
             zero: 'нет линий',

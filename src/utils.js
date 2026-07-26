@@ -1,6 +1,33 @@
 import { projectPointOnPolyline } from './geometry.js';
 
 /**
+ * What the pipeline writes into CALLE/ESQUINA when no street name resolves
+ * (fetch_api_data.py). A sentinel, not a name — and a Spanish one, so it has no
+ * business reaching an English or Russian screen.
+ */
+export const UNKNOWN_STREET = 'Desconocida';
+
+/**
+ * Street names of a stop with the sentinel and empty strings collapsed to null,
+ * so every caller decides what to show once instead of re-testing the literal.
+ *
+ * Three call sites used to compare against 'Desconocida' by hand and only two
+ * did it: the popup rendered "at Desconocida" / "угол Desconocida" verbatim, and
+ * nothing anywhere handled a sentinel CALLE. 10 of the 4901 committed stops are
+ * affected (4 unknown ESQUINA, 6 unknown CALLE).
+ *
+ * @param {object} properties - a stop feature's GeoJSON properties
+ * @returns {{calle: string|null, esquina: string|null}}
+ */
+export const stopStreets = (properties) => {
+    const clean = (value) => {
+        const text = typeof value === 'string' ? value.trim() : '';
+        return text && text !== UNKNOWN_STREET ? text : null;
+    };
+    return { calle: clean(properties?.CALLE), esquina: clean(properties?.ESQUINA) };
+};
+
+/**
  * Escapes a string to prevent XSS when injecting into innerHTML.
  * @param {*} str
  * @returns {string}

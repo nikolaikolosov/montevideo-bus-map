@@ -6,6 +6,7 @@
 import { CONFIG } from './config.js';
 import { t, tPlural, getLang, LOCALE_TAGS } from './i18n.js';
 import { getLineColor } from './data.js';
+import { stopStreets } from './utils.js';
 
 // ---------------------------------------------------------------------------
 // Loader & error states
@@ -206,10 +207,11 @@ export function initSearchBox({ search, lines, onPick }) {
             li.appendChild(document.createTextNode(t('panel.lineOption', { id: entry.id })));
         } else {
             const name = document.createElement('span');
+            const { calle, esquina } = stopStreets({ CALLE: entry.name, ESQUINA: entry.esquina });
             name.textContent =
-                entry.esquina && entry.esquina !== 'Desconocida'
-                    ? `${entry.name} y ${entry.esquina}`
-                    : entry.name;
+                calle && esquina
+                    ? `${calle} y ${esquina}`
+                    : (calle ?? esquina ?? t('stop.unknownStreet'));
             const sub = document.createElement('span');
             sub.className = 'search-sub';
             sub.textContent = t('popup.stop', { cod: entry.code });

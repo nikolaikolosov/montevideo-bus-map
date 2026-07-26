@@ -75,4 +75,44 @@ describe('search ranking', () => {
         expect(index.search('   ')).toEqual([]);
         expect(index.search('1', 3)).toHaveLength(3);
     });
+
+    it('matches stop NAMES for a digits-only query too', () => {
+        // "18" is Montevideo's main avenue. The two branches used to be chained
+        // with else-if on the query SHAPE rather than the match KIND, so a
+        // numeric query was never tested against stop names at all: 526 of the
+        // committed stops carry digits in CALLE/ESQUINA and none of them was
+        // reachable by its own number.
+        const stops = [
+            stop(1801, 'SARANDI', 'BACACAY'),
+            stop(1802, 'RECONQUISTA', 'PIEDRAS'),
+            stop(4000, 'AV 18 DE JULIO', 'EJIDO'),
+            stop(4001, 'AV 18 DE JULIO', 'YAGUARON'),
+        ];
+        const ix = buildSearchIndex(['180', '181'], stops);
+        const codes = ix.search('18').map((e) => (e.type === 'line' ? e.id : e.code));
+        expect(codes).toContain(4000);
+        expect(codes).toContain(4001);
+        // Without starving the ranks above it: lines and code-prefix stops stay.
+        expect(codes).toContain('180');
+        expect(codes).toContain(1801);
+        // Names come last, as documented.
+        expect(codes.indexOf(4000)).toBeGreaterThan(codes.indexOf(1801));
+    });
+
+    it('keeps a share of the list for names when codes would flood it', () => {
+        // A short numeric prefix matches hundreds of stop CODES, which used to
+        // consume the whole limit even once both branches ran.
+        const flood = Array.from({ length: 60 }, (_, i) => stop(1800 + i, 'CALLE X', 'Y'));
+        const named = [stop(9001, 'AV 18 DE JULIO', 'EJIDO')];
+        const ix = buildSearchIndex([], [...flood, ...named]);
+        const rows = ix.search('18', 12);
+        expect(rows).toHaveLength(12);
+        expect(rows.map((e) => e.code)).toContain(9001);
+    });
+
+    it('does not list the same stop twice when it matches by code and by name', () => {
+        const ix = buildSearchIndex([], [stop(18, 'AV 18 DE JULIO', 'EJIDO')]);
+        const rows = ix.search('18');
+        expect(rows.filter((e) => e.code === 18)).toHaveLength(1);
+    });
 });

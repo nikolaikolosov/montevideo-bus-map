@@ -29,6 +29,7 @@ always an int. ORDINAL is strictly increasing within a pattern.
 """
 
 import csv
+import hashlib
 import io
 import json
 import os
@@ -203,6 +204,25 @@ def _coerce_code(value):
         return None
     value = value.strip()
     return int(value) if value.isdigit() else value
+
+
+def _surrogate_code(raw):
+    """A deterministic negative COD_UBIC_P for a stop with no numeric code.
+
+    `stop_code` is OPTIONAL in the GTFS spec, and the fallback to `stop_id`
+    produced a STRING whenever that id was not all digits — a value this file's
+    own validator rejects (`COD_UBIC_P not int`), so one such row upstream aborted
+    the entire update. The whole front-end keys stops by an integer code
+    (data-contract.md; journey.js does Number(code)), so the fix is to mint an
+    integer rather than to widen the contract.
+
+    Derived from a hash of the raw id, NOT from a counter: a counter would
+    renumber every surrogate as soon as one more codeless stop appeared upstream,
+    churning the diff and breaking anyone's deep link. Negative, so a surrogate
+    can never collide with a real code and is obvious in the data.
+    """
+    digest = hashlib.blake2s(str(raw).encode("utf-8"), digest_size=4).digest()
+    return -(1 + int.from_bytes(digest, "big") % 900_000_000)
 
 
 def parse_gtfs(zip_content):
@@ -405,6 +425,7 @@ def build_stops_collection(stop_occurrences, stops_meta, street_lookup, generate
     patterns = {}
     matched_streets = 0
     missing_meta = 0
+    surrogates = {}
 
     for occ in stop_occurrences:
         meta = stops_meta.get(occ["stop_id"])
@@ -413,7 +434,12 @@ def build_stops_collection(stop_occurrences, stops_meta, street_lookup, generate
             continue
 
         code = meta["code"]
-        cod_ubic = _coerce_code(code) if code else _coerce_code(occ["stop_id"])
+        raw = code if code else occ["stop_id"]
+        cod_ubic = _coerce_code(raw)
+        if not isinstance(cod_ubic, int):
+            # No numeric code anywhere: mint a stable integer so the stop keeps
+            # its place in the patterns instead of failing the contract.
+            cod_ubic = surrogates.setdefault(raw, _surrogate_code(raw))
 
         if cod_ubic not in features_by_code:
             # Resolve CALLE/ESQUINA: prefer the /busstops streets, fall back to
@@ -454,6 +480,11 @@ def build_stops_collection(stop_occurrences, stops_meta, street_lookup, generate
         pattern["paradas"].sort(key=lambda p: p[1])
     features = sorted(features_by_code.values(), key=lambda f: str(f["properties"]["COD_UBIC_P"]))
 
+    if surrogates:
+        log(
+            f"Note: {len(surrogates)} stop(s) had no numeric code; assigned stable "
+            f"negative surrogates: {sorted(surrogates.items())[:5]}"
+        )
     log(
         f"Stops: {len(features)} unique stops, {len(patterns)} patterns, "
         f"{matched_streets} matched street names, {missing_meta} occurrences dropped "
