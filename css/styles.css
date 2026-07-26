@@ -23,6 +23,15 @@
        two are deliberately theme-independent. */
     --journey-origin: #1d4ed8;
     --journey-destination: #15803d;
+    /* Leaflet's own control palette, mirrored here so our map control can match
+       the zoom buttons it sits under. Leaflet's stylesheet knows nothing about
+       our themes and paints `.leaflet-bar a` white in both, so these are
+       deliberately NOT theme-scoped — a themed value would put a dark button
+       directly below two white ones in the same column. Measured from the live
+       control, and the e2e asserts the parity against it. */
+    --map-control-bg: #ffffff;
+    --map-control-fg: #000000;
+    --map-control-bg-hover: #f4f4f4;
 }
 
 /* Light theme palette — activated via <html data-theme="light"> (src/theme.js:
@@ -388,7 +397,19 @@ label {
     white-space: nowrap;
 }
 
-/* "Show all stops" map control — sits under the zoom buttons */
+/* "Show all stops" map control — sits under the zoom buttons.
+
+   Deliberately light in BOTH themes, unlike every other surface in this file.
+   The control lives in the Leaflet control stack directly below the zoom
+   buttons, and Leaflet's own stylesheet paints those white whatever the app
+   theme is (measured: `.leaflet-bar a` is #fff at rest and #f4f4f4 on
+   hover/press in dark and light alike, since nothing here overrides it). A
+   theme-following surface therefore turned dark while the two buttons above it
+   stayed white — the same column reading as two unrelated widgets. The values
+   below mirror Leaflet's; the e2e asserts the parity by reading BOTH controls
+   live in BOTH themes, so it fails if Leaflet's palette ever moves instead of
+   silently drifting apart again. The dots are fill="currentColor", so `color`
+   drives them together with the +/− glyphs. */
 .home-control {
     display: flex;
     align-items: center;
@@ -397,8 +418,8 @@ label {
     height: 34px;
     border: 2px solid rgba(0, 0, 0, 0.2);
     border-radius: 8px;
-    background: var(--panel-bg-fallback);
-    color: var(--text-main);
+    background: var(--map-control-bg);
+    color: var(--map-control-fg);
     cursor: pointer;
     background-clip: padding-box;
     /* Match the zoom buttons' tap feedback: Leaflet gives `.leaflet-container a`
@@ -409,15 +430,15 @@ label {
 
 @media (hover: hover) {
     .home-control:hover {
-        background-color: var(--input-bg-hover);
+        background-color: var(--map-control-bg-hover);
     }
 }
 
 /* Momentary press feedback (touch AND desktop click). Unlike :hover this does
    not stick on touch — it clears on release, so it can't revive the PR #19
-   sticky-tint bug. */
+   sticky-tint bug. Same tint Leaflet gives `.leaflet-bar a:hover`. */
 .home-control:active {
-    background-color: var(--input-bg-hover);
+    background-color: var(--map-control-bg-hover);
 }
 
 .home-control:focus-visible {
