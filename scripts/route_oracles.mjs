@@ -69,6 +69,11 @@ export const ORACLE = {
     // DUPLICATE (ported): near-parallel (≤10°) same-line segments of
     // different sections, ≥40 m axial overlap, 6–20 m apart. Below 6 m they
     // render as one strand; above 20 m carriageways are physically separate.
+    // The separation is measured OVER the axial overlap (geometry.js
+    // axialOverlapAndLateralM). It used to be the mean at the other segment's
+    // raw endpoints, which for a strand that runs close and then peels away
+    // describes a stretch the two no longer share — that pushed genuine
+    // duplicates out of this band (audit G-3, fixed 2026-07-26).
     DUP_MIN_SEG_M: 40,
     DUP_MAX_AXIS_DEG: 10,
     DUP_MIN_OVERLAP_M: 40,
@@ -87,6 +92,9 @@ export const ORACLE = {
     // (≤ tolerance 24 m worst axis) + smoothing (≤ 11 m) + simplify (4 m)
     // never compound fully; route-invariants bounds the reverse direction
     // at ~20 m. 30 m flags true detachments only.
+    // The smoothing term really is ≤ 11 m since audit G-1: the clamp used to be
+    // per pass, so with BUNDLE_SMOOTH_PASSES = 2 the true term was ~22 m and
+    // this sum understated the compounding it is meant to bound.
     CHORD_MAX_M: 30,
     CHORD_SAMPLE_STEP_M: 50,
 

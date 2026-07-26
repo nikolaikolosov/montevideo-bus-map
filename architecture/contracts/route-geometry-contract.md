@@ -44,6 +44,13 @@
   `simplifyPath` ≤ 4 m (Hausdorff), `smoothPath` ≤ ~11 m/vertex and only
   between segments < 66 m (km-leg corners immovable), clustering ≤ the merge
   radius. Budgets are unit-tested (`geometry.test.js`, `bundling.test.js`).
+  A budget is **cumulative over the whole operator**, not per internal
+  iteration: `smoothPath` clamps each vertex against its canonical node, so
+  running N passes still displaces it by at most one budget. Clamping per pass
+  instead silently multiplied the budget by `BUNDLE_SMOOTH_PASSES` — 219 of
+  14,001 corridor vertices ended up beyond ~11 m, the worst at 21.7 m, which ate
+  the headroom `CHORD_MAX_M = 30` is derived from (audit G-1, fixed 2026-07-26;
+  `verify:scales` now asserts the effective displacement, not the constant).
 - **R-CONSERVE.** Graph cleanup (diamond merge, triangle dissolve, section
   chaining) preserves the (line, variant) composition — nothing gains or
   loses a line silently (edge merges union `variantsByLine`).

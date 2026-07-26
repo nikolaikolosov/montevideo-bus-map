@@ -119,3 +119,28 @@ describe('jointPath (cubic Bézier along strand tangents)', () => {
         }
     });
 });
+
+describe('offsetPoints — degenerate joins (audit G-2)', () => {
+    /** Signed progress of each point along the base direction u. */
+    const progress = (pts, u) => pts.map((p) => p.x * u[0] + p.y * u[1]);
+
+    it('never doubles back when the offset exceeds a corner segment', () => {
+        // A short segment between two long ones is the shape that breaks: with
+        // |d| bigger than that segment, the offset lines of the two flanking
+        // segments intersect BEHIND the short one's offset start (t ≤ 0), and
+        // pushing that intersection made the strand reverse. Real occurrence:
+        // 17 of 7054 joins at zoom 15 on the committed corridors.
+        // 4 px corner segment, |d| up to 16 — verified to reverse on the old code.
+        const pts = [P(0, 0), P(40, 0), P(44, 0), P(86.4, 42.4)];
+        for (const d of [10, 12, 16, -16]) {
+            const out = offsetPoints(pts, d);
+            const along = progress(out, [1, 0]);
+            for (let i = 1; i < along.length; i++) {
+                expect(
+                    along[i] - along[i - 1],
+                    `d=${d} point ${i} moves backwards (${JSON.stringify(out)})`,
+                ).toBeGreaterThanOrEqual(-1e-9);
+            }
+        }
+    });
+});

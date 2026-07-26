@@ -1,1402 +1,2662 @@
 {
-    "2": {
-        "sections": 30,
-        "joints": 0,
-        "totalPoints": 215,
-        "colors": ["#d43b88"],
-        "weights": [4],
-        "bbox": [-34.8974, -56.2495, -34.7889, -56.0711],
-        "stops": 193,
-        "labels": 10
-    },
-    "17": {
-        "sections": 30,
-        "joints": 0,
-        "totalPoints": 163,
-        "colors": ["#049583"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2796, -34.8625, -56.1493],
-        "stops": 167,
-        "labels": 4
-    },
-    "21": {
-        "sections": 71,
-        "joints": 0,
-        "totalPoints": 264,
-        "colors": ["#ad7ff4"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8648, -56.0208],
-        "stops": 154,
-        "labels": 6
-    },
-    "60": {
-        "sections": 25,
-        "joints": 0,
-        "totalPoints": 136,
-        "colors": ["#cb8e07"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8818, -56.0712],
-        "stops": 111,
-        "labels": 9
-    },
-    "62": {
-        "sections": 13,
-        "joints": 0,
-        "totalPoints": 76,
-        "colors": ["#768c00"],
-        "weights": [4],
-        "bbox": [-34.9118, -56.2139, -34.9015, -56.1351],
-        "stops": 56,
-        "labels": 4
-    },
-    "64": {
-        "sections": 21,
-        "joints": 0,
-        "totalPoints": 133,
-        "colors": ["#3378f5"],
-        "weights": [4],
-        "bbox": [-34.9071, -56.2009, -34.8817, -56.0714],
-        "stops": 87,
-        "labels": 5
-    },
-    "71": {
-        "sections": 30,
-        "joints": 0,
-        "totalPoints": 134,
-        "colors": ["#88ab00"],
-        "weights": [4],
-        "bbox": [-34.9145, -56.1653, -34.8065, -56.1424],
-        "stops": 103,
-        "labels": 5
-    },
-    "76": {
-        "sections": 42,
-        "joints": 0,
-        "totalPoints": 203,
-        "colors": ["#20d4b6"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2557, -34.8625, -56.1508],
-        "stops": 169,
-        "labels": 6
-    },
-    "79": {
-        "sections": 31,
-        "joints": 0,
-        "totalPoints": 138,
-        "colors": ["#73e7ff"],
-        "weights": [4],
-        "bbox": [-34.9053, -56.1992, -34.8482, -56.1323],
-        "stops": 101,
-        "labels": 5
-    },
-    "100": {
-        "sections": 11,
-        "joints": 0,
-        "totalPoints": 106,
-        "colors": ["#0ca7eb"],
-        "weights": [4],
-        "bbox": [-34.9092, -56.2029, -34.8131, -56.0956],
-        "stops": 121,
-        "labels": 13
-    },
-    "102": {
-        "sections": 12,
-        "joints": 0,
-        "totalPoints": 91,
-        "colors": ["#fe9594"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.8217, -56.1336],
-        "stops": 136,
-        "labels": 15
-    },
-    "103": {
-        "sections": 27,
-        "joints": 0,
-        "totalPoints": 196,
-        "colors": ["#7feccf"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.7703, -56.0251],
-        "stops": 166,
-        "labels": 20
-    },
-    "104": {
-        "sections": 52,
-        "joints": 0,
-        "totalPoints": 239,
-        "colors": ["#fccb7e"],
-        "weights": [4],
-        "bbox": [-34.9152, -56.2136, -34.8598, -55.9956],
-        "stops": 156,
-        "labels": 8
-    },
-    "105": {
-        "sections": 23,
-        "joints": 0,
-        "totalPoints": 134,
-        "colors": ["#60d291"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.8648, -56.0208],
-        "stops": 148,
-        "labels": 18
-    },
-    "106": {
-        "sections": 3,
-        "joints": 0,
-        "totalPoints": 64,
-        "colors": ["#8bb9fd"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.8243, -56.1323],
-        "stops": 99,
-        "labels": 4
-    },
-    "109": {
-        "sections": 11,
-        "joints": 0,
-        "totalPoints": 94,
-        "colors": ["#d4cdfe"],
-        "weights": [4],
-        "bbox": [-34.9092, -56.2029, -34.8519, -56.0233],
-        "stops": 122,
-        "labels": 15
-    },
-    "110": {
-        "sections": 14,
-        "joints": 0,
-        "totalPoints": 117,
-        "colors": ["#f26c52"],
-        "weights": [4],
-        "bbox": [-34.9092, -56.2029, -34.7168, -56.1323],
-        "stops": 159,
-        "labels": 15
-    },
-    "111": {
-        "sections": 20,
-        "joints": 0,
-        "totalPoints": 114,
-        "colors": ["#8fa907"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.8551, -56.1048],
-        "stops": 117,
-        "labels": 13
-    },
-    "112": {
-        "sections": 31,
-        "joints": 0,
-        "totalPoints": 176,
-        "colors": ["#049677"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.8548, -56.066],
-        "stops": 146,
-        "labels": 15
-    },
-    "113": {
-        "sections": 19,
-        "joints": 0,
-        "totalPoints": 89,
-        "colors": ["#dd6cbe"],
-        "weights": [4],
-        "bbox": [-34.9092, -56.2029, -34.8669, -56.1048],
-        "stops": 99,
-        "labels": 10
-    },
-    "115": {
-        "sections": 26,
-        "joints": 0,
-        "totalPoints": 125,
-        "colors": ["#a37800"],
-        "weights": [4],
-        "bbox": [-34.8968, -56.17, -34.8414, -56.1108],
-        "stops": 77,
-        "labels": 7
-    },
-    "116": {
-        "sections": 12,
-        "joints": 0,
-        "totalPoints": 74,
-        "colors": ["#a1c75e"],
-        "weights": [4],
-        "bbox": [-34.9205, -56.2139, -34.9034, -56.1349],
-        "stops": 72,
-        "labels": 6
-    },
-    "117": {
-        "sections": 11,
-        "joints": 0,
-        "totalPoints": 59,
-        "colors": ["#f1677f"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2139, -34.9015, -56.1576],
-        "stops": 57,
-        "labels": 6
-    },
-    "121": {
-        "sections": 10,
-        "joints": 0,
-        "totalPoints": 72,
-        "colors": ["#9e56dc"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2139, -34.8973, -56.1486],
-        "stops": 72,
-        "labels": 5
-    },
-    "124": {
-        "sections": 27,
-        "joints": 0,
-        "totalPoints": 164,
-        "colors": ["#e9780d"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2941, -34.8686, -56.1916],
-        "stops": 99,
-        "labels": 9
-    },
-    "125": {
-        "sections": 15,
-        "joints": 0,
-        "totalPoints": 98,
-        "colors": ["#589bfd"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2535, -34.8544, -56.1916],
-        "stops": 115,
-        "labels": 10
-    },
-    "127": {
-        "sections": 30,
-        "joints": 0,
-        "totalPoints": 193,
-        "colors": ["#a07a00"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.3918, -34.7585, -56.1916],
-        "stops": 198,
-        "labels": 13
-    },
-    "128": {
-        "sections": 25,
-        "joints": 0,
-        "totalPoints": 155,
-        "colors": ["#9cb4fd"],
-        "weights": [4],
-        "bbox": [-34.9152, -56.2816, -34.8179, -56.1351],
-        "stops": 140,
-        "labels": 9
-    },
-    "130": {
-        "sections": 29,
-        "joints": 0,
-        "totalPoints": 153,
-        "colors": ["#fec6aa"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2278, -34.753, -56.1916],
-        "stops": 137,
-        "labels": 11
-    },
-    "133": {
-        "sections": 25,
-        "joints": 0,
-        "totalPoints": 146,
-        "colors": ["#e8ab3e"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.3761, -34.8434, -56.1916],
-        "stops": 202,
-        "labels": 6
-    },
-    "135": {
-        "sections": 28,
-        "joints": 0,
-        "totalPoints": 145,
-        "colors": ["#0eb590"],
-        "weights": [4],
-        "bbox": [-34.9046, -56.4048, -34.8194, -56.1858],
-        "stops": 200,
-        "labels": 3
-    },
-    "137": {
-        "sections": 45,
-        "joints": 0,
-        "totalPoints": 236,
-        "colors": ["#d7397b"],
-        "weights": [4],
-        "bbox": [-34.9126, -56.2816, -34.8175, -56.1762],
-        "stops": 179,
-        "labels": 10
-    },
-    "140": {
-        "sections": 29,
-        "joints": 0,
-        "totalPoints": 162,
-        "colors": ["#90b8fd"],
-        "weights": [4],
-        "bbox": [-34.9052, -56.2018, -34.8818, -56.0711],
-        "stops": 108,
-        "labels": 4
-    },
-    "141": {
-        "sections": 12,
-        "joints": 0,
-        "totalPoints": 68,
-        "colors": ["#febde5"],
-        "weights": [4],
-        "bbox": [-34.9094, -56.2029, -34.8749, -56.121],
-        "stops": 85,
-        "labels": 4
-    },
-    "142": {
-        "sections": 16,
-        "joints": 0,
-        "totalPoints": 126,
-        "colors": ["#c4a4fd"],
-        "weights": [4],
-        "bbox": [-34.9092, -56.2029, -34.8598, -55.9956],
-        "stops": 137,
-        "labels": 10
-    },
-    "143": {
-        "sections": 19,
-        "joints": 0,
-        "totalPoints": 84,
-        "colors": ["#ea689d"],
-        "weights": [4],
-        "bbox": [-34.9053, -56.2024, -34.8912, -56.1302],
-        "stops": 56,
-        "labels": 3
-    },
-    "144": {
-        "sections": 23,
-        "joints": 0,
-        "totalPoints": 125,
-        "colors": ["#fa9e56"],
-        "weights": [4],
-        "bbox": [-34.9083, -56.1983, -34.8457, -56.1209],
-        "stops": 126,
-        "labels": 8
-    },
-    "145": {
-        "sections": 44,
-        "joints": 0,
-        "totalPoints": 278,
-        "colors": ["#0490a5"],
-        "weights": [4],
-        "bbox": [-34.9144, -56.2682, -34.7961, -56.1298],
-        "stops": 208,
-        "labels": 15
-    },
-    "147": {
-        "sections": 33,
-        "joints": 0,
-        "totalPoints": 175,
-        "colors": ["#fa90c2"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2335, -34.7961, -56.1762],
-        "stops": 168,
-        "labels": 13
-    },
-    "148": {
-        "sections": 27,
-        "joints": 0,
-        "totalPoints": 187,
-        "colors": ["#049b38"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2705, -34.7611, -56.1762],
-        "stops": 173,
-        "labels": 12
-    },
-    "149": {
-        "sections": 35,
-        "joints": 0,
-        "totalPoints": 207,
-        "colors": ["#f6a24e"],
-        "weights": [4],
-        "bbox": [-34.9144, -56.2023, -34.7975, -56.1349],
-        "stops": 202,
-        "labels": 13
-    },
-    "150": {
-        "sections": 18,
-        "joints": 0,
-        "totalPoints": 137,
-        "colors": ["#81ad16"],
-        "weights": [4],
-        "bbox": [-34.9046, -56.2202, -34.7419, -56.1762],
-        "stops": 177,
-        "labels": 4
-    },
-    "151": {
-        "sections": 43,
-        "joints": 0,
-        "totalPoints": 253,
-        "colors": ["#6897fd"],
-        "weights": [4],
-        "bbox": [-34.9049, -56.2535, -34.7961, -56.0833],
-        "stops": 220,
-        "labels": 13
-    },
-    "155": {
-        "sections": 27,
-        "joints": 0,
-        "totalPoints": 157,
-        "colors": ["#bca8fd"],
-        "weights": [4],
-        "bbox": [-34.9046, -56.2024, -34.8216, -56.0985],
-        "stops": 153,
-        "labels": 6
-    },
-    "156": {
-        "sections": 18,
-        "joints": 0,
-        "totalPoints": 106,
-        "colors": ["#b9d7fe"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.837, -56.1489],
-        "stops": 108,
-        "labels": 6
-    },
-    "157": {
-        "sections": 16,
-        "joints": 0,
-        "totalPoints": 115,
-        "colors": ["#9bc963"],
-        "weights": [4],
-        "bbox": [-34.9038, -56.2768, -34.8343, -56.1635],
-        "stops": 124,
-        "labels": 9
-    },
-    "158": {
-        "sections": 23,
-        "joints": 0,
-        "totalPoints": 147,
-        "colors": ["#a3e8aa"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8064, -56.1621],
-        "stops": 144,
-        "labels": 12
-    },
-    "163": {
-        "sections": 40,
-        "joints": 0,
-        "totalPoints": 207,
-        "colors": ["#fec4bc"],
-        "weights": [4],
-        "bbox": [-34.9118, -56.2768, -34.8343, -56.1352],
-        "stops": 166,
-        "labels": 9
-    },
-    "169": {
-        "sections": 36,
-        "joints": 0,
-        "totalPoints": 188,
-        "colors": ["#4db550"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.7531, -56.1082],
-        "stops": 140,
-        "labels": 16
-    },
-    "174": {
-        "sections": 50,
-        "joints": 0,
-        "totalPoints": 229,
-        "colors": ["#de3f20"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2601, -34.7873, -56.1401],
-        "stops": 207,
-        "labels": 16
-    },
-    "175": {
-        "sections": 21,
-        "joints": 0,
-        "totalPoints": 171,
-        "colors": ["#49d3a1"],
-        "weights": [4],
-        "bbox": [-34.9053, -56.2193, -34.7258, -56.1486],
-        "stops": 190,
-        "labels": 11
-    },
-    "180": {
-        "sections": 31,
-        "joints": 0,
-        "totalPoints": 143,
-        "colors": ["#00d4c0"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8492, -56.1483],
-        "stops": 89,
-        "labels": 10
-    },
-    "181": {
-        "sections": 17,
-        "joints": 0,
-        "totalPoints": 107,
-        "colors": ["#5471f5"],
-        "weights": [4],
-        "bbox": [-34.9152, -56.2138, -34.8496, -56.1355],
-        "stops": 83,
-        "labels": 8
-    },
-    "182": {
-        "sections": 32,
-        "joints": 0,
-        "totalPoints": 175,
-        "colors": ["#d23c8f"],
-        "weights": [4],
-        "bbox": [-34.9152, -56.2138, -34.8496, -56.1355],
-        "stops": 106,
-        "labels": 5
-    },
-    "183": {
-        "sections": 18,
-        "joints": 0,
-        "totalPoints": 115,
-        "colors": ["#d98506"],
-        "weights": [4],
-        "bbox": [-34.9151, -56.2138, -34.8496, -56.1358],
-        "stops": 84,
-        "labels": 10
-    },
-    "185": {
-        "sections": 48,
-        "joints": 0,
-        "totalPoints": 246,
-        "colors": ["#dc9af1"],
-        "weights": [4],
-        "bbox": [-34.9111, -56.2796, -34.8544, -56.1351],
-        "stops": 165,
-        "labels": 17
-    },
-    "186": {
-        "sections": 41,
-        "joints": 0,
-        "totalPoints": 218,
-        "colors": ["#95a707"],
-        "weights": [4],
-        "bbox": [-34.9111, -56.2942, -34.8544, -56.1351],
-        "stops": 158,
-        "labels": 7
-    },
-    "187": {
-        "sections": 37,
-        "joints": 0,
-        "totalPoints": 138,
-        "colors": ["#72e8fc"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8752, -56.1585],
-        "stops": 76,
-        "labels": 7
-    },
-    "188": {
-        "sections": 16,
-        "joints": 0,
-        "totalPoints": 102,
-        "colors": ["#e26ab3"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.873, -56.1646],
-        "stops": 75,
-        "labels": 6
-    },
-    "191": {
-        "sections": 29,
-        "joints": 0,
-        "totalPoints": 143,
-        "colors": ["#b17df1"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2024, -34.8804, -56.135],
-        "stops": 115,
-        "labels": 8
-    },
-    "192": {
-        "sections": 49,
-        "joints": 0,
-        "totalPoints": 188,
-        "colors": ["#fec7a3"],
-        "weights": [4],
-        "bbox": [-34.9257, -56.1704, -34.7975, -56.1362],
-        "stops": 126,
-        "labels": 9
-    },
-    "195": {
-        "sections": 45,
-        "joints": 0,
-        "totalPoints": 227,
-        "colors": ["#d171d1"],
-        "weights": [4],
-        "bbox": [-34.9038, -56.2611, -34.8311, -56.1159],
-        "stops": 232,
-        "labels": 7
-    },
-    "199": {
-        "sections": 27,
-        "joints": 0,
-        "totalPoints": 135,
-        "colors": ["#6c6af3"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.184, -34.8391, -56.1538],
-        "stops": 104,
-        "labels": 8
-    },
-    "300": {
-        "sections": 26,
-        "joints": 0,
-        "totalPoints": 128,
-        "colors": ["#d59cf8"],
-        "weights": [4],
-        "bbox": [-34.9197, -56.1871, -34.7811, -56.1323],
-        "stops": 139,
-        "labels": 13
-    },
-    "306": {
-        "sections": 58,
-        "joints": 0,
-        "totalPoints": 286,
-        "colors": ["#dd410d"],
-        "weights": [4],
-        "bbox": [-34.8936, -56.2796, -34.8457, -56.0207],
-        "stops": 258,
-        "labels": 17
-    },
-    "316": {
-        "sections": 40,
-        "joints": 0,
-        "totalPoints": 231,
-        "colors": ["#4b74f6"],
-        "weights": [4],
-        "bbox": [-34.923, -56.1582, -34.791, -56.0678],
-        "stops": 134,
-        "labels": 12
-    },
-    "328": {
-        "sections": 37,
-        "joints": 0,
-        "totalPoints": 201,
-        "colors": ["#0dadcf"],
-        "weights": [4],
-        "bbox": [-34.927, -56.1813, -34.8064, -56.135],
-        "stops": 156,
-        "labels": 5
-    },
-    "329": {
-        "sections": 63,
-        "joints": 0,
-        "totalPoints": 283,
-        "colors": ["#d7db84"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2705, -34.7611, -56.135],
-        "stops": 236,
-        "labels": 11
-    },
-    "330": {
-        "sections": 25,
-        "joints": 0,
-        "totalPoints": 137,
-        "colors": ["#a752d4"],
-        "weights": [4],
-        "bbox": [-34.9064, -56.2024, -34.8061, -56.1424],
-        "stops": 105,
-        "labels": 9
-    },
-    "370": {
-        "sections": 39,
-        "joints": 0,
-        "totalPoints": 220,
-        "colors": ["#f26966"],
-        "weights": [4],
-        "bbox": [-34.904, -56.2612, -34.8544, -56.0832],
-        "stops": 190,
-        "labels": 10
-    },
-    "396": {
-        "sections": 25,
-        "joints": 0,
-        "totalPoints": 151,
-        "colors": ["#febfde"],
-        "weights": [4],
-        "bbox": [-34.9053, -56.2024, -34.8064, -56.1621],
-        "stops": 135,
-        "labels": 6
-    },
-    "402": {
-        "sections": 19,
-        "joints": 0,
-        "totalPoints": 141,
-        "colors": ["#f4befe"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8551, -56.1048],
-        "stops": 140,
-        "labels": 8
-    },
-    "404": {
-        "sections": 23,
-        "joints": 0,
-        "totalPoints": 138,
-        "colors": ["#e6d67e"],
-        "weights": [4],
-        "bbox": [-34.8869, -56.1948, -34.8311, -56.1104],
-        "stops": 113,
-        "labels": 8
-    },
-    "405": {
-        "sections": 25,
-        "joints": 0,
-        "totalPoints": 164,
-        "colors": ["#049a46"],
-        "weights": [4],
-        "bbox": [-34.923, -56.2021, -34.8265, -56.1233],
-        "stops": 184,
-        "labels": 12
-    },
-    "407": {
-        "sections": 24,
-        "joints": 0,
-        "totalPoints": 138,
-        "colors": ["#16cdea"],
-        "weights": [4],
-        "bbox": [-34.9144, -56.2031, -34.8699, -56.0835],
-        "stops": 132,
-        "labels": 3
-    },
-    "409": {
-        "sections": 36,
-        "joints": 0,
-        "totalPoints": 181,
-        "colors": ["#bd9607"],
-        "weights": [4],
-        "bbox": [-34.9103, -56.2682, -34.7874, -56.1762],
-        "stops": 176,
-        "labels": 9
-    },
-    "427": {
-        "sections": 60,
-        "joints": 0,
-        "totalPoints": 289,
-        "colors": ["#79ecd7"],
-        "weights": [4],
-        "bbox": [-34.9151, -56.2958, -34.8175, -56.0834],
-        "stops": 266,
-        "labels": 12
-    },
-    "456": {
-        "sections": 48,
-        "joints": 0,
-        "totalPoints": 176,
-        "colors": ["#1dcaf7"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8064, -56.1393],
-        "stops": 137,
-        "labels": 7
-    },
-    "468": {
-        "sections": 46,
-        "joints": 0,
-        "totalPoints": 249,
-        "colors": ["#ab50d0"],
-        "weights": [4],
-        "bbox": [-34.9038, -56.2278, -34.753, -56.0835],
-        "stops": 230,
-        "labels": 11
-    },
-    "494": {
-        "sections": 49,
-        "joints": 0,
-        "totalPoints": 259,
-        "colors": ["#fe9b5f"],
-        "weights": [4],
-        "bbox": [-34.9049, -56.3918, -34.7585, -56.1242],
-        "stops": 242,
-        "labels": 10
-    },
-    "495": {
-        "sections": 32,
-        "joints": 0,
-        "totalPoints": 166,
-        "colors": ["#febde9"],
-        "weights": [4],
-        "bbox": [-34.9049, -56.3393, -34.8343, -56.1242],
-        "stops": 199,
-        "labels": 5
-    },
-    "505": {
-        "sections": 39,
-        "joints": 0,
-        "totalPoints": 192,
-        "colors": ["#0287cf"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.7945, -56.118],
-        "stops": 124,
-        "labels": 7
-    },
-    "522": {
-        "sections": 31,
-        "joints": 0,
-        "totalPoints": 182,
-        "colors": ["#c36200"],
-        "weights": [4],
-        "bbox": [-34.9205, -56.2432, -34.8207, -56.1348],
-        "stops": 174,
-        "labels": 6
-    },
-    "524": {
-        "sections": 15,
-        "joints": 0,
-        "totalPoints": 100,
-        "colors": ["#dfd981"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.246, -34.8519, -56.1916],
-        "stops": 105,
-        "labels": 4
-    },
-    "526": {
-        "sections": 36,
-        "joints": 0,
-        "totalPoints": 195,
-        "colors": ["#f16779"],
-        "weights": [4],
-        "bbox": [-34.9031, -56.2336, -34.7961, -56.0915],
-        "stops": 189,
-        "labels": 6
-    },
-    "538": {
-        "sections": 32,
-        "joints": 0,
-        "totalPoints": 163,
-        "colors": ["#0184dd"],
-        "weights": [4],
-        "bbox": [-34.9096, -56.2044, -34.8454, -56.1197],
-        "stops": 158,
-        "labels": 6
-    },
-    "546": {
-        "sections": 29,
-        "joints": 0,
-        "totalPoints": 134,
-        "colors": ["#038fac"],
-        "weights": [4],
-        "bbox": [-34.8907, -56.2238, -34.8545, -56.0833],
-        "stops": 126,
-        "labels": 4
-    },
-    "582": {
-        "sections": 33,
-        "joints": 0,
-        "totalPoints": 143,
-        "colors": ["#c4d3fe"],
-        "weights": [4],
-        "bbox": [-34.9271, -56.2139, -34.8117, -56.1513],
-        "stops": 143,
-        "labels": 4
-    },
-    "124 Sd": {
-        "sections": 24,
-        "joints": 0,
-        "totalPoints": 166,
-        "colors": ["#5d6ff5"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2942, -34.8686, -56.1916],
-        "stops": 89,
-        "labels": 3
-    },
-    "Bt1": {
-        "sections": 6,
-        "joints": 0,
-        "totalPoints": 169,
-        "colors": ["#0eb2ae"],
-        "weights": [4],
-        "bbox": [-34.9197, -56.2152, -34.8569, -56.1511],
-        "stops": 12,
-        "labels": 2
-    },
-    "Bt2": {
-        "sections": 30,
-        "joints": 0,
-        "totalPoints": 225,
-        "colors": ["#dc3860"],
-        "weights": [4],
-        "bbox": [-34.9291, -56.1736, -34.8884, -56.0546],
-        "stops": 7,
-        "labels": 2
-    },
-    "Ce1": {
-        "sections": 7,
-        "joints": 0,
-        "totalPoints": 46,
-        "colors": ["#fec0d5"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.8927, -56.1636],
-        "stops": 33,
-        "labels": 5
-    },
-    "Ce2": {
-        "sections": 6,
-        "joints": 0,
-        "totalPoints": 34,
-        "colors": ["#0eb68b"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2136, -34.885, -56.1919],
-        "stops": 34,
-        "labels": 4
-    },
-    "D1": {
-        "sections": 29,
-        "joints": 0,
-        "totalPoints": 202,
-        "colors": ["#ca74da"],
-        "weights": [4],
-        "bbox": [-34.9153, -56.2136, -34.8773, -56.056],
-        "stops": 61,
-        "labels": 4
-    },
-    "D5": {
-        "sections": 20,
-        "joints": 0,
-        "totalPoints": 144,
-        "colors": ["#0daec7"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2278, -34.753, -56.1853],
-        "stops": 105,
-        "labels": 5
-    },
-    "D8": {
-        "sections": 33,
-        "joints": 0,
-        "totalPoints": 183,
-        "colors": ["#fe9a6c"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.7759, -56.0436],
-        "stops": 116,
-        "labels": 8
-    },
-    "D9": {
-        "sections": 13,
-        "joints": 0,
-        "totalPoints": 107,
-        "colors": ["#bf6500"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8585, -56.0483],
-        "stops": 79,
-        "labels": 5
-    },
-    "D10": {
-        "sections": 27,
-        "joints": 0,
-        "totalPoints": 152,
-        "colors": ["#caba40"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8593, -56.0233],
-        "stops": 84,
-        "labels": 5
-    },
-    "D11": {
-        "sections": 16,
-        "joints": 0,
-        "totalPoints": 109,
-        "colors": ["#048fa8"],
-        "weights": [4],
-        "bbox": [-34.9107, -56.2139, -34.8648, -56.0209],
-        "stops": 82,
-        "labels": 3
-    },
-    "E14": {
-        "sections": 5,
-        "joints": 0,
-        "totalPoints": 74,
-        "colors": ["#de3951"],
-        "weights": [4],
-        "bbox": [-34.9205, -56.2136, -34.9034, -56.1351],
-        "stops": 59,
-        "labels": 5
-    },
-    "G3": {
-        "sections": 6,
-        "joints": 0,
-        "totalPoints": 40,
-        "colors": ["#70e9f5"],
-        "weights": [4],
-        "bbox": [-34.8217, -56.2369, -34.7977, -56.2201],
-        "stops": 33,
-        "labels": 3
-    },
-    "G6": {
-        "sections": 5,
-        "joints": 0,
-        "totalPoints": 19,
-        "colors": ["#68d18c"],
-        "weights": [4],
-        "bbox": [-34.7995, -56.234, -34.7878, -56.2215],
-        "stops": 11,
-        "labels": 3
-    },
-    "G8": {
-        "sections": 14,
-        "joints": 0,
-        "totalPoints": 83,
-        "colors": ["#db3867"],
-        "weights": [4],
-        "bbox": [-34.7995, -56.2343, -34.7307, -56.1808],
-        "stops": 112,
-        "labels": 3
-    },
-    "G10": {
-        "sections": 12,
-        "joints": 0,
-        "totalPoints": 88,
-        "colors": ["#038ac4"],
-        "weights": [4],
-        "bbox": [-34.8038, -56.3187, -34.7231, -56.2215],
-        "stops": 104,
-        "labels": 7
-    },
-    "G11": {
-        "sections": 7,
-        "joints": 0,
-        "totalPoints": 64,
-        "colors": ["#fec6a7"],
-        "weights": [4],
-        "bbox": [-34.8055, -56.3187, -34.7231, -56.2215],
-        "stops": 102,
-        "labels": 5
-    },
-    "L1": {
-        "sections": 13,
-        "joints": 0,
-        "totalPoints": 63,
-        "colors": ["#da6dc3"],
-        "weights": [4],
-        "bbox": [-34.8706, -56.3754, -34.8101, -56.2725],
-        "stops": 139,
-        "labels": 3
-    },
-    "L2": {
-        "sections": 5,
-        "joints": 0,
-        "totalPoints": 29,
-        "colors": ["#1f9b00"],
-        "weights": [4],
-        "bbox": [-34.828, -56.1411, -34.7976, -56.0868],
-        "stops": 41,
-        "labels": 6
-    },
-    "L3": {
-        "sections": 18,
-        "joints": 0,
-        "totalPoints": 110,
-        "colors": ["#f891c7"],
-        "weights": [4],
-        "bbox": [-34.8607, -56.2535, -34.7977, -56.2147],
-        "stops": 102,
-        "labels": 4
-    },
-    "L4": {
-        "sections": 7,
-        "joints": 0,
-        "totalPoints": 30,
-        "colors": ["#4076f5"],
-        "weights": [4],
-        "bbox": [-34.8734, -56.2546, -34.8583, -56.2487],
-        "stops": 21,
-        "labels": 2
-    },
-    "L5": {
-        "sections": 2,
-        "joints": 0,
-        "totalPoints": 29,
-        "colors": ["#049486"],
-        "weights": [4],
-        "bbox": [-34.8373, -56.3354, -34.8035, -56.2725],
-        "stops": 50,
-        "labels": 2
-    },
-    "L6": {
-        "sections": 8,
-        "joints": 0,
-        "totalPoints": 46,
-        "colors": ["#589300"],
-        "weights": [4],
-        "bbox": [-34.8753, -56.2793, -34.8343, -56.249],
-        "stops": 65,
-        "labels": 2
-    },
-    "L7": {
-        "sections": 19,
-        "joints": 0,
-        "totalPoints": 127,
-        "colors": ["#905de6"],
-        "weights": [4],
-        "bbox": [-34.8761, -56.3078, -34.787, -56.2422],
-        "stops": 154,
-        "labels": 3
-    },
-    "L8": {
-        "sections": 2,
-        "joints": 0,
-        "totalPoints": 43,
-        "colors": ["#b04ecc"],
-        "weights": [4],
-        "bbox": [-34.891, -56.2942, -34.8731, -56.2475],
-        "stops": 63,
-        "labels": 2
-    },
-    "L9": {
-        "sections": 5,
-        "joints": 0,
-        "totalPoints": 38,
-        "colors": ["#febfdb"],
-        "weights": [4],
-        "bbox": [-34.8558, -56.1327, -34.8133, -56.0959],
-        "stops": 53,
-        "labels": 4
-    },
-    "L12": {
-        "sections": 21,
-        "joints": 0,
-        "totalPoints": 97,
-        "colors": ["#c6e18e"],
-        "weights": [4],
-        "bbox": [-34.9038, -56.2756, -34.8729, -56.2456],
-        "stops": 82,
-        "labels": 4
-    },
-    "L13": {
-        "sections": 8,
-        "joints": 0,
-        "totalPoints": 38,
-        "colors": ["#0289c9"],
-        "weights": [4],
-        "bbox": [-34.8063, -56.162, -34.7373, -56.0942],
-        "stops": 61,
-        "labels": 2
-    },
-    "L14": {
-        "sections": 5,
-        "joints": 0,
-        "totalPoints": 33,
-        "colors": ["#0286d5"],
-        "weights": [4],
-        "bbox": [-34.8606, -56.2766, -34.8345, -56.2146],
-        "stops": 49,
-        "labels": 3
-    },
-    "L15": {
-        "sections": 12,
-        "joints": 0,
-        "totalPoints": 70,
-        "colors": ["#b0adfd"],
-        "weights": [4],
-        "bbox": [-34.8797, -56.3749, -34.8434, -56.249],
-        "stops": 115,
-        "labels": 3
-    },
-    "L16": {
-        "sections": 4,
-        "joints": 0,
-        "totalPoints": 24,
-        "colors": ["#cf5500"],
-        "weights": [4],
-        "bbox": [-34.8707, -56.3392, -34.8343, -56.2725],
-        "stops": 61,
-        "labels": 3
-    },
-    "L19": {
-        "sections": 12,
-        "joints": 0,
-        "totalPoints": 58,
-        "colors": ["#d3dd87"],
-        "weights": [4],
-        "bbox": [-34.8875, -56.3393, -34.8343, -56.2725],
-        "stops": 102,
-        "labels": 3
-    },
-    "L20": {
-        "sections": 13,
-        "joints": 0,
-        "totalPoints": 77,
-        "colors": ["#da4700"],
-        "weights": [4],
-        "bbox": [-34.8874, -56.0863, -34.8497, -56.0476],
-        "stops": 41,
-        "labels": 2
-    },
-    "L22": {
-        "sections": 3,
-        "joints": 0,
-        "totalPoints": 31,
-        "colors": ["#c742a7"],
-        "weights": [4],
-        "bbox": [-34.8254, -56.1813, -34.7976, -56.0868],
-        "stops": 61,
-        "labels": 5
-    },
-    "L23": {
-        "sections": 7,
-        "joints": 0,
-        "totalPoints": 47,
-        "colors": ["#71ebe7"],
-        "weights": [4],
-        "bbox": [-34.891, -56.2942, -34.8731, -56.2456],
-        "stops": 45,
-        "labels": 2
-    },
-    "L24": {
-        "sections": 11,
-        "joints": 0,
-        "totalPoints": 62,
-        "colors": ["#d1cefe"],
-        "weights": [4],
-        "bbox": [-34.861, -56.2434, -34.8276, -56.2087],
-        "stops": 65,
-        "labels": 5
-    },
-    "L25": {
-        "sections": 3,
-        "joints": 0,
-        "totalPoints": 14,
-        "colors": ["#c2e291"],
-        "weights": [4],
-        "bbox": [-34.8169, -56.1388, -34.7973, -56.1168],
-        "stops": 22,
-        "labels": 3
-    },
-    "L26": {
-        "sections": 15,
-        "joints": 0,
-        "totalPoints": 61,
-        "colors": ["#abdbfe"],
-        "weights": [4],
-        "bbox": [-34.8748, -56.2503, -34.8561, -56.2139],
-        "stops": 44,
-        "labels": 3
-    },
-    "L28": {
-        "sections": 10,
-        "joints": 0,
-        "totalPoints": 56,
-        "colors": ["#217bf4"],
-        "weights": [4],
-        "bbox": [-34.8607, -56.2498, -34.8275, -56.2147],
-        "stops": 68,
-        "labels": 4
-    },
-    "L29": {
-        "sections": 20,
-        "joints": 0,
-        "totalPoints": 107,
-        "colors": ["#67c1fd"],
-        "weights": [4],
-        "bbox": [-34.8609, -56.2358, -34.7817, -56.1929],
-        "stops": 125,
-        "labels": 3
-    },
-    "L30": {
-        "sections": 3,
-        "joints": 0,
-        "totalPoints": 11,
-        "colors": ["#00b96d"],
-        "weights": [4],
-        "bbox": [-34.8369, -56.1016, -34.8238, -56.0874],
-        "stops": 9,
-        "labels": 2
-    },
-    "L31": {
-        "sections": 7,
-        "joints": 0,
-        "totalPoints": 30,
-        "colors": ["#fe8fb9"],
-        "weights": [4],
-        "bbox": [-34.8062, -56.1709, -34.7814, -56.1359],
-        "stops": 36,
-        "labels": 4
-    },
-    "L32": {
-        "sections": 9,
-        "joints": 0,
-        "totalPoints": 41,
-        "colors": ["#04919c"],
-        "weights": [4],
-        "bbox": [-34.8062, -56.1375, -34.7751, -56.1257],
-        "stops": 31,
-        "labels": 4
-    },
-    "L33": {
-        "sections": 10,
-        "joints": 0,
-        "totalPoints": 47,
-        "colors": ["#9fe9ae"],
-        "weights": [4],
-        "bbox": [-34.8062, -56.1375, -34.7751, -56.1279],
-        "stops": 30,
-        "labels": 3
-    },
-    "L35": {
-        "sections": 2,
-        "joints": 0,
-        "totalPoints": 18,
-        "colors": ["#8d8bfd"],
-        "weights": [4],
-        "bbox": [-34.858, -56.4048, -34.8194, -56.2725],
-        "stops": 100,
-        "labels": 3
-    },
-    "L36": {
-        "sections": 4,
-        "joints": 0,
-        "totalPoints": 44,
-        "colors": ["#ae9d07"],
-        "weights": [4],
-        "bbox": [-34.8559, -56.1477, -34.8218, -56.1002],
-        "stops": 55,
-        "labels": 4
-    },
-    "L38": {
-        "sections": 9,
-        "joints": 0,
-        "totalPoints": 45,
-        "colors": ["#038bbf"],
-        "weights": [4],
-        "bbox": [-34.8748, -56.2503, -34.8519, -56.2347],
-        "stops": 34,
-        "labels": 3
-    },
-    "L39": {
-        "sections": 10,
-        "joints": 0,
-        "totalPoints": 38,
-        "colors": ["#61b341"],
-        "weights": [4],
-        "bbox": [-34.8373, -56.3292, -34.8014, -56.267],
-        "stops": 53,
-        "labels": 3
-    },
-    "L40": {
-        "sections": 9,
-        "joints": 0,
-        "totalPoints": 35,
-        "colors": ["#f0d17d"],
-        "weights": [4],
-        "bbox": [-34.8979, -56.1436, -34.8733, -56.1204],
-        "stops": 33,
-        "labels": 3
-    },
-    "L41": {
-        "sections": 12,
-        "joints": 0,
-        "totalPoints": 58,
-        "colors": ["#94b7fd"],
-        "weights": [4],
-        "bbox": [-34.8621, -56.1327, -34.8414, -56.1108],
-        "stops": 37,
-        "labels": 4
-    },
-    "L46": {
-        "sections": 6,
-        "joints": 0,
-        "totalPoints": 58,
-        "colors": ["#c444ac"],
-        "weights": [4],
-        "bbox": [-34.8559, -56.1475, -34.8218, -56.1003],
-        "stops": 57,
-        "labels": 5
-    },
-    "L77": {
-        "sections": 11,
-        "joints": 0,
-        "totalPoints": 73,
-        "colors": ["#00cdf0"],
-        "weights": [4],
-        "bbox": [-34.8761, -56.2793, -34.8343, -56.249],
-        "stops": 82,
-        "labels": 2
-    }
+ "2": {
+  "sections": 30,
+  "joints": 0,
+  "totalPoints": 217,
+  "colors": [
+   "#d43b88"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8974,
+   -56.2495,
+   -34.7889,
+   -56.0711
+  ],
+  "stops": 193,
+  "labels": 10
+ },
+ "17": {
+  "sections": 30,
+  "joints": 0,
+  "totalPoints": 164,
+  "colors": [
+   "#049583"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2796,
+   -34.8625,
+   -56.1493
+  ],
+  "stops": 167,
+  "labels": 4
+ },
+ "21": {
+  "sections": 71,
+  "joints": 0,
+  "totalPoints": 264,
+  "colors": [
+   "#ad7ff4"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8648,
+   -56.0208
+  ],
+  "stops": 154,
+  "labels": 6
+ },
+ "60": {
+  "sections": 25,
+  "joints": 0,
+  "totalPoints": 134,
+  "colors": [
+   "#cb8e07"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8818,
+   -56.0712
+  ],
+  "stops": 111,
+  "labels": 9
+ },
+ "62": {
+  "sections": 13,
+  "joints": 0,
+  "totalPoints": 75,
+  "colors": [
+   "#768c00"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9118,
+   -56.2139,
+   -34.9015,
+   -56.135
+  ],
+  "stops": 56,
+  "labels": 4
+ },
+ "64": {
+  "sections": 21,
+  "joints": 0,
+  "totalPoints": 132,
+  "colors": [
+   "#3378f5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9071,
+   -56.2009,
+   -34.8817,
+   -56.0713
+  ],
+  "stops": 87,
+  "labels": 5
+ },
+ "71": {
+  "sections": 30,
+  "joints": 0,
+  "totalPoints": 136,
+  "colors": [
+   "#88ab00"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9145,
+   -56.1653,
+   -34.8065,
+   -56.1424
+  ],
+  "stops": 103,
+  "labels": 5
+ },
+ "76": {
+  "sections": 42,
+  "joints": 0,
+  "totalPoints": 202,
+  "colors": [
+   "#20d4b6"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2557,
+   -34.8625,
+   -56.1508
+  ],
+  "stops": 169,
+  "labels": 6
+ },
+ "79": {
+  "sections": 31,
+  "joints": 0,
+  "totalPoints": 139,
+  "colors": [
+   "#73e7ff"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9053,
+   -56.1992,
+   -34.8482,
+   -56.1323
+  ],
+  "stops": 101,
+  "labels": 5
+ },
+ "100": {
+  "sections": 11,
+  "joints": 0,
+  "totalPoints": 105,
+  "colors": [
+   "#0ca7eb"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9092,
+   -56.203,
+   -34.8131,
+   -56.0956
+  ],
+  "stops": 121,
+  "labels": 13
+ },
+ "102": {
+  "sections": 12,
+  "joints": 0,
+  "totalPoints": 92,
+  "colors": [
+   "#fe9594"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.8217,
+   -56.1336
+  ],
+  "stops": 136,
+  "labels": 15
+ },
+ "103": {
+  "sections": 27,
+  "joints": 0,
+  "totalPoints": 196,
+  "colors": [
+   "#7feccf"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.7703,
+   -56.0251
+  ],
+  "stops": 166,
+  "labels": 20
+ },
+ "104": {
+  "sections": 52,
+  "joints": 0,
+  "totalPoints": 239,
+  "colors": [
+   "#fccb7e"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9152,
+   -56.2136,
+   -34.8598,
+   -55.9956
+  ],
+  "stops": 156,
+  "labels": 8
+ },
+ "105": {
+  "sections": 23,
+  "joints": 0,
+  "totalPoints": 131,
+  "colors": [
+   "#60d291"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.8648,
+   -56.0208
+  ],
+  "stops": 148,
+  "labels": 18
+ },
+ "106": {
+  "sections": 3,
+  "joints": 0,
+  "totalPoints": 65,
+  "colors": [
+   "#8bb9fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.8243,
+   -56.1323
+  ],
+  "stops": 99,
+  "labels": 4
+ },
+ "109": {
+  "sections": 11,
+  "joints": 0,
+  "totalPoints": 94,
+  "colors": [
+   "#d4cdfe"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9092,
+   -56.203,
+   -34.8519,
+   -56.0233
+  ],
+  "stops": 122,
+  "labels": 15
+ },
+ "110": {
+  "sections": 14,
+  "joints": 0,
+  "totalPoints": 118,
+  "colors": [
+   "#f26c52"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9092,
+   -56.203,
+   -34.7168,
+   -56.1323
+  ],
+  "stops": 159,
+  "labels": 15
+ },
+ "111": {
+  "sections": 20,
+  "joints": 0,
+  "totalPoints": 114,
+  "colors": [
+   "#8fa907"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.8551,
+   -56.1048
+  ],
+  "stops": 117,
+  "labels": 13
+ },
+ "112": {
+  "sections": 31,
+  "joints": 0,
+  "totalPoints": 173,
+  "colors": [
+   "#049677"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.8547,
+   -56.066
+  ],
+  "stops": 146,
+  "labels": 15
+ },
+ "113": {
+  "sections": 19,
+  "joints": 0,
+  "totalPoints": 90,
+  "colors": [
+   "#dd6cbe"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9092,
+   -56.203,
+   -34.8669,
+   -56.1048
+  ],
+  "stops": 99,
+  "labels": 10
+ },
+ "115": {
+  "sections": 26,
+  "joints": 0,
+  "totalPoints": 127,
+  "colors": [
+   "#a37800"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8968,
+   -56.17,
+   -34.8414,
+   -56.1108
+  ],
+  "stops": 77,
+  "labels": 7
+ },
+ "116": {
+  "sections": 12,
+  "joints": 0,
+  "totalPoints": 74,
+  "colors": [
+   "#a1c75e"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9205,
+   -56.2139,
+   -34.9034,
+   -56.1349
+  ],
+  "stops": 72,
+  "labels": 6
+ },
+ "117": {
+  "sections": 11,
+  "joints": 0,
+  "totalPoints": 60,
+  "colors": [
+   "#f1677f"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2139,
+   -34.9015,
+   -56.1576
+  ],
+  "stops": 57,
+  "labels": 6
+ },
+ "121": {
+  "sections": 10,
+  "joints": 0,
+  "totalPoints": 72,
+  "colors": [
+   "#9e56dc"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2139,
+   -34.8973,
+   -56.1486
+  ],
+  "stops": 72,
+  "labels": 5
+ },
+ "124": {
+  "sections": 27,
+  "joints": 0,
+  "totalPoints": 164,
+  "colors": [
+   "#e9780d"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2941,
+   -34.8686,
+   -56.1916
+  ],
+  "stops": 99,
+  "labels": 9
+ },
+ "125": {
+  "sections": 15,
+  "joints": 0,
+  "totalPoints": 96,
+  "colors": [
+   "#589bfd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2535,
+   -34.8544,
+   -56.1916
+  ],
+  "stops": 115,
+  "labels": 10
+ },
+ "127": {
+  "sections": 30,
+  "joints": 0,
+  "totalPoints": 193,
+  "colors": [
+   "#a07a00"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.3918,
+   -34.7585,
+   -56.1916
+  ],
+  "stops": 198,
+  "labels": 13
+ },
+ "128": {
+  "sections": 25,
+  "joints": 0,
+  "totalPoints": 155,
+  "colors": [
+   "#9cb4fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9152,
+   -56.2816,
+   -34.8179,
+   -56.135
+  ],
+  "stops": 140,
+  "labels": 9
+ },
+ "130": {
+  "sections": 29,
+  "joints": 0,
+  "totalPoints": 155,
+  "colors": [
+   "#fec6aa"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2278,
+   -34.753,
+   -56.1916
+  ],
+  "stops": 137,
+  "labels": 11
+ },
+ "133": {
+  "sections": 25,
+  "joints": 0,
+  "totalPoints": 145,
+  "colors": [
+   "#e8ab3e"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.3761,
+   -34.8434,
+   -56.1916
+  ],
+  "stops": 202,
+  "labels": 6
+ },
+ "135": {
+  "sections": 28,
+  "joints": 0,
+  "totalPoints": 146,
+  "colors": [
+   "#0eb590"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9046,
+   -56.4048,
+   -34.8194,
+   -56.1858
+  ],
+  "stops": 200,
+  "labels": 3
+ },
+ "137": {
+  "sections": 45,
+  "joints": 0,
+  "totalPoints": 234,
+  "colors": [
+   "#d7397b"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9126,
+   -56.2816,
+   -34.8175,
+   -56.1762
+  ],
+  "stops": 179,
+  "labels": 10
+ },
+ "140": {
+  "sections": 29,
+  "joints": 0,
+  "totalPoints": 163,
+  "colors": [
+   "#90b8fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9052,
+   -56.2018,
+   -34.8817,
+   -56.0711
+  ],
+  "stops": 108,
+  "labels": 4
+ },
+ "141": {
+  "sections": 12,
+  "joints": 0,
+  "totalPoints": 67,
+  "colors": [
+   "#febde5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9094,
+   -56.203,
+   -34.8749,
+   -56.121
+  ],
+  "stops": 85,
+  "labels": 4
+ },
+ "142": {
+  "sections": 16,
+  "joints": 0,
+  "totalPoints": 125,
+  "colors": [
+   "#c4a4fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9092,
+   -56.203,
+   -34.8598,
+   -55.9956
+  ],
+  "stops": 137,
+  "labels": 10
+ },
+ "143": {
+  "sections": 19,
+  "joints": 0,
+  "totalPoints": 83,
+  "colors": [
+   "#ea689d"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9053,
+   -56.2024,
+   -34.8912,
+   -56.1302
+  ],
+  "stops": 56,
+  "labels": 3
+ },
+ "144": {
+  "sections": 23,
+  "joints": 0,
+  "totalPoints": 125,
+  "colors": [
+   "#fa9e56"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9083,
+   -56.1983,
+   -34.8457,
+   -56.1209
+  ],
+  "stops": 126,
+  "labels": 8
+ },
+ "145": {
+  "sections": 44,
+  "joints": 0,
+  "totalPoints": 282,
+  "colors": [
+   "#0490a5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9144,
+   -56.2682,
+   -34.7961,
+   -56.1298
+  ],
+  "stops": 208,
+  "labels": 15
+ },
+ "147": {
+  "sections": 33,
+  "joints": 0,
+  "totalPoints": 173,
+  "colors": [
+   "#fa90c2"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2335,
+   -34.7961,
+   -56.1762
+  ],
+  "stops": 168,
+  "labels": 13
+ },
+ "148": {
+  "sections": 27,
+  "joints": 0,
+  "totalPoints": 184,
+  "colors": [
+   "#049b38"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2705,
+   -34.7611,
+   -56.1762
+  ],
+  "stops": 173,
+  "labels": 12
+ },
+ "149": {
+  "sections": 35,
+  "joints": 0,
+  "totalPoints": 209,
+  "colors": [
+   "#f6a24e"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9144,
+   -56.2023,
+   -34.7975,
+   -56.1349
+  ],
+  "stops": 202,
+  "labels": 13
+ },
+ "150": {
+  "sections": 18,
+  "joints": 0,
+  "totalPoints": 138,
+  "colors": [
+   "#81ad16"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9046,
+   -56.2202,
+   -34.7419,
+   -56.1762
+  ],
+  "stops": 177,
+  "labels": 4
+ },
+ "151": {
+  "sections": 43,
+  "joints": 0,
+  "totalPoints": 253,
+  "colors": [
+   "#6897fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9049,
+   -56.2535,
+   -34.7961,
+   -56.0833
+  ],
+  "stops": 220,
+  "labels": 13
+ },
+ "155": {
+  "sections": 27,
+  "joints": 0,
+  "totalPoints": 157,
+  "colors": [
+   "#bca8fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9046,
+   -56.2024,
+   -34.8215,
+   -56.0985
+  ],
+  "stops": 153,
+  "labels": 6
+ },
+ "156": {
+  "sections": 18,
+  "joints": 0,
+  "totalPoints": 106,
+  "colors": [
+   "#b9d7fe"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.837,
+   -56.1489
+  ],
+  "stops": 108,
+  "labels": 6
+ },
+ "157": {
+  "sections": 16,
+  "joints": 0,
+  "totalPoints": 115,
+  "colors": [
+   "#9bc963"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9038,
+   -56.2768,
+   -34.8343,
+   -56.1635
+  ],
+  "stops": 124,
+  "labels": 9
+ },
+ "158": {
+  "sections": 23,
+  "joints": 0,
+  "totalPoints": 145,
+  "colors": [
+   "#a3e8aa"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8064,
+   -56.1621
+  ],
+  "stops": 144,
+  "labels": 12
+ },
+ "163": {
+  "sections": 40,
+  "joints": 0,
+  "totalPoints": 204,
+  "colors": [
+   "#fec4bc"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9118,
+   -56.2768,
+   -34.8343,
+   -56.1351
+  ],
+  "stops": 166,
+  "labels": 9
+ },
+ "169": {
+  "sections": 36,
+  "joints": 0,
+  "totalPoints": 187,
+  "colors": [
+   "#4db550"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.7531,
+   -56.1082
+  ],
+  "stops": 140,
+  "labels": 16
+ },
+ "174": {
+  "sections": 50,
+  "joints": 0,
+  "totalPoints": 228,
+  "colors": [
+   "#de3f20"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2601,
+   -34.7873,
+   -56.1401
+  ],
+  "stops": 207,
+  "labels": 16
+ },
+ "175": {
+  "sections": 21,
+  "joints": 0,
+  "totalPoints": 172,
+  "colors": [
+   "#49d3a1"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9053,
+   -56.2193,
+   -34.7258,
+   -56.1486
+  ],
+  "stops": 190,
+  "labels": 11
+ },
+ "180": {
+  "sections": 31,
+  "joints": 0,
+  "totalPoints": 144,
+  "colors": [
+   "#00d4c0"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8492,
+   -56.1483
+  ],
+  "stops": 89,
+  "labels": 10
+ },
+ "181": {
+  "sections": 17,
+  "joints": 0,
+  "totalPoints": 106,
+  "colors": [
+   "#5471f5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9152,
+   -56.2138,
+   -34.8496,
+   -56.1355
+  ],
+  "stops": 83,
+  "labels": 8
+ },
+ "182": {
+  "sections": 32,
+  "joints": 0,
+  "totalPoints": 175,
+  "colors": [
+   "#d23c8f"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9152,
+   -56.2138,
+   -34.8496,
+   -56.1355
+  ],
+  "stops": 106,
+  "labels": 5
+ },
+ "183": {
+  "sections": 18,
+  "joints": 0,
+  "totalPoints": 118,
+  "colors": [
+   "#d98506"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9151,
+   -56.2138,
+   -34.8496,
+   -56.1358
+  ],
+  "stops": 84,
+  "labels": 10
+ },
+ "185": {
+  "sections": 48,
+  "joints": 0,
+  "totalPoints": 246,
+  "colors": [
+   "#dc9af1"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9111,
+   -56.2796,
+   -34.8544,
+   -56.135
+  ],
+  "stops": 165,
+  "labels": 17
+ },
+ "186": {
+  "sections": 41,
+  "joints": 0,
+  "totalPoints": 218,
+  "colors": [
+   "#95a707"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9111,
+   -56.2942,
+   -34.8544,
+   -56.135
+  ],
+  "stops": 158,
+  "labels": 7
+ },
+ "187": {
+  "sections": 37,
+  "joints": 0,
+  "totalPoints": 137,
+  "colors": [
+   "#72e8fc"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8752,
+   -56.1585
+  ],
+  "stops": 76,
+  "labels": 7
+ },
+ "188": {
+  "sections": 16,
+  "joints": 0,
+  "totalPoints": 104,
+  "colors": [
+   "#e26ab3"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.873,
+   -56.1646
+  ],
+  "stops": 75,
+  "labels": 6
+ },
+ "191": {
+  "sections": 29,
+  "joints": 0,
+  "totalPoints": 145,
+  "colors": [
+   "#b17df1"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2024,
+   -34.8804,
+   -56.135
+  ],
+  "stops": 115,
+  "labels": 8
+ },
+ "192": {
+  "sections": 49,
+  "joints": 0,
+  "totalPoints": 189,
+  "colors": [
+   "#fec7a3"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9257,
+   -56.1704,
+   -34.7975,
+   -56.1362
+  ],
+  "stops": 126,
+  "labels": 9
+ },
+ "195": {
+  "sections": 45,
+  "joints": 0,
+  "totalPoints": 225,
+  "colors": [
+   "#d171d1"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9038,
+   -56.2611,
+   -34.8311,
+   -56.1159
+  ],
+  "stops": 232,
+  "labels": 7
+ },
+ "199": {
+  "sections": 27,
+  "joints": 0,
+  "totalPoints": 137,
+  "colors": [
+   "#6c6af3"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.184,
+   -34.8391,
+   -56.1538
+  ],
+  "stops": 104,
+  "labels": 8
+ },
+ "300": {
+  "sections": 26,
+  "joints": 0,
+  "totalPoints": 128,
+  "colors": [
+   "#d59cf8"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9197,
+   -56.1871,
+   -34.7811,
+   -56.1323
+  ],
+  "stops": 139,
+  "labels": 13
+ },
+ "306": {
+  "sections": 58,
+  "joints": 0,
+  "totalPoints": 285,
+  "colors": [
+   "#dd410d"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8936,
+   -56.2796,
+   -34.8457,
+   -56.0206
+  ],
+  "stops": 258,
+  "labels": 17
+ },
+ "316": {
+  "sections": 40,
+  "joints": 0,
+  "totalPoints": 232,
+  "colors": [
+   "#4b74f6"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.923,
+   -56.1582,
+   -34.7909,
+   -56.0677
+  ],
+  "stops": 134,
+  "labels": 12
+ },
+ "328": {
+  "sections": 37,
+  "joints": 0,
+  "totalPoints": 202,
+  "colors": [
+   "#0dadcf"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.927,
+   -56.1813,
+   -34.8064,
+   -56.135
+  ],
+  "stops": 156,
+  "labels": 5
+ },
+ "329": {
+  "sections": 63,
+  "joints": 0,
+  "totalPoints": 285,
+  "colors": [
+   "#d7db84"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2705,
+   -34.7611,
+   -56.135
+  ],
+  "stops": 236,
+  "labels": 11
+ },
+ "330": {
+  "sections": 25,
+  "joints": 0,
+  "totalPoints": 136,
+  "colors": [
+   "#a752d4"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9064,
+   -56.2024,
+   -34.806,
+   -56.1424
+  ],
+  "stops": 105,
+  "labels": 9
+ },
+ "370": {
+  "sections": 39,
+  "joints": 0,
+  "totalPoints": 222,
+  "colors": [
+   "#f26966"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.904,
+   -56.2612,
+   -34.8544,
+   -56.0832
+  ],
+  "stops": 190,
+  "labels": 10
+ },
+ "396": {
+  "sections": 25,
+  "joints": 0,
+  "totalPoints": 150,
+  "colors": [
+   "#febfde"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9053,
+   -56.2024,
+   -34.8064,
+   -56.1621
+  ],
+  "stops": 135,
+  "labels": 6
+ },
+ "402": {
+  "sections": 19,
+  "joints": 0,
+  "totalPoints": 139,
+  "colors": [
+   "#f4befe"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8551,
+   -56.1048
+  ],
+  "stops": 140,
+  "labels": 8
+ },
+ "404": {
+  "sections": 23,
+  "joints": 0,
+  "totalPoints": 138,
+  "colors": [
+   "#e6d67e"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8869,
+   -56.1948,
+   -34.8311,
+   -56.1104
+  ],
+  "stops": 113,
+  "labels": 8
+ },
+ "405": {
+  "sections": 25,
+  "joints": 0,
+  "totalPoints": 163,
+  "colors": [
+   "#049a46"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.923,
+   -56.2021,
+   -34.8265,
+   -56.1233
+  ],
+  "stops": 184,
+  "labels": 12
+ },
+ "407": {
+  "sections": 24,
+  "joints": 0,
+  "totalPoints": 138,
+  "colors": [
+   "#16cdea"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9144,
+   -56.2031,
+   -34.8699,
+   -56.0835
+  ],
+  "stops": 132,
+  "labels": 3
+ },
+ "409": {
+  "sections": 36,
+  "joints": 0,
+  "totalPoints": 181,
+  "colors": [
+   "#bd9607"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9103,
+   -56.2682,
+   -34.7874,
+   -56.1762
+  ],
+  "stops": 176,
+  "labels": 9
+ },
+ "427": {
+  "sections": 60,
+  "joints": 0,
+  "totalPoints": 288,
+  "colors": [
+   "#79ecd7"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9151,
+   -56.2958,
+   -34.8175,
+   -56.0834
+  ],
+  "stops": 266,
+  "labels": 12
+ },
+ "456": {
+  "sections": 48,
+  "joints": 0,
+  "totalPoints": 178,
+  "colors": [
+   "#1dcaf7"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8064,
+   -56.1393
+  ],
+  "stops": 137,
+  "labels": 7
+ },
+ "468": {
+  "sections": 46,
+  "joints": 0,
+  "totalPoints": 248,
+  "colors": [
+   "#ab50d0"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9038,
+   -56.2278,
+   -34.753,
+   -56.0835
+  ],
+  "stops": 230,
+  "labels": 11
+ },
+ "494": {
+  "sections": 49,
+  "joints": 0,
+  "totalPoints": 258,
+  "colors": [
+   "#fe9b5f"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9049,
+   -56.3918,
+   -34.7585,
+   -56.1242
+  ],
+  "stops": 242,
+  "labels": 10
+ },
+ "495": {
+  "sections": 32,
+  "joints": 0,
+  "totalPoints": 166,
+  "colors": [
+   "#febde9"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9049,
+   -56.3393,
+   -34.8343,
+   -56.1242
+  ],
+  "stops": 199,
+  "labels": 5
+ },
+ "505": {
+  "sections": 39,
+  "joints": 0,
+  "totalPoints": 192,
+  "colors": [
+   "#0287cf"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.7945,
+   -56.118
+  ],
+  "stops": 124,
+  "labels": 7
+ },
+ "522": {
+  "sections": 31,
+  "joints": 0,
+  "totalPoints": 181,
+  "colors": [
+   "#c36200"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9205,
+   -56.2432,
+   -34.8207,
+   -56.1348
+  ],
+  "stops": 174,
+  "labels": 6
+ },
+ "524": {
+  "sections": 15,
+  "joints": 0,
+  "totalPoints": 99,
+  "colors": [
+   "#dfd981"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.246,
+   -34.8519,
+   -56.1916
+  ],
+  "stops": 105,
+  "labels": 4
+ },
+ "526": {
+  "sections": 36,
+  "joints": 0,
+  "totalPoints": 194,
+  "colors": [
+   "#f16779"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9031,
+   -56.2336,
+   -34.7961,
+   -56.0915
+  ],
+  "stops": 189,
+  "labels": 6
+ },
+ "538": {
+  "sections": 32,
+  "joints": 0,
+  "totalPoints": 162,
+  "colors": [
+   "#0184dd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9096,
+   -56.2044,
+   -34.8454,
+   -56.1197
+  ],
+  "stops": 158,
+  "labels": 6
+ },
+ "546": {
+  "sections": 29,
+  "joints": 0,
+  "totalPoints": 134,
+  "colors": [
+   "#038fac"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8907,
+   -56.2238,
+   -34.8545,
+   -56.0833
+  ],
+  "stops": 126,
+  "labels": 4
+ },
+ "582": {
+  "sections": 33,
+  "joints": 0,
+  "totalPoints": 143,
+  "colors": [
+   "#c4d3fe"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9271,
+   -56.2139,
+   -34.8117,
+   -56.1513
+  ],
+  "stops": 143,
+  "labels": 4
+ },
+ "124 Sd": {
+  "sections": 24,
+  "joints": 0,
+  "totalPoints": 166,
+  "colors": [
+   "#5d6ff5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2942,
+   -34.8686,
+   -56.1916
+  ],
+  "stops": 89,
+  "labels": 3
+ },
+ "Bt1": {
+  "sections": 6,
+  "joints": 0,
+  "totalPoints": 169,
+  "colors": [
+   "#0eb2ae"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9197,
+   -56.2152,
+   -34.8569,
+   -56.1511
+  ],
+  "stops": 12,
+  "labels": 2
+ },
+ "Bt2": {
+  "sections": 30,
+  "joints": 0,
+  "totalPoints": 229,
+  "colors": [
+   "#dc3860"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9291,
+   -56.1736,
+   -34.8884,
+   -56.0546
+  ],
+  "stops": 7,
+  "labels": 2
+ },
+ "Ce1": {
+  "sections": 7,
+  "joints": 0,
+  "totalPoints": 45,
+  "colors": [
+   "#fec0d5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.8927,
+   -56.1635
+  ],
+  "stops": 33,
+  "labels": 5
+ },
+ "Ce2": {
+  "sections": 6,
+  "joints": 0,
+  "totalPoints": 34,
+  "colors": [
+   "#0eb68b"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2136,
+   -34.885,
+   -56.1919
+  ],
+  "stops": 34,
+  "labels": 4
+ },
+ "D1": {
+  "sections": 29,
+  "joints": 0,
+  "totalPoints": 204,
+  "colors": [
+   "#ca74da"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9153,
+   -56.2136,
+   -34.8773,
+   -56.0559
+  ],
+  "stops": 61,
+  "labels": 4
+ },
+ "D5": {
+  "sections": 20,
+  "joints": 0,
+  "totalPoints": 144,
+  "colors": [
+   "#0daec7"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2278,
+   -34.753,
+   -56.1853
+  ],
+  "stops": 105,
+  "labels": 5
+ },
+ "D8": {
+  "sections": 33,
+  "joints": 0,
+  "totalPoints": 184,
+  "colors": [
+   "#fe9a6c"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.7759,
+   -56.0436
+  ],
+  "stops": 116,
+  "labels": 8
+ },
+ "D9": {
+  "sections": 13,
+  "joints": 0,
+  "totalPoints": 105,
+  "colors": [
+   "#bf6500"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8585,
+   -56.0483
+  ],
+  "stops": 79,
+  "labels": 5
+ },
+ "D10": {
+  "sections": 27,
+  "joints": 0,
+  "totalPoints": 152,
+  "colors": [
+   "#caba40"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8593,
+   -56.0233
+  ],
+  "stops": 84,
+  "labels": 5
+ },
+ "D11": {
+  "sections": 16,
+  "joints": 0,
+  "totalPoints": 109,
+  "colors": [
+   "#048fa8"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9107,
+   -56.2139,
+   -34.8648,
+   -56.0209
+  ],
+  "stops": 82,
+  "labels": 3
+ },
+ "E14": {
+  "sections": 5,
+  "joints": 0,
+  "totalPoints": 76,
+  "colors": [
+   "#de3951"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9205,
+   -56.2136,
+   -34.9034,
+   -56.135
+  ],
+  "stops": 59,
+  "labels": 5
+ },
+ "G3": {
+  "sections": 6,
+  "joints": 0,
+  "totalPoints": 40,
+  "colors": [
+   "#70e9f5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8217,
+   -56.2369,
+   -34.7977,
+   -56.2201
+  ],
+  "stops": 33,
+  "labels": 3
+ },
+ "G6": {
+  "sections": 5,
+  "joints": 0,
+  "totalPoints": 19,
+  "colors": [
+   "#68d18c"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.7995,
+   -56.234,
+   -34.7878,
+   -56.2215
+  ],
+  "stops": 11,
+  "labels": 3
+ },
+ "G8": {
+  "sections": 14,
+  "joints": 0,
+  "totalPoints": 83,
+  "colors": [
+   "#db3867"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.7995,
+   -56.2343,
+   -34.7307,
+   -56.1808
+  ],
+  "stops": 112,
+  "labels": 3
+ },
+ "G10": {
+  "sections": 12,
+  "joints": 0,
+  "totalPoints": 87,
+  "colors": [
+   "#038ac4"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8038,
+   -56.3187,
+   -34.7231,
+   -56.2215
+  ],
+  "stops": 104,
+  "labels": 7
+ },
+ "G11": {
+  "sections": 7,
+  "joints": 0,
+  "totalPoints": 68,
+  "colors": [
+   "#fec6a7"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8055,
+   -56.3187,
+   -34.7231,
+   -56.2215
+  ],
+  "stops": 102,
+  "labels": 5
+ },
+ "L1": {
+  "sections": 13,
+  "joints": 0,
+  "totalPoints": 63,
+  "colors": [
+   "#da6dc3"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8706,
+   -56.3754,
+   -34.8101,
+   -56.2725
+  ],
+  "stops": 139,
+  "labels": 3
+ },
+ "L2": {
+  "sections": 5,
+  "joints": 0,
+  "totalPoints": 29,
+  "colors": [
+   "#1f9b00"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.828,
+   -56.1411,
+   -34.7976,
+   -56.0868
+  ],
+  "stops": 41,
+  "labels": 6
+ },
+ "L3": {
+  "sections": 18,
+  "joints": 0,
+  "totalPoints": 111,
+  "colors": [
+   "#f891c7"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8607,
+   -56.2535,
+   -34.7977,
+   -56.2147
+  ],
+  "stops": 102,
+  "labels": 4
+ },
+ "L4": {
+  "sections": 7,
+  "joints": 0,
+  "totalPoints": 30,
+  "colors": [
+   "#4076f5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8734,
+   -56.2546,
+   -34.8583,
+   -56.2487
+  ],
+  "stops": 21,
+  "labels": 2
+ },
+ "L5": {
+  "sections": 2,
+  "joints": 0,
+  "totalPoints": 29,
+  "colors": [
+   "#049486"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8373,
+   -56.3354,
+   -34.8035,
+   -56.2725
+  ],
+  "stops": 50,
+  "labels": 2
+ },
+ "L6": {
+  "sections": 8,
+  "joints": 0,
+  "totalPoints": 47,
+  "colors": [
+   "#589300"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8753,
+   -56.2793,
+   -34.8343,
+   -56.249
+  ],
+  "stops": 65,
+  "labels": 2
+ },
+ "L7": {
+  "sections": 19,
+  "joints": 0,
+  "totalPoints": 131,
+  "colors": [
+   "#905de6"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8761,
+   -56.3078,
+   -34.787,
+   -56.2422
+  ],
+  "stops": 154,
+  "labels": 3
+ },
+ "L8": {
+  "sections": 2,
+  "joints": 0,
+  "totalPoints": 43,
+  "colors": [
+   "#b04ecc"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.891,
+   -56.2942,
+   -34.8731,
+   -56.2475
+  ],
+  "stops": 63,
+  "labels": 2
+ },
+ "L9": {
+  "sections": 5,
+  "joints": 0,
+  "totalPoints": 38,
+  "colors": [
+   "#febfdb"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8558,
+   -56.1327,
+   -34.8133,
+   -56.0959
+  ],
+  "stops": 53,
+  "labels": 4
+ },
+ "L12": {
+  "sections": 21,
+  "joints": 0,
+  "totalPoints": 97,
+  "colors": [
+   "#c6e18e"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.9038,
+   -56.2756,
+   -34.8729,
+   -56.2456
+  ],
+  "stops": 82,
+  "labels": 4
+ },
+ "L13": {
+  "sections": 8,
+  "joints": 0,
+  "totalPoints": 38,
+  "colors": [
+   "#0289c9"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8064,
+   -56.1621,
+   -34.7373,
+   -56.0942
+  ],
+  "stops": 61,
+  "labels": 2
+ },
+ "L14": {
+  "sections": 5,
+  "joints": 0,
+  "totalPoints": 33,
+  "colors": [
+   "#0286d5"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8606,
+   -56.2766,
+   -34.8345,
+   -56.2146
+  ],
+  "stops": 49,
+  "labels": 3
+ },
+ "L15": {
+  "sections": 12,
+  "joints": 0,
+  "totalPoints": 69,
+  "colors": [
+   "#b0adfd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8797,
+   -56.3749,
+   -34.8434,
+   -56.249
+  ],
+  "stops": 115,
+  "labels": 3
+ },
+ "L16": {
+  "sections": 4,
+  "joints": 0,
+  "totalPoints": 25,
+  "colors": [
+   "#cf5500"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8707,
+   -56.3392,
+   -34.8343,
+   -56.2725
+  ],
+  "stops": 61,
+  "labels": 3
+ },
+ "L19": {
+  "sections": 12,
+  "joints": 0,
+  "totalPoints": 59,
+  "colors": [
+   "#d3dd87"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8875,
+   -56.3393,
+   -34.8343,
+   -56.2725
+  ],
+  "stops": 102,
+  "labels": 3
+ },
+ "L20": {
+  "sections": 13,
+  "joints": 0,
+  "totalPoints": 74,
+  "colors": [
+   "#da4700"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8874,
+   -56.0863,
+   -34.8497,
+   -56.0476
+  ],
+  "stops": 41,
+  "labels": 2
+ },
+ "L22": {
+  "sections": 3,
+  "joints": 0,
+  "totalPoints": 31,
+  "colors": [
+   "#c742a7"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8254,
+   -56.1813,
+   -34.7976,
+   -56.0868
+  ],
+  "stops": 61,
+  "labels": 5
+ },
+ "L23": {
+  "sections": 7,
+  "joints": 0,
+  "totalPoints": 47,
+  "colors": [
+   "#71ebe7"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.891,
+   -56.2942,
+   -34.8731,
+   -56.2455
+  ],
+  "stops": 45,
+  "labels": 2
+ },
+ "L24": {
+  "sections": 11,
+  "joints": 0,
+  "totalPoints": 63,
+  "colors": [
+   "#d1cefe"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.861,
+   -56.2434,
+   -34.8276,
+   -56.2087
+  ],
+  "stops": 65,
+  "labels": 5
+ },
+ "L25": {
+  "sections": 3,
+  "joints": 0,
+  "totalPoints": 14,
+  "colors": [
+   "#c2e291"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8169,
+   -56.1388,
+   -34.7973,
+   -56.1168
+  ],
+  "stops": 22,
+  "labels": 3
+ },
+ "L26": {
+  "sections": 15,
+  "joints": 0,
+  "totalPoints": 62,
+  "colors": [
+   "#abdbfe"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8748,
+   -56.2503,
+   -34.8561,
+   -56.2139
+  ],
+  "stops": 44,
+  "labels": 3
+ },
+ "L28": {
+  "sections": 10,
+  "joints": 0,
+  "totalPoints": 58,
+  "colors": [
+   "#217bf4"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8607,
+   -56.2498,
+   -34.8275,
+   -56.2147
+  ],
+  "stops": 68,
+  "labels": 4
+ },
+ "L29": {
+  "sections": 20,
+  "joints": 0,
+  "totalPoints": 106,
+  "colors": [
+   "#67c1fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.861,
+   -56.2358,
+   -34.7817,
+   -56.1929
+  ],
+  "stops": 125,
+  "labels": 3
+ },
+ "L30": {
+  "sections": 3,
+  "joints": 0,
+  "totalPoints": 11,
+  "colors": [
+   "#00b96d"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8369,
+   -56.1016,
+   -34.8238,
+   -56.0874
+  ],
+  "stops": 9,
+  "labels": 2
+ },
+ "L31": {
+  "sections": 7,
+  "joints": 0,
+  "totalPoints": 30,
+  "colors": [
+   "#fe8fb9"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8062,
+   -56.1709,
+   -34.7814,
+   -56.1359
+  ],
+  "stops": 36,
+  "labels": 4
+ },
+ "L32": {
+  "sections": 9,
+  "joints": 0,
+  "totalPoints": 41,
+  "colors": [
+   "#04919c"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8062,
+   -56.1375,
+   -34.7751,
+   -56.1257
+  ],
+  "stops": 31,
+  "labels": 4
+ },
+ "L33": {
+  "sections": 10,
+  "joints": 0,
+  "totalPoints": 47,
+  "colors": [
+   "#9fe9ae"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8062,
+   -56.1375,
+   -34.7751,
+   -56.1279
+  ],
+  "stops": 30,
+  "labels": 3
+ },
+ "L35": {
+  "sections": 2,
+  "joints": 0,
+  "totalPoints": 18,
+  "colors": [
+   "#8d8bfd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.858,
+   -56.4048,
+   -34.8194,
+   -56.2725
+  ],
+  "stops": 100,
+  "labels": 3
+ },
+ "L36": {
+  "sections": 4,
+  "joints": 0,
+  "totalPoints": 44,
+  "colors": [
+   "#ae9d07"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8559,
+   -56.1477,
+   -34.8218,
+   -56.1002
+  ],
+  "stops": 55,
+  "labels": 4
+ },
+ "L38": {
+  "sections": 9,
+  "joints": 0,
+  "totalPoints": 45,
+  "colors": [
+   "#038bbf"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8748,
+   -56.2503,
+   -34.8519,
+   -56.2347
+  ],
+  "stops": 34,
+  "labels": 3
+ },
+ "L39": {
+  "sections": 10,
+  "joints": 0,
+  "totalPoints": 38,
+  "colors": [
+   "#61b341"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8373,
+   -56.3292,
+   -34.8014,
+   -56.267
+  ],
+  "stops": 53,
+  "labels": 3
+ },
+ "L40": {
+  "sections": 9,
+  "joints": 0,
+  "totalPoints": 35,
+  "colors": [
+   "#f0d17d"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8979,
+   -56.1436,
+   -34.8733,
+   -56.1204
+  ],
+  "stops": 33,
+  "labels": 3
+ },
+ "L41": {
+  "sections": 12,
+  "joints": 0,
+  "totalPoints": 58,
+  "colors": [
+   "#94b7fd"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8621,
+   -56.1327,
+   -34.8414,
+   -56.1108
+  ],
+  "stops": 37,
+  "labels": 4
+ },
+ "L46": {
+  "sections": 6,
+  "joints": 0,
+  "totalPoints": 58,
+  "colors": [
+   "#c444ac"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8559,
+   -56.1475,
+   -34.8218,
+   -56.1003
+  ],
+  "stops": 57,
+  "labels": 5
+ },
+ "L77": {
+  "sections": 11,
+  "joints": 0,
+  "totalPoints": 74,
+  "colors": [
+   "#00cdf0"
+  ],
+  "weights": [
+   4
+  ],
+  "bbox": [
+   -34.8761,
+   -56.2793,
+   -34.8343,
+   -56.249
+  ],
+  "stops": 82,
+  "labels": 2
+ }
 }

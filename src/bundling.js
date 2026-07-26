@@ -52,6 +52,7 @@ const lineCompare = (a, b) => a.localeCompare(b, undefined, { numeric: true, sen
 export function smoothPath(coords, passes, maxSegDeg, maxShiftDeg) {
     if (coords.length < 3) return coords;
     const maxSegSq = maxSegDeg * maxSegDeg;
+    const maxShiftSq = maxShiftDeg * maxShiftDeg;
     let cur = coords;
     for (let p = 0; p < passes; p++) {
         const next = [cur[0]];
@@ -69,19 +70,36 @@ export function smoothPath(coords, passes, maxSegDeg, maxShiftDeg) {
                 next.push(cur[i]);
                 continue;
             }
-            let dx = (px + 2 * cx + nx) / 4 - cx;
-            let dy = (py + 2 * cy + ny) / 4 - cy;
-            const shift = Math.hypot(dx, dy);
-            if (shift > maxShiftDeg) {
-                dx *= maxShiftDeg / shift;
-                dy *= maxShiftDeg / shift;
-            }
-            next.push([cx + dx, cy + dy]);
+            const dx = (px + 2 * cx + nx) / 4 - cx;
+            const dy = (py + 2 * cy + ny) / 4 - cy;
+            // Clamp the TOTAL displacement from the canonical node, not this
+            // pass's step. Clamping per pass let `passes` multiply the budget:
+            // with 2 passes a vertex could end up 2 × maxShiftDeg away, and on
+            // the committed data 204 of 13,930 corridor vertices moved past the
+            // documented ~11 m — the worst by 21.6 m. That budget is not
+            // cosmetic: route_oracles.mjs derives CHORD_MAX_M = 30 as cluster
+            // mean (≤24 m) + smoothing (≤11 m) + simplify (4 m), so overrunning
+            // it eats the oracle's headroom.
+            const [ox, oy] = coords[i];
+            next.push(clampToDisc(cx + dx, cy + dy, ox, oy, maxShiftDeg, maxShiftSq));
         }
         next.push(cur[cur.length - 1]);
         cur = next;
     }
     return cur;
+}
+
+/**
+ * Projects a candidate point back onto the disc of radius `r` around an anchor.
+ * @returns {number[]} [lon, lat] — the candidate itself when already inside
+ */
+function clampToDisc(x, y, ax, ay, r, rSq) {
+    const dx = x - ax;
+    const dy = y - ay;
+    const dSq = dx * dx + dy * dy;
+    if (dSq <= rSq) return [x, y];
+    const scale = r / Math.sqrt(dSq);
+    return [ax + dx * scale, ay + dy * scale];
 }
 
 /**

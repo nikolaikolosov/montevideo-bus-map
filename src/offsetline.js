@@ -95,7 +95,41 @@ export function offsetPoints(pts, d) {
         }
 
         const X = lineIntersection(A.a, A.b, B.a, B.b);
-        if (X && X.t > 1 && X.u < 0) {
+
+        // A miter is only a valid join when it is a TRIM: it has to cut A short
+        // and start B late, i.e. t ∈ (0, 1] along A and u ∈ [0, 1) along B.
+        // The old code asked one question — "is this the outer side?" — and let
+        // every other configuration fall through to the miter unconditionally.
+        // Where |offset| exceeds a segment's length (short corner segment, outer
+        // slot of a wide bundle) the intersection lands BEHIND A's offset start,
+        // t ≤ 0, and inserting it made the strand double back on itself.
+        //
+        // Measured over all 2921 corridor sections: 17 of 7054 joins hit this at
+        // zoom 15, 3 at zoom 16, none at 17+. Dropping the join there (below)
+        // halves the adjacent-slot crossings a bundle is supposed to make
+        // impossible: 9 → 5 at zoom 15, 1 → 0 at zoom 16. Two alternatives were
+        // measured and are worse — beveling, which is what the audit report
+        // proposed, DOUBLES them (9 → 18) because the raw offset endpoints of a
+        // swallowed segment stick out further than the bad miter did; clamping to
+        // A.a / B.b matches 5 but duplicates a neighbouring point.
+        //
+        // NOT fixed here: the audit also asked for a miter limit, because a
+        // valid trim still spikes as a turn approaches a hairpin (miter length
+        // = |d| / sin(interior/2); 183 px at a 175° turn with |d| = 8). A limit
+        // cannot work at this layer — declining the miter emits a bevel, and
+        // cullLoops() below sees the bevel's two points cross and replaces them
+        // with exactly the intersection that was declined. Verified: with a
+        // 3 × |d| limit in place, output was byte-identical to no limit at
+        // 140/155/165/175° turns. A real cap has to teach cullLoops to leave
+        // deliberate bevels alone, which is a change to the loop culler, not to
+        // the join.
+        const isTrim = X && X.t > 0 && X.t <= 1 && X.u >= 0 && X.u < 1;
+
+        if (isTrim) {
+            // Inner side — trim both segments to the exact intersection.
+            // (Loops from offsets larger than a segment are culled below.)
+            out.push(L.point(X.x, X.y));
+        } else if (X && X.t > 1 && X.u < 0) {
             // Outer side of the turn — approximate a round join with one
             // midpoint on the offset circle around the original vertex.
             out.push(A.b);
@@ -106,11 +140,16 @@ export function offsetPoints(pts, d) {
                 out.push(L.point(A.ov.x + (mx / ml) * absd, A.ov.y + (my / ml) * absd));
             }
             out.push(B.a);
-        } else if (X) {
-            // Inner side — trim both segments to the exact intersection.
-            // (Loops from offsets larger than a segment are culled below.)
-            out.push(L.point(X.x, X.y));
+        } else if (X && (X.t <= 0 || X.u >= 1)) {
+            // One of the two offset segments is entirely consumed at this |d|:
+            // the corner cannot be represented at this offset distance. Emit
+            // NOTHING and let the neighbouring points join directly — the same
+            // thing a stroker does when a segment is swallowed. Pushing any
+            // point here is what went wrong: the intersection reverses the
+            // strand, A.b/B.a (a bevel) stick out even further, and A.a/B.b
+            // duplicate a neighbour.
         } else {
+            // Parallel or degenerate: bevel. Two points, no invented geometry.
             out.push(A.b);
             out.push(B.a);
         }
