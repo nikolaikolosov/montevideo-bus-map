@@ -26,44 +26,31 @@ const { buildIndexes, getSortedLines, getFilteredRouteFeatures } = await import(
 const { prepareRouteFeature } = await import('../src/map.js');
 const { measureLine, buildLineGeometry } = await import('./route_oracles.mjs');
 const { toMeters } = await import('../src/geometry.js');
+const { SVG_PX, toSvgPolylines } = await import('./triage_sketch.mjs');
 
 const routes = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8'));
 const stops = JSON.parse(readFileSync(join(root, 'stops.json'), 'utf8'));
 buildIndexes(routes, stops);
 
-const BOX_M = 260; // half-size of the sketch window
-const SVG_PX = 340;
-
-/** Clips a polyline to the box around anchor and converts to SVG points. */
-function toSvgPolylines(coords, anchorM) {
-    const scale = SVG_PX / (2 * BOX_M);
-    const runs = [];
-    let run = [];
-    for (const p of coords) {
-        const m = toMeters(p);
-        const x = m[0] - anchorM[0];
-        const y = m[1] - anchorM[1];
-        if (Math.abs(x) <= BOX_M && Math.abs(y) <= BOX_M) {
-            run.push(`${((x + BOX_M) * scale).toFixed(1)},${((BOX_M - y) * scale).toFixed(1)}`);
-        } else if (run.length > 0) {
-            if (run.length > 1) runs.push(run);
-            run = [];
-        }
-    }
-    if (run.length > 1) runs.push(run);
-    return runs;
-}
-
 const SECTION_COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#008080'];
 
 function sketch(finding, paths, sections) {
     const anchorM = toMeters(finding.at);
-    const gray = paths
-        .flatMap((p) => toSvgPolylines(p, anchorM))
+    const grayRuns = paths.flatMap((p) => toSvgPolylines(p, anchorM));
+    const gray = grayRuns
         .map(
             (r) => `<polyline points="${r.join(' ')}" fill="none" stroke="#bbb" stroke-width="1"/>`,
         )
         .join('');
+    // Say so when there is nothing to compare against, instead of letting an
+    // empty reference layer read as "the trace genuinely isn't here". With
+    // vertex filtering this happened on 2 findings whose trace does cross the
+    // window; with clipping it should mean what it says, and if it ever appears
+    // the reviewer knows not to trust the card.
+    const grayWarning = grayRuns.length
+        ? ''
+        : `<rect x="6" y="6" width="${SVG_PX - 12}" height="20" fill="#fdecea" stroke="#c0392b" stroke-width="0.8"/>
+<text x="${SVG_PX / 2}" y="20" text-anchor="middle" font-size="11" fill="#c0392b">no digitised trace in this window — do not classify</text>`;
     const colored = sections
         .flatMap((s, i) =>
             toSvgPolylines(s.coords, anchorM).map(
@@ -74,7 +61,7 @@ function sketch(finding, paths, sections) {
         .join('');
     const c = SVG_PX / 2;
     return `<svg width="${SVG_PX}" height="${SVG_PX}" viewBox="0 0 ${SVG_PX} ${SVG_PX}" style="background:#fff;border:1px solid #ddd">
-${gray}${colored}
+${gray}${colored}${grayWarning}
 <circle cx="${c}" cy="${c}" r="5" fill="none" stroke="red" stroke-width="1.5"/>
 <line x1="${c - 9}" y1="${c}" x2="${c + 9}" y2="${c}" stroke="red" stroke-width="0.7"/>
 <line x1="${c}" y1="${c - 9}" x2="${c}" y2="${c + 9}" stroke="red" stroke-width="0.7"/>
