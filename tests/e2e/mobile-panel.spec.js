@@ -92,20 +92,38 @@ test('home control reveals all stops WITHOUT moving the camera', async ({ page }
 
 test('the home control keeps its opaque colour on tap (no sticky hover)', async ({ page }) => {
     // brainstorm-010 issue 2: on touch (hover:none) the :hover rule must not
-    // apply, so the button never turns into its translucent-white hover state.
+    // apply, so the button never picks up its pressed tint and keeps it.
     await openMap(page, { theme: 'dark' });
     expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true);
 
     const base = await page.evaluate(
         () => getComputedStyle(document.querySelector('.home-control')).backgroundColor,
     );
-    expect(base).toBe('rgba(15, 23, 42, 0.95)'); // opaque panel base, not a hover tint
+    // Light in both themes, matching the zoom buttons above it — and the plain
+    // rest colour, not the #f4f4f4 press tint.
+    expect(base).toBe('rgb(255, 255, 255)');
 
     await page.hover('.home-control');
     const afterHover = await page.evaluate(
         () => getComputedStyle(document.querySelector('.home-control')).backgroundColor,
     );
     expect(afterHover).toBe(base);
+});
+
+test('the home control matches the zoom buttons on a dark-theme phone too', async ({ page }) => {
+    // Mobile is where the mismatch was most visible: the dark control sat
+    // directly under two white zoom buttons in the same column.
+    await openMap(page, { theme: 'dark' });
+    const both = await page.evaluate(() => {
+        const read = (s) => {
+            const c = getComputedStyle(document.querySelector(s));
+            return { bg: c.backgroundColor, color: c.color };
+        };
+        return { home: read('.home-control'), zoomIn: read('.leaflet-control-zoom-in') };
+    });
+    expect(both.home.bg).toBe(both.zoomIn.bg);
+    expect(both.home.color).toBe(both.zoomIn.color);
+    expect(both.home.bg).toBe('rgb(255, 255, 255)');
 });
 
 test('the home control flashes the same tap highlight as the zoom buttons', async ({ page }) => {
