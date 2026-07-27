@@ -8,6 +8,7 @@
  * Hash grammar (components URI-encoded; line ids can contain spaces, "124 Sd"):
  *   #/                          all stops (home)
  *   #/linea/104                 one line, whole route
+ *   #/linea/104/destino/Pocitos one line, only the variants headed there
  *   #/parada/4772               all stops, popup open at stop 4772
  *   #/parada/4772/linea/102     line 102 downstream from stop 4772
  *   #/parada/4772/todas         every line through stop 4772, downstream
@@ -60,7 +61,15 @@ export function parseHash(hash) {
 
     if (parts.length === 0) return { view: 'all' };
     if (parts.includes(null)) return { view: 'all' }; // malformed escape
-    if (parts[0] === 'linea' && parts.length === 2) return { view: 'line', line: parts[1] };
+    if (parts[0] === 'linea' && parts.length === 2) {
+        return { view: 'line', line: parts[1], headsign: null };
+    }
+    // One destination of a line: #/linea/104/destino/Pocitos. No headsign in the
+    // committed data contains / # ? or %, and parts are split before decoding,
+    // so an encoded separator would survive anyway.
+    if (parts[0] === 'linea' && parts.length === 4 && parts[2] === 'destino') {
+        return { view: 'line', line: parts[1], headsign: parts[3] };
+    }
     if (parts[0] === 'viaje' && (parts.length === 3 || parts.length === 5)) {
         const journey = parseJourney(parts);
         if (journey) return journey;
@@ -122,7 +131,9 @@ function parseJourney(parts) {
 export function buildHash(state) {
     switch (state.view) {
         case 'line':
-            return `#/linea/${encodeURIComponent(state.line)}`;
+            return state.headsign
+                ? `#/linea/${encodeURIComponent(state.line)}/destino/${encodeURIComponent(state.headsign)}`
+                : `#/linea/${encodeURIComponent(state.line)}`;
         case 'stop':
             return `#/parada/${state.stop}`;
         case 'downstream':
@@ -167,7 +178,12 @@ export function go(state) {
             location.hash = hash; // exotic environments — degrade gracefully
         }
     }
-    notify(state);
+    // Notify with the state as PARSED BACK from the hash, not as passed in, so
+    // subscribers always see the same canonical shape a reload would give them.
+    // Callers legitimately omit optional fields — `go({view: 'line', line})`
+    // means the whole line — and without this each new optional field would
+    // arrive as undefined from some call sites and null from others.
+    notify(parseHash(hash));
 }
 
 /**

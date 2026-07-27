@@ -11,8 +11,13 @@ describe('parseHash / buildHash', () => {
     const cases = [
         ['#/', { view: 'all' }],
         ['', { view: 'all' }],
-        ['#/linea/104', { view: 'line', line: '104' }],
-        ['#/linea/124%20Sd', { view: 'line', line: '124 Sd' }],
+        ['#/linea/104', { view: 'line', line: '104', headsign: null }],
+        ['#/linea/104/destino/Pocitos', { view: 'line', line: '104', headsign: 'Pocitos' }],
+        [
+            '#/linea/104/destino/Playa%20Malv%C3%ADn',
+            { view: 'line', line: '104', headsign: 'Playa Malvín' },
+        ],
+        ['#/linea/124%20Sd', { view: 'line', line: '124 Sd', headsign: null }],
         ['#/parada/4772', { view: 'stop', stop: 4772 }],
         ['#/parada/4772/todas', { view: 'downstream', stop: 4772, line: null }],
         ['#/parada/4772/linea/102', { view: 'downstream', stop: 4772, line: '102' }],
@@ -68,9 +73,17 @@ describe('parseHash / buildHash', () => {
     });
 
     it('still decodes the escapes that are valid', () => {
-        expect(parseHash('#/linea/124%20Sd')).toEqual({ view: 'line', line: '124 Sd' });
-        expect(parseHash('#/linea/G%C3%A9nova')).toEqual({ view: 'line', line: 'Génova' });
-        expect(parseHash('#/linea/100%25')).toEqual({ view: 'line', line: '100%' });
+        expect(parseHash('#/linea/124%20Sd')).toEqual({
+            view: 'line',
+            line: '124 Sd',
+            headsign: null,
+        });
+        expect(parseHash('#/linea/G%C3%A9nova')).toEqual({
+            view: 'line',
+            line: 'Génova',
+            headsign: null,
+        });
+        expect(parseHash('#/linea/100%25')).toEqual({ view: 'line', line: '100%', headsign: null });
     });
 
     it('drops the option segment for the first (best) itinerary', () => {
@@ -86,11 +99,23 @@ describe('parseHash / buildHash', () => {
 });
 
 describe('navigation', () => {
+    it('notifies with the canonical state even when a caller omits a field', () => {
+        // Callers legitimately write `go({view: 'line', line})` to mean the whole
+        // line. Subscribers must still see the same shape a reload would give
+        // them, or each new optional field arrives undefined from some call
+        // sites and null from others.
+        history.replaceState(null, '', '#/');
+        const seen = [];
+        start((s) => seen.push(s));
+        go({ view: 'line', line: '104' });
+        expect(seen.at(-1)).toEqual({ view: 'line', line: '104', headsign: null });
+    });
+
     it('start() notifies with the initial URL state', () => {
         history.replaceState(null, '', '#/linea/104');
         const seen = [];
         start((s) => seen.push(s));
-        expect(seen).toEqual([{ view: 'line', line: '104' }]);
+        expect(seen).toEqual([{ view: 'line', line: '104', headsign: null }]);
     });
 
     it('go() pushes a history entry and notifies synchronously', () => {
@@ -100,7 +125,7 @@ describe('navigation', () => {
         go({ view: 'line', line: '104' });
         expect(location.hash).toBe('#/linea/104');
         expect(history.length).toBe(before + 1);
-        expect(seen.at(-1)).toEqual({ view: 'line', line: '104' });
+        expect(seen.at(-1)).toEqual({ view: 'line', line: '104', headsign: null });
     });
 
     it('go() to the CURRENT state re-renders without stacking history', () => {

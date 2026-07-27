@@ -26,6 +26,7 @@ import {
     stopLinesMap,
     stopVariantsMap,
     getStopLineVariants,
+    getLineHeadsigns,
 } from './data.js';
 import {
     initMap,
@@ -54,6 +55,7 @@ import {
     setSearchDisplay,
     renderContextBar,
     updateStatsPanel,
+    renderDestinationPicker,
     renderDataFreshness,
     initThemeToggle,
     updateThemeToggle,
@@ -275,17 +277,29 @@ function renderForState(state) {
     currentState = state;
 
     if (state.view !== 'journey') renderJourneyPanel({ visible: false });
+    // Hidden by default and shown only by the line view below, so a view added
+    // later cannot leave a stale destination picker on screen.
+    if (state.view !== 'line')
+        renderDestinationPicker({ groups: [], active: null, onPick: () => {} });
 
     switch (state.view) {
         case 'journey':
             renderJourneyState(state);
             break;
         case 'line': {
-            const { variantCount, stopCount } = renderRoutes({
+            const groups = getLineHeadsigns(state.line);
+            const picked = groups.find((g) => g.headsign === state.headsign) ?? null;
+            const { stopCount } = renderRoutes({
                 lineIds: [state.line],
+                variantsArr: picked ? picked.variants : undefined,
                 onShowRoutes: handleShowRoutes,
             });
-            updateStatsPanel({ show: true, variantCount, stopCount });
+            updateStatsPanel({ show: true, stopCount });
+            renderDestinationPicker({
+                groups,
+                active: picked ? picked.headsign : null,
+                onPick: (headsign) => router.go({ view: 'line', line: state.line, headsign }),
+            });
             setSearchDisplay(t('panel.lineOption', { id: state.line }));
             renderContextBar(null);
             break;
@@ -306,17 +320,13 @@ function renderForState(state) {
             const variantsArr = single
                 ? getStopLineVariants(state.stop, state.line)
                 : Array.from(stopVariantsMap.get(state.stop) ?? []);
-            const { variantCount, stopCount } = renderRoutes({
+            const { stopCount } = renderRoutes({
                 lineIds,
                 variantsArr,
                 sourceFeature: feature,
                 onShowRoutes: handleShowRoutes,
             });
-            updateStatsPanel({
-                show: true,
-                variantCount: single ? variantCount : null,
-                stopCount,
-            });
+            updateStatsPanel({ show: true, stopCount });
             setSearchDisplay(single ? t('panel.lineOption', { id: state.line }) : '');
             renderContextBar({ name: stopDisplayName(feature), code: state.stop, single }, () =>
                 single

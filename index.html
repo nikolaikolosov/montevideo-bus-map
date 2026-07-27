@@ -220,11 +220,20 @@
             </section>
 
             <div id="routeInfo" class="route-info" aria-live="polite">
-                <div class="stat-row">
-                    <span class="stat-label" data-i18n="panel.statVariants"
-                        >Variantes de recorrido</span
-                    >
-                    <span id="statVariants" class="stat-value">-</span>
+                <!-- Destination picker: the headsigns a selected line serves. It
+                     takes the ROW the old "Variantes de recorrido: 7" stat
+                     vacated — pipeline vocabulary that could not be acted on
+                     (ux-review-001 R4 / X1). Occupying that row rather than
+                     adding a block is what keeps the mobile bottom sheet inside
+                     its map-space budget. -->
+                <div id="destinations" class="stat-row destinations" hidden>
+                    <span class="stat-label" data-i18n="panel.destinations">Destino</span>
+                    <div
+                        id="destinationChips"
+                        class="destination-chips"
+                        role="group"
+                        data-i18n-aria="panel.destinationAria"
+                    ></div>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label" data-i18n="panel.statStops">Total de paradas</span>

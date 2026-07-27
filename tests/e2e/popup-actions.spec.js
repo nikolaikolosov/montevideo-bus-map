@@ -37,7 +37,11 @@ test('chip click renders exactly that line downstream from the stop', async ({ p
     await expect(page.locator('#searchInput')).toHaveValue('Línea 102');
     expect(new URL(page.url()).hash).toBe('#/parada/4772/linea/102');
     await expect(page.locator('#contextText')).toContainText('4772');
-    await expect(page.locator('#statVariants')).not.toHaveText('-');
+    // The variants count is gone (ux-review-001 X1); the stop count is what the
+    // stats block still reports for a downstream render.
+    await expect(page.locator('#statStops')).not.toHaveText('-');
+    // A downstream view is not a whole-line view, so it offers no destinations.
+    await expect(page.locator('#destinations')).toBeHidden();
 });
 
 test('"Ver todos los recorridos" renders the whole bundle', async ({ page }) => {
