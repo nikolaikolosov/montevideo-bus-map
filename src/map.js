@@ -8,7 +8,7 @@ import {
     stopStreets,
 } from './utils.js';
 import { appState, resetLayers } from './state.js';
-import { projectionCandidates, pointAt } from './geometry.js';
+import { projectionCandidates, pointAt, M_PER_DEG_LON, M_PER_DEG_LAT } from './geometry.js';
 import { buildSections, buildJoints } from './bundling.js';
 import { OffsetPolyline, OffsetJoint } from './offsetline.js';
 import { getTheme } from './theme.js';
@@ -440,6 +440,9 @@ let locationTimer = null;
 /** True between locateUser() and stopLocatingUser(), across visibility pauses. */
 let locationTracking = false;
 
+/** Previous fix, so the next interval can be derived from the rider's speed. */
+let prevFix = null;
+
 /**
  * The camera we last set ourselves, and the view it belonged to. While the map
  * still matches this, each new fix re-centres on the rider; the moment anything
@@ -473,6 +476,47 @@ export function cameraLeftAnchor(anchor, state) {
         anchor.zoom !== state.zoom ||
         Math.abs(anchor.lat - state.lat) > CAMERA_EPS ||
         Math.abs(anchor.lng - state.lng) > CAMERA_EPS
+    );
+}
+
+/**
+ * How long to wait before reading the position again, from how fast the rider is
+ * actually moving.
+ *
+ * A fixed cadence is wrong in both directions: 30 s leaves the map implying the
+ * wrong stop on 73 % of stop pairs while riding, and the same 30 s spent
+ * standing at a stop buys nothing at all, because the position is not changing.
+ * So the interval is whatever keeps the fix from going stale by more than
+ * GEOLOCATION_STALE_BUDGET_M — half a p10 stop gap, the point where the nearest
+ * stop the map implies would flip. Standing still, that is forever, hence the
+ * cap; at 40 km/h it would be 8 s, hence the floor.
+ *
+ * Displacement below the reported accuracy is not motion — a stationary phone
+ * wanders inside its own error circle, and treating that as speed would keep the
+ * GPS at full rate next to a bus stop.
+ *
+ * @param {{lat: number, lng: number, accuracy: number, at: number}|null} prev
+ * @param {{lat: number, lng: number, accuracy: number, at: number}} fix
+ * @returns {number} milliseconds until the next read
+ */
+export function nextRefreshMs(prev, fix) {
+    if (!prev) return CONFIG.GEOLOCATION_FIRST_REFRESH_MS;
+    const seconds = (fix.at - prev.at) / 1000;
+    if (!(seconds > 0)) return CONFIG.GEOLOCATION_FIRST_REFRESH_MS;
+
+    const travelled = Math.hypot(
+        (fix.lng - prev.lng) * M_PER_DEG_LON,
+        (fix.lat - prev.lat) * M_PER_DEG_LAT,
+    );
+    const noise = Math.max(prev.accuracy || 0, fix.accuracy || 0);
+    const moved = Math.max(0, travelled - noise);
+    if (moved === 0) return CONFIG.GEOLOCATION_MAX_REFRESH_MS;
+
+    const speed = moved / seconds; // m/s
+    const ms = (CONFIG.GEOLOCATION_STALE_BUDGET_M / speed) * 1000;
+    return Math.min(
+        CONFIG.GEOLOCATION_MAX_REFRESH_MS,
+        Math.max(CONFIG.GEOLOCATION_MIN_REFRESH_MS, Math.round(ms)),
     );
 }
 
@@ -548,11 +592,20 @@ function requestPosition() {
     });
 }
 
+/** Arms the next read. Each delay is decided from the last two fixes. */
+function scheduleNextRead(ms) {
+    if (locationTimer !== null) clearTimeout(locationTimer);
+    locationTimer = setTimeout(() => {
+        locationTimer = null;
+        requestPosition();
+    }, ms);
+}
+
 /** Polling runs only while the page is visible — a backgrounded tab is not read. */
 function onVisibilityChange() {
     if (!locationTracking) return;
     if (document.visibilityState === 'hidden') {
-        if (locationTimer !== null) clearInterval(locationTimer);
+        if (locationTimer !== null) clearTimeout(locationTimer);
         locationTimer = null;
         return;
     }
@@ -560,7 +613,6 @@ function onVisibilityChange() {
         // Coming back to the app after it was hidden: the shown position is as
         // old as the pause, so refresh at once rather than at the next tick.
         requestPosition();
-        locationTimer = setInterval(requestPosition, CONFIG.GEOLOCATION_REFRESH_MS);
     }
 }
 
@@ -634,6 +686,10 @@ export function locateUser() {
             };
         }
 
+        const fix = { lat: e.latlng.lat, lng: e.latlng.lng, accuracy: e.accuracy, at: Date.now() };
+        scheduleNextRead(nextRefreshMs(prevFix, fix));
+        prevFix = fix;
+
         drawUserLocation(e.latlng, e.accuracy);
         updateLocateControl({ busy: false });
     });
@@ -648,23 +704,30 @@ export function locateUser() {
         const denied = isFatalLocationError(err.code);
         updateLocateControl({ busy: false, denied });
         if (denied) stopLocatingUser();
+        // A transient failure must not end the session: try again on the same
+        // cadence the last known speed implies.
+        else
+            scheduleNextRead(
+                nextRefreshMs(prevFix, prevFix ? { ...prevFix, at: Date.now() } : null),
+            );
     });
 
-    // The interval is armed BEFORE the first request on purpose: a denied
+    // The timer is armed BEFORE the first request on purpose: a denied
     // permission comes back synchronously from map.locate(), and stopping the
     // polling from inside that handler must find a timer to clear — otherwise
-    // the interval is created afterwards and keeps asking forever.
-    locationTimer = setInterval(requestPosition, CONFIG.GEOLOCATION_REFRESH_MS);
+    // one is armed afterwards and keeps asking forever.
+    scheduleNextRead(CONFIG.GEOLOCATION_FIRST_REFRESH_MS);
     document.addEventListener('visibilitychange', onVisibilityChange);
     requestPosition();
 }
 
 /** Stops the position polling. Leaves the last marker in place. */
 export function stopLocatingUser() {
-    if (locationTimer !== null) clearInterval(locationTimer);
+    if (locationTimer !== null) clearTimeout(locationTimer);
     locationTimer = null;
     locationTracking = false;
     followAnchor = null;
+    prevFix = null;
     document.removeEventListener('visibilitychange', onVisibilityChange);
     if (map) map.off('locationfound').off('locationerror');
 }

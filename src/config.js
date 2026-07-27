@@ -45,10 +45,32 @@ export const CONFIG = {
     FIT_BOUNDS_MAX_ZOOM: 15,
     // Auto-geolocation (mobile only): how far to zoom in when centring on the user.
     GEOLOCATION_MAX_ZOOM: 16,
-    // The position is re-read on this interval for the whole session, not once
-    // at startup: the map is used DURING a ride to tell which stop to get off
-    // at, and a fix taken while boarding is worthless ten blocks later.
-    GEOLOCATION_REFRESH_MS: 30_000,
+    // How often the position is re-read. NOT a constant: the cadence needed to
+    // keep the map honest differs by ~4x between riding and standing, so it is
+    // derived from the rider's own speed (see nextRefreshMs in map.js).
+    //
+    // The criterion is "the shown position still implies the right stop": the
+    // nearest-stop reading flips once you are more than halfway to the next
+    // stop, so the fix may not go stale by more than half a stop gap. Measured
+    // over all 59,751 consecutive stop pairs in the committed data, the p10 gap
+    // is 177 m (median 268 m) — half of it is the budget below. Deriving from
+    // p10 rather than the median keeps the dense downtown honest, which is
+    // exactly where riders need it. Method and tables:
+    // qa/reports/geolocation-cadence-report.md.
+    GEOLOCATION_STALE_BUDGET_M: 88,
+    // Floor: at 10 s the budget already holds on 99.3 % of stop pairs while
+    // riding, and halving the interval again to 5 s buys 0.7 pp for double the
+    // fixes — the curve has flattened, so this is where paying more stops
+    // buying anything.
+    GEOLOCATION_MIN_REFRESH_MS: 10_000,
+    // Cap: standing still, position does not change, so the only reason to poll
+    // is to notice that motion resumed — and this bounds that latency to one
+    // interval. At walking speed 45 s still holds the budget on 99.1 % of pairs.
+    GEOLOCATION_MAX_REFRESH_MS: 45_000,
+    // Before a second fix there is no speed to derive from. 15 s is the fixed
+    // cadence that would hold the budget on 92.5 % of pairs while riding, i.e.
+    // the safe assumption until the rider's actual speed is known.
+    GEOLOCATION_FIRST_REFRESH_MS: 15_000,
     // How long to wait for a fix before giving up on one poll. Well under the
     // refresh interval so a slow answer cannot overlap the next request.
     GEOLOCATION_TIMEOUT_MS: 10_000,

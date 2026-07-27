@@ -13,7 +13,9 @@
 import { test, expect, devices } from '@playwright/test';
 import { openMap, setView } from './helpers.js';
 
-const REFRESH_MS = 30_000; // CONFIG.GEOLOCATION_REFRESH_MS
+// Past GEOLOCATION_MAX_REFRESH_MS (45 s): the rider is standing still when the
+// control is pressed, so the cadence backs off to the cap until they move.
+const PAST_CAP_MS = 60_000;
 const BOARDED = { latitude: -34.9055, longitude: -56.187 }; // 18 de Julio y Ejido
 const MOVED = { latitude: -34.9012, longitude: -56.1662 }; // ~2 km along
 
@@ -53,7 +55,7 @@ test.describe('on mobile', () => {
 
     test('resumes following, so the next refresh keeps up too', async ({ page, context }) => {
         // Recentring once would not be enough: the rider presses this DURING a
-        // ride, and thirty seconds later the bus has moved again.
+        // ride, and by the next read the bus has moved again.
         await page.clock.install();
         await context.setGeolocation(BOARDED);
         await openMap(page, { theme: 'dark' });
@@ -63,7 +65,7 @@ test.describe('on mobile', () => {
         await page.click('.locate-control');
 
         await context.setGeolocation(MOVED);
-        await page.clock.fastForward(REFRESH_MS);
+        await page.clock.fastForward(PAST_CAP_MS);
 
         await expect
             .poll(async () => (await camera(page)).lat, { timeout: 15_000 })

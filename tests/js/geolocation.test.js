@@ -9,7 +9,8 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { cameraLeftAnchor, isFatalLocationError } from '../../src/map.js';
+import { cameraLeftAnchor, isFatalLocationError, nextRefreshMs } from '../../src/map.js';
+import { CONFIG } from '../../src/config.js';
 
 describe('cameraLeftAnchor (whether following may continue)', () => {
     const anchor = { hash: '', lat: -34.9055, lng: -56.187, zoom: 16 };
@@ -54,5 +55,65 @@ describe('isFatalLocationError (whether to keep polling)', () => {
         // which is the whole point of polling.
         expect(isFatalLocationError(2)).toBe(false); // POSITION_UNAVAILABLE
         expect(isFatalLocationError(3)).toBe(false); // TIMEOUT
+    });
+});
+
+describe('nextRefreshMs (how often to read the position)', () => {
+    // The budget is half a p10 stop gap: past that, the map implies the wrong
+    // stop. Measured over 59,751 stop pairs — qa/reports/geolocation-cadence-report.md.
+    const M_PER_DEG_LAT = 111000;
+    const at = 1_000_000;
+    /** A fix `metres` north of `from`, `seconds` later. */
+    const after = (from, metres, seconds, accuracy = 10) => ({
+        lat: from.lat + metres / M_PER_DEG_LAT,
+        lng: from.lng,
+        accuracy,
+        at: from.at + seconds * 1000,
+    });
+    const origin = { lat: -34.9055, lng: -56.187, accuracy: 10, at };
+
+    it('assumes a riding cadence before any speed is known', () => {
+        expect(nextRefreshMs(null, origin)).toBe(CONFIG.GEOLOCATION_FIRST_REFRESH_MS);
+    });
+
+    it('backs off to the cap when the rider is not moving', () => {
+        // Standing at a stop: position is not changing, so reading it again
+        // buys nothing but the news that motion resumed.
+        expect(nextRefreshMs(origin, after(origin, 0, 15))).toBe(CONFIG.GEOLOCATION_MAX_REFRESH_MS);
+    });
+
+    it('does not mistake GPS jitter for motion', () => {
+        // A stationary phone wanders inside its own error circle. Treating that
+        // as speed would hold the GPS at full rate next to a bus stop.
+        expect(nextRefreshMs(origin, after(origin, 18, 15, 25))).toBe(
+            CONFIG.GEOLOCATION_MAX_REFRESH_MS,
+        );
+    });
+
+    it('speeds up to keep half a stop gap while riding', () => {
+        // 20 km/h = 5.56 m/s over 15 s = 83 m of travel.
+        const ms = nextRefreshMs(origin, after(origin, 83 + 10, 15));
+        expect(ms).toBeGreaterThan(12_000);
+        expect(ms).toBeLessThan(20_000);
+    });
+
+    it('never reads faster than the floor, however fast the bus is', () => {
+        // 60 km/h: the budget would ask for 5 s, but below the floor extra
+        // reads stop buying anything measurable.
+        expect(nextRefreshMs(origin, after(origin, 250 + 10, 15))).toBe(
+            CONFIG.GEOLOCATION_MIN_REFRESH_MS,
+        );
+    });
+
+    it('walking does not need a fast cadence, so the cap applies', () => {
+        // 4.5 km/h = 1.25 m/s: half a gap takes over a minute to cover, so the
+        // cap applies — walking simply does not need a fast cadence.
+        expect(nextRefreshMs(origin, after(origin, 19 + 10, 15))).toBe(
+            CONFIG.GEOLOCATION_MAX_REFRESH_MS,
+        );
+    });
+
+    it('ignores a non-advancing clock instead of dividing by zero', () => {
+        expect(nextRefreshMs(origin, { ...origin })).toBe(CONFIG.GEOLOCATION_FIRST_REFRESH_MS);
     });
 });
