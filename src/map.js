@@ -119,6 +119,13 @@ function updateMapStyles() {
     const zoom = map.getZoom();
     const touch = isCoarsePointer();
 
+    // Labels group by SCREEN distance, so the grouping is only valid for the
+    // zoom it was computed at — a zoom change re-clusters the same candidates.
+    if (appState.labelCandidates?.length && appState.routeLabelsLayer) {
+        map.removeLayer(appState.routeLabelsLayer);
+        renderRouteLabels(clusterLabelsByScreen(appState.labelCandidates));
+    }
+
     // 1. Update stops (guard setStyle: a terminal-only layer may be a plain
     // LayerGroup holding just the highlight marker, which has no setStyle).
     const stopStyle = getStopStyleForZoom(zoom, touch);
@@ -1059,32 +1066,20 @@ export function prepareRouteFeature(f, sourceLonLat) {
 // ---------------------------------------------------------------------------
 
 /**
- * Collects label positions from route features and clusters nearby ones.
+ * Collects candidate label positions from route features: the two endpoints of
+ * every variant, which is where a line's identity is worth stating.
+ *
+ * Clustering is NOT done here — it depends on the zoom, so it happens at render
+ * time and again whenever the zoom changes (see clusterLabelsByScreen).
+ *
  * @param {object[]} features - cleaned GeoJSON Feature[]
- * @returns {Array<{coords: number[], labels: Array<{linea: string, color: string}>}>}
+ * @returns {Array<{coords: number[], linea: string, color: string}>}
  */
-function buildLabelGroups(features) {
-    const threshold = CONFIG.LABEL_CLUSTER_THRESHOLD_DEG;
-    const groups = [];
-
-    const addLabel = (coords, linea, color) => {
+function buildLabelCandidates(features) {
+    const out = [];
+    const add = (coords, linea, color) => {
         if (!coords || coords.length < 2) return;
-        let found = null;
-        for (const g of groups) {
-            const dx = g.coords[0] - coords[0];
-            const dy = g.coords[1] - coords[1];
-            if (Math.sqrt(dx * dx + dy * dy) < threshold) {
-                found = g;
-                break;
-            }
-        }
-        if (!found) {
-            found = { coords, labels: [] };
-            groups.push(found);
-        }
-        if (!found.labels.some((l) => l.linea === linea)) {
-            found.labels.push({ linea, color });
-        }
+        out.push({ coords, linea, color });
     };
 
     features.forEach((feature) => {
@@ -1094,25 +1089,67 @@ function buildLabelGroups(features) {
 
         if (feature.geometry.type === 'LineString') {
             if (coords.length > 0) {
-                addLabel(coords[0], linea, color);
-                addLabel(coords[coords.length - 1], linea, color);
+                add(coords[0], linea, color);
+                add(coords[coords.length - 1], linea, color);
             }
         } else if (feature.geometry.type === 'MultiLineString') {
             if (coords.length > 0) {
                 const first = coords[0];
                 const last = coords[coords.length - 1];
-                if (first.length > 0) addLabel(first[0], linea, color);
-                if (last.length > 0) addLabel(last[last.length - 1], linea, color);
+                if (first.length > 0) add(first[0], linea, color);
+                if (last.length > 0) add(last[last.length - 1], linea, color);
             }
         }
     });
+
+    return out;
+}
+
+/**
+ * Groups label candidates that land within LABEL_MIN_GAP_PX of each other on the
+ * CURRENT view, deduplicating line ids inside a group.
+ *
+ * The distance that matters is the one the rider sees. A fixed ground distance
+ * cannot express it: 50 m is sub-pixel at city zoom, which is how twelve copies
+ * of "405" ended up stacked within 3 px of each other, and it is a whole block
+ * at zoom 17, which would merge two genuinely different terminals.
+ *
+ * Deterministic: candidates are visited in order and join the first group in
+ * range, so the same view always produces the same grouping (the golden
+ * manifest counts these).
+ *
+ * @param {Array<{coords: number[], linea: string, color: string}>} candidates
+ * @returns {Array<{coords: number[], labels: Array<{linea: string, color: string}>}>}
+ */
+function clusterLabelsByScreen(candidates) {
+    if (!map) return [];
+    const gap = CONFIG.LABEL_MIN_GAP_PX;
+    const groups = [];
+
+    for (const { coords, linea, color } of candidates) {
+        const pt = map.latLngToLayerPoint([coords[1], coords[0]]);
+        let found = null;
+        for (const g of groups) {
+            if (pt.distanceTo(g.point) < gap) {
+                found = g;
+                break;
+            }
+        }
+        if (!found) {
+            found = { coords, point: pt, labels: [] };
+            groups.push(found);
+        }
+        if (!found.labels.some((l) => l.linea === linea)) {
+            found.labels.push({ linea, color });
+        }
+    }
 
     return groups;
 }
 
 /**
  * Renders clustered route labels onto the map.
- * @param {Array} labelGroups - output of buildLabelGroups()
+ * @param {Array} labelGroups - output of clusterLabelsByScreen()
  */
 function renderRouteLabels(labelGroups) {
     appState.routeLabelsLayer = L.layerGroup().addTo(map);
@@ -1376,8 +1413,8 @@ export function renderRoutes({
     const stopFeatures = getFilteredStopFeatures(lineIds, variantsArr, variantOrdinalMap);
 
     // --- Render ---
-    const labelGroups = buildLabelGroups(cleanedRouteFeatures);
-    renderRouteLabels(labelGroups);
+    appState.labelCandidates = buildLabelCandidates(cleanedRouteFeatures);
+    renderRouteLabels(clusterLabelsByScreen(appState.labelCandidates));
     renderRouteLines(cleanedRouteFeatures);
     renderStops(stopFeatures, onShowRoutes);
 

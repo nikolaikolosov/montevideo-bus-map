@@ -16,7 +16,7 @@
    -56.0711
   ],
   "stops": 193,
-  "labels": 10
+  "labels": 7
  },
  "17": {
   "sections": 28,
@@ -35,7 +35,7 @@
    -56.1493
   ],
   "stops": 167,
-  "labels": 4
+  "labels": 3
  },
  "21": {
   "sections": 38,
@@ -54,7 +54,7 @@
    -56.0208
   ],
   "stops": 154,
-  "labels": 6
+  "labels": 4
  },
  "60": {
   "sections": 22,
@@ -73,7 +73,7 @@
    -56.0712
   ],
   "stops": 111,
-  "labels": 9
+  "labels": 5
  },
  "62": {
   "sections": 15,
@@ -92,7 +92,7 @@
    -56.135
   ],
   "stops": 56,
-  "labels": 4
+  "labels": 2
  },
  "64": {
   "sections": 24,
@@ -111,7 +111,7 @@
    -56.0713
   ],
   "stops": 87,
-  "labels": 5
+  "labels": 3
  },
  "71": {
   "sections": 16,
@@ -130,7 +130,7 @@
    -56.1424
   ],
   "stops": 103,
-  "labels": 5
+  "labels": 3
  },
  "76": {
   "sections": 45,
@@ -149,7 +149,7 @@
    -56.1509
   ],
   "stops": 169,
-  "labels": 6
+  "labels": 4
  },
  "79": {
   "sections": 28,
@@ -168,7 +168,7 @@
    -56.1324
   ],
   "stops": 101,
-  "labels": 5
+  "labels": 3
  },
  "100": {
   "sections": 11,
@@ -187,7 +187,7 @@
    -56.0956
   ],
   "stops": 121,
-  "labels": 13
+  "labels": 9
  },
  "102": {
   "sections": 12,
@@ -206,7 +206,7 @@
    -56.1336
   ],
   "stops": 136,
-  "labels": 15
+  "labels": 9
  },
  "103": {
   "sections": 24,
@@ -225,7 +225,7 @@
    -56.0251
   ],
   "stops": 166,
-  "labels": 20
+  "labels": 8
  },
  "104": {
   "sections": 29,
@@ -244,7 +244,7 @@
    -55.9956
   ],
   "stops": 156,
-  "labels": 8
+  "labels": 6
  },
  "105": {
   "sections": 20,
@@ -263,7 +263,7 @@
    -56.0208
   ],
   "stops": 148,
-  "labels": 18
+  "labels": 11
  },
  "106": {
   "sections": 3,
@@ -282,7 +282,7 @@
    -56.1323
   ],
   "stops": 99,
-  "labels": 4
+  "labels": 2
  },
  "109": {
   "sections": 11,
@@ -301,7 +301,7 @@
    -56.0233
   ],
   "stops": 122,
-  "labels": 15
+  "labels": 9
  },
  "110": {
   "sections": 10,
@@ -320,7 +320,7 @@
    -56.1323
   ],
   "stops": 159,
-  "labels": 15
+  "labels": 6
  },
  "111": {
   "sections": 18,
@@ -339,7 +339,7 @@
    -56.1048
   ],
   "stops": 117,
-  "labels": 13
+  "labels": 9
  },
  "112": {
   "sections": 24,
@@ -358,7 +358,7 @@
    -56.066
   ],
   "stops": 146,
-  "labels": 15
+  "labels": 7
  },
  "113": {
   "sections": 17,
@@ -377,7 +377,7 @@
    -56.1048
   ],
   "stops": 99,
-  "labels": 10
+  "labels": 7
  },
  "115": {
   "sections": 28,
@@ -396,7 +396,7 @@
    -56.1108
   ],
   "stops": 77,
-  "labels": 7
+  "labels": 4
  },
  "116": {
   "sections": 12,
@@ -415,7 +415,7 @@
    -56.135
   ],
   "stops": 72,
-  "labels": 6
+  "labels": 4
  },
  "117": {
   "sections": 11,
@@ -434,7 +434,7 @@
    -56.1576
   ],
   "stops": 57,
-  "labels": 6
+  "labels": 3
  },
  "121": {
   "sections": 11,
@@ -453,7 +453,7 @@
    -56.1486
   ],
   "stops": 72,
-  "labels": 5
+  "labels": 3
  },
  "124": {
   "sections": 19,
@@ -472,7 +472,7 @@
    -56.1916
   ],
   "stops": 99,
-  "labels": 9
+  "labels": 5
  },
  "125": {
   "sections": 18,
@@ -491,7 +491,7 @@
    -56.1916
   ],
   "stops": 115,
-  "labels": 10
+  "labels": 4
  },
  "127": {
   "sections": 30,
@@ -510,7 +510,7 @@
    -56.1916
   ],
   "stops": 198,
-  "labels": 13
+  "labels": 7
  },
  "128": {
   "sections": 25,
@@ -529,7 +529,7 @@
    -56.135
   ],
   "stops": 140,
-  "labels": 9
+  "labels": 6
  },
  "130": {
   "sections": 13,
@@ -548,7 +548,7 @@
    -56.1916
   ],
   "stops": 137,
-  "labels": 11
+  "labels": 5
  },
  "133": {
   "sections": 25,
@@ -567,7 +567,7 @@
    -56.1916
   ],
   "stops": 202,
-  "labels": 6
+  "labels": 4
  },
  "135": {
   "sections": 19,
@@ -586,7 +586,7 @@
    -56.1858
   ],
   "stops": 200,
-  "labels": 3
+  "labels": 2
  },
  "137": {
   "sections": 35,
@@ -605,7 +605,7 @@
    -56.1762
   ],
   "stops": 179,
-  "labels": 10
+  "labels": 6
  },
  "140": {
   "sections": 35,
@@ -624,7 +624,7 @@
    -56.0711
   ],
   "stops": 108,
-  "labels": 4
+  "labels": 2
  },
  "141": {
   "sections": 13,
@@ -643,7 +643,7 @@
    -56.121
   ],
   "stops": 85,
-  "labels": 4
+  "labels": 2
  },
  "142": {
   "sections": 13,
@@ -662,7 +662,7 @@
    -55.9956
   ],
   "stops": 137,
-  "labels": 10
+  "labels": 6
  },
  "143": {
   "sections": 17,
@@ -681,7 +681,7 @@
    -56.1302
   ],
   "stops": 56,
-  "labels": 3
+  "labels": 2
  },
  "144": {
   "sections": 24,
@@ -700,7 +700,7 @@
    -56.1209
   ],
   "stops": 126,
-  "labels": 8
+  "labels": 5
  },
  "145": {
   "sections": 46,
@@ -719,7 +719,7 @@
    -56.1298
   ],
   "stops": 208,
-  "labels": 15
+  "labels": 7
  },
  "147": {
   "sections": 28,
@@ -738,7 +738,7 @@
    -56.1762
   ],
   "stops": 168,
-  "labels": 13
+  "labels": 5
  },
  "148": {
   "sections": 25,
@@ -757,7 +757,7 @@
    -56.1762
   ],
   "stops": 173,
-  "labels": 12
+  "labels": 7
  },
  "149": {
   "sections": 33,
@@ -776,7 +776,7 @@
    -56.1349
   ],
   "stops": 202,
-  "labels": 13
+  "labels": 8
  },
  "150": {
   "sections": 18,
@@ -795,7 +795,7 @@
    -56.1762
   ],
   "stops": 177,
-  "labels": 4
+  "labels": 3
  },
  "151": {
   "sections": 27,
@@ -814,7 +814,7 @@
    -56.0834
   ],
   "stops": 220,
-  "labels": 13
+  "labels": 8
  },
  "155": {
   "sections": 21,
@@ -833,7 +833,7 @@
    -56.0985
   ],
   "stops": 153,
-  "labels": 6
+  "labels": 3
  },
  "156": {
   "sections": 15,
@@ -852,7 +852,7 @@
    -56.1489
   ],
   "stops": 108,
-  "labels": 6
+  "labels": 4
  },
  "157": {
   "sections": 16,
@@ -871,7 +871,7 @@
    -56.1635
   ],
   "stops": 124,
-  "labels": 9
+  "labels": 6
  },
  "158": {
   "sections": 20,
@@ -890,7 +890,7 @@
    -56.1622
   ],
   "stops": 144,
-  "labels": 12
+  "labels": 4
  },
  "163": {
   "sections": 34,
@@ -909,7 +909,7 @@
    -56.1351
   ],
   "stops": 166,
-  "labels": 9
+  "labels": 6
  },
  "169": {
   "sections": 23,
@@ -928,7 +928,7 @@
    -56.1082
   ],
   "stops": 140,
-  "labels": 16
+  "labels": 8
  },
  "174": {
   "sections": 36,
@@ -947,7 +947,7 @@
    -56.1401
   ],
   "stops": 207,
-  "labels": 16
+  "labels": 8
  },
  "175": {
   "sections": 15,
@@ -966,7 +966,7 @@
    -56.1487
   ],
   "stops": 190,
-  "labels": 11
+  "labels": 6
  },
  "180": {
   "sections": 22,
@@ -985,7 +985,7 @@
    -56.1485
   ],
   "stops": 89,
-  "labels": 10
+  "labels": 3
  },
  "181": {
   "sections": 18,
@@ -1004,7 +1004,7 @@
    -56.1355
   ],
   "stops": 83,
-  "labels": 8
+  "labels": 5
  },
  "182": {
   "sections": 29,
@@ -1023,7 +1023,7 @@
    -56.1355
   ],
   "stops": 106,
-  "labels": 5
+  "labels": 3
  },
  "183": {
   "sections": 15,
@@ -1042,7 +1042,7 @@
    -56.1358
   ],
   "stops": 84,
-  "labels": 10
+  "labels": 7
  },
  "185": {
   "sections": 43,
@@ -1061,7 +1061,7 @@
    -56.1349
   ],
   "stops": 165,
-  "labels": 17
+  "labels": 10
  },
  "186": {
   "sections": 42,
@@ -1080,7 +1080,7 @@
    -56.135
   ],
   "stops": 158,
-  "labels": 7
+  "labels": 4
  },
  "187": {
   "sections": 23,
@@ -1099,7 +1099,7 @@
    -56.1585
   ],
   "stops": 76,
-  "labels": 7
+  "labels": 4
  },
  "188": {
   "sections": 14,
@@ -1118,7 +1118,7 @@
    -56.1647
   ],
   "stops": 75,
-  "labels": 6
+  "labels": 3
  },
  "191": {
   "sections": 28,
@@ -1137,7 +1137,7 @@
    -56.135
   ],
   "stops": 115,
-  "labels": 8
+  "labels": 5
  },
  "192": {
   "sections": 39,
@@ -1156,7 +1156,7 @@
    -56.1362
   ],
   "stops": 126,
-  "labels": 9
+  "labels": 6
  },
  "195": {
   "sections": 39,
@@ -1175,7 +1175,7 @@
    -56.1159
   ],
   "stops": 232,
-  "labels": 7
+  "labels": 6
  },
  "199": {
   "sections": 18,
@@ -1194,7 +1194,7 @@
    -56.1538
   ],
   "stops": 104,
-  "labels": 8
+  "labels": 5
  },
  "300": {
   "sections": 20,
@@ -1213,7 +1213,7 @@
    -56.1323
   ],
   "stops": 139,
-  "labels": 13
+  "labels": 6
  },
  "306": {
   "sections": 43,
@@ -1232,7 +1232,7 @@
    -56.0206
   ],
   "stops": 258,
-  "labels": 17
+  "labels": 9
  },
  "316": {
   "sections": 24,
@@ -1251,7 +1251,7 @@
    -56.0677
   ],
   "stops": 134,
-  "labels": 12
+  "labels": 6
  },
  "328": {
   "sections": 45,
@@ -1270,7 +1270,7 @@
    -56.135
   ],
   "stops": 156,
-  "labels": 5
+  "labels": 4
  },
  "329": {
   "sections": 44,
@@ -1289,7 +1289,7 @@
    -56.135
   ],
   "stops": 236,
-  "labels": 11
+  "labels": 7
  },
  "330": {
   "sections": 13,
@@ -1308,7 +1308,7 @@
    -56.1425
   ],
   "stops": 105,
-  "labels": 9
+  "labels": 4
  },
  "370": {
   "sections": 40,
@@ -1327,7 +1327,7 @@
    -56.0832
   ],
   "stops": 190,
-  "labels": 10
+  "labels": 7
  },
  "396": {
   "sections": 24,
@@ -1346,7 +1346,7 @@
    -56.1621
   ],
   "stops": 135,
-  "labels": 6
+  "labels": 4
  },
  "402": {
   "sections": 22,
@@ -1365,7 +1365,7 @@
    -56.1048
   ],
   "stops": 140,
-  "labels": 8
+  "labels": 4
  },
  "404": {
   "sections": 23,
@@ -1384,7 +1384,7 @@
    -56.1104
   ],
   "stops": 113,
-  "labels": 8
+  "labels": 3
  },
  "405": {
   "sections": 28,
@@ -1403,7 +1403,7 @@
    -56.1233
   ],
   "stops": 184,
-  "labels": 12
+  "labels": 8
  },
  "407": {
   "sections": 25,
@@ -1441,7 +1441,7 @@
    -56.1762
   ],
   "stops": 176,
-  "labels": 9
+  "labels": 6
  },
  "427": {
   "sections": 46,
@@ -1460,7 +1460,7 @@
    -56.0834
   ],
   "stops": 266,
-  "labels": 12
+  "labels": 7
  },
  "456": {
   "sections": 22,
@@ -1479,7 +1479,7 @@
    -56.1393
   ],
   "stops": 137,
-  "labels": 7
+  "labels": 3
  },
  "468": {
   "sections": 31,
@@ -1498,7 +1498,7 @@
    -56.0835
   ],
   "stops": 230,
-  "labels": 11
+  "labels": 6
  },
  "494": {
   "sections": 36,
@@ -1517,7 +1517,7 @@
    -56.1242
   ],
   "stops": 242,
-  "labels": 10
+  "labels": 8
  },
  "495": {
   "sections": 23,
@@ -1536,7 +1536,7 @@
    -56.1242
   ],
   "stops": 199,
-  "labels": 5
+  "labels": 4
  },
  "505": {
   "sections": 22,
@@ -1555,7 +1555,7 @@
    -56.118
   ],
   "stops": 124,
-  "labels": 7
+  "labels": 4
  },
  "522": {
   "sections": 26,
@@ -1574,7 +1574,7 @@
    -56.1348
   ],
   "stops": 174,
-  "labels": 6
+  "labels": 3
  },
  "524": {
   "sections": 17,
@@ -1593,7 +1593,7 @@
    -56.1916
   ],
   "stops": 105,
-  "labels": 4
+  "labels": 3
  },
  "526": {
   "sections": 43,
@@ -1612,7 +1612,7 @@
    -56.0915
   ],
   "stops": 189,
-  "labels": 6
+  "labels": 5
  },
  "538": {
   "sections": 28,
@@ -1631,7 +1631,7 @@
    -56.1197
   ],
   "stops": 158,
-  "labels": 6
+  "labels": 5
  },
  "546": {
   "sections": 26,
@@ -1650,7 +1650,7 @@
    -56.0833
   ],
   "stops": 126,
-  "labels": 4
+  "labels": 2
  },
  "582": {
   "sections": 28,
@@ -1669,7 +1669,7 @@
    -56.1513
   ],
   "stops": 143,
-  "labels": 4
+  "labels": 3
  },
  "124 Sd": {
   "sections": 19,
@@ -1688,7 +1688,7 @@
    -56.1916
   ],
   "stops": 89,
-  "labels": 3
+  "labels": 2
  },
  "Bt1": {
   "sections": 6,
@@ -1745,7 +1745,7 @@
    -56.1635
   ],
   "stops": 33,
-  "labels": 5
+  "labels": 4
  },
  "Ce2": {
   "sections": 6,
@@ -1764,7 +1764,7 @@
    -56.1919
   ],
   "stops": 34,
-  "labels": 4
+  "labels": 2
  },
  "D1": {
   "sections": 13,
@@ -1783,7 +1783,7 @@
    -56.056
   ],
   "stops": 61,
-  "labels": 4
+  "labels": 2
  },
  "D5": {
   "sections": 13,
@@ -1802,7 +1802,7 @@
    -56.1853
   ],
   "stops": 105,
-  "labels": 5
+  "labels": 2
  },
  "D8": {
   "sections": 15,
@@ -1821,7 +1821,7 @@
    -56.0436
   ],
   "stops": 116,
-  "labels": 8
+  "labels": 4
  },
  "D9": {
   "sections": 10,
@@ -1840,7 +1840,7 @@
    -56.0483
   ],
   "stops": 79,
-  "labels": 5
+  "labels": 3
  },
  "D10": {
   "sections": 23,
@@ -1859,7 +1859,7 @@
    -56.0233
   ],
   "stops": 84,
-  "labels": 5
+  "labels": 2
  },
  "D11": {
   "sections": 10,
@@ -1878,7 +1878,7 @@
    -56.0209
   ],
   "stops": 82,
-  "labels": 3
+  "labels": 2
  },
  "E14": {
   "sections": 5,
@@ -1897,7 +1897,7 @@
    -56.135
   ],
   "stops": 59,
-  "labels": 5
+  "labels": 3
  },
  "G3": {
   "sections": 6,
@@ -1954,7 +1954,7 @@
    -56.1808
   ],
   "stops": 112,
-  "labels": 3
+  "labels": 2
  },
  "G10": {
   "sections": 12,
@@ -1973,7 +1973,7 @@
    -56.2215
   ],
   "stops": 104,
-  "labels": 7
+  "labels": 4
  },
  "G11": {
   "sections": 7,
@@ -1992,7 +1992,7 @@
    -56.2215
   ],
   "stops": 102,
-  "labels": 5
+  "labels": 4
  },
  "L1": {
   "sections": 13,
@@ -2030,7 +2030,7 @@
    -56.0868
   ],
   "stops": 41,
-  "labels": 6
+  "labels": 3
  },
  "L3": {
   "sections": 6,
@@ -2049,7 +2049,7 @@
    -56.2147
   ],
   "stops": 102,
-  "labels": 4
+  "labels": 2
  },
  "L4": {
   "sections": 5,
@@ -2087,7 +2087,7 @@
    -56.2725
   ],
   "stops": 50,
-  "labels": 2
+  "labels": 1
  },
  "L6": {
   "sections": 3,
@@ -2163,7 +2163,7 @@
    -56.0959
   ],
   "stops": 53,
-  "labels": 4
+  "labels": 2
  },
  "L12": {
   "sections": 18,
@@ -2182,7 +2182,7 @@
    -56.2455
   ],
   "stops": 82,
-  "labels": 4
+  "labels": 3
  },
  "L13": {
   "sections": 5,
@@ -2220,7 +2220,7 @@
    -56.2146
   ],
   "stops": 49,
-  "labels": 3
+  "labels": 2
  },
  "L15": {
   "sections": 15,
@@ -2258,7 +2258,7 @@
    -56.2725
   ],
   "stops": 61,
-  "labels": 3
+  "labels": 2
  },
  "L19": {
   "sections": 9,
@@ -2296,7 +2296,7 @@
    -56.0476
   ],
   "stops": 41,
-  "labels": 2
+  "labels": 1
  },
  "L22": {
   "sections": 3,
@@ -2315,7 +2315,7 @@
    -56.0868
   ],
   "stops": 61,
-  "labels": 5
+  "labels": 3
  },
  "L23": {
   "sections": 7,
@@ -2353,7 +2353,7 @@
    -56.2087
   ],
   "stops": 65,
-  "labels": 5
+  "labels": 3
  },
  "L25": {
   "sections": 3,
@@ -2391,7 +2391,7 @@
    -56.2139
   ],
   "stops": 44,
-  "labels": 3
+  "labels": 2
  },
  "L28": {
   "sections": 7,
@@ -2410,7 +2410,7 @@
    -56.2147
   ],
   "stops": 68,
-  "labels": 4
+  "labels": 2
  },
  "L29": {
   "sections": 17,
@@ -2467,7 +2467,7 @@
    -56.1359
   ],
   "stops": 36,
-  "labels": 4
+  "labels": 3
  },
  "L32": {
   "sections": 4,
@@ -2486,7 +2486,7 @@
    -56.1257
   ],
   "stops": 31,
-  "labels": 4
+  "labels": 3
  },
  "L33": {
   "sections": 8,
@@ -2505,7 +2505,7 @@
    -56.1279
   ],
   "stops": 30,
-  "labels": 3
+  "labels": 2
  },
  "L35": {
   "sections": 2,
@@ -2543,7 +2543,7 @@
    -56.1002
   ],
   "stops": 55,
-  "labels": 4
+  "labels": 2
  },
  "L38": {
   "sections": 11,
@@ -2562,7 +2562,7 @@
    -56.2347
   ],
   "stops": 34,
-  "labels": 3
+  "labels": 2
  },
  "L39": {
   "sections": 10,
@@ -2581,7 +2581,7 @@
    -56.267
   ],
   "stops": 53,
-  "labels": 3
+  "labels": 2
  },
  "L40": {
   "sections": 9,
@@ -2600,7 +2600,7 @@
    -56.1204
   ],
   "stops": 33,
-  "labels": 3
+  "labels": 2
  },
  "L41": {
   "sections": 13,
@@ -2619,7 +2619,7 @@
    -56.1108
   ],
   "stops": 37,
-  "labels": 4
+  "labels": 3
  },
  "L46": {
   "sections": 6,
@@ -2638,7 +2638,7 @@
    -56.1003
   ],
   "stops": 57,
-  "labels": 5
+  "labels": 3
  },
  "L77": {
   "sections": 6,

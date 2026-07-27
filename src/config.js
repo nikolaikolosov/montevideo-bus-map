@@ -1,5 +1,11 @@
 export const CONFIG = {
-    LABEL_CLUSTER_THRESHOLD_DEG: 0.0005, // ~50 meters
+    // Route labels cluster in SCREEN space, not on the ground: the old 50 m
+    // threshold is sub-pixel at city zoom, so a line's endpoint labels piled up
+    // on top of each other — measured on a Pixel 7, line 405 showed 12 chips all
+    // reading "405" with the closest pair 3 px apart (F5 in design/ux-review-001).
+    // 48 px is a touch target's worth of separation: closer than that and two
+    // chips are the same place as far as a rider is concerned.
+    LABEL_MIN_GAP_PX: 48,
     GOLDEN_RATIO: 0.618033988749895,
     MAP_CENTER: [-34.88, -56.16],
     MAP_ZOOM: 12,
