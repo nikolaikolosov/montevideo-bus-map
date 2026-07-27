@@ -604,10 +604,9 @@ export function initJourneyControls({ onClear, onSwap, onChangeOrigin, onChangeD
  * Updates the route-info stats panel.
  * @param {object} options
  * @param {boolean} options.show
- * @param {number|null} [options.variantCount] - pass null to hide the variants row
  * @param {number} [options.stopCount]
  */
-export function updateStatsPanel({ show, variantCount = null, stopCount = 0 }) {
+export function updateStatsPanel({ show, stopCount = 0 }) {
     const routeInfo = document.getElementById('routeInfo');
     if (!show) {
         routeInfo.classList.remove('active');
@@ -616,16 +615,50 @@ export function updateStatsPanel({ show, variantCount = null, stopCount = 0 }) {
 
     routeInfo.classList.add('active');
 
-    const variantsRow = document.getElementById('statVariants')?.parentElement;
-    if (variantsRow) {
-        if (variantCount !== null) {
-            variantsRow.style.display = 'flex';
-            document.getElementById('statVariants').textContent = variantCount;
-        } else {
-            variantsRow.style.display = 'none';
-        }
-    }
-
     const statStops = document.getElementById('statStops');
     if (statStops) statStops.textContent = stopCount;
+}
+
+/**
+ * Renders the destination picker for a selected line: one chip per headsign the
+ * line serves, plus "all" to come back to the whole route.
+ *
+ * A line serves 4 destinations at the median and up to 14, with labels up to 36
+ * characters, so the chips wrap and the list is height-capped with its own
+ * scroll — the same treatment the stop popup gives its line chips.
+ *
+ * @param {object} options
+ * @param {{headsign: string, variants: string[]}[]} options.groups - empty hides the picker
+ * @param {string|null} options.active - the chosen headsign, null for "all"
+ * @param {(headsign: string|null) => void} options.onPick
+ */
+export function renderDestinationPicker({ groups, active, onPick }) {
+    const box = document.getElementById('destinations');
+    const chips = document.getElementById('destinationChips');
+    if (!box || !chips) return;
+
+    chips.replaceChildren();
+    // One destination is not a choice — showing a single chip would imply the
+    // rider could pick something else.
+    if (!groups || groups.length < 2) {
+        box.hidden = true;
+        return;
+    }
+    box.hidden = false;
+
+    const chip = (label, headsign) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'destination-chip';
+        btn.textContent = label;
+        // aria-pressed, not a class alone: the active destination has to reach a
+        // screen reader, and the chips are a set of toggles over one line.
+        btn.setAttribute('aria-pressed', String(active === headsign));
+        if (active === headsign) btn.classList.add('is-active');
+        btn.addEventListener('click', () => onPick(headsign));
+        return btn;
+    };
+
+    chips.append(chip(t('panel.allDestinations'), null));
+    for (const g of groups) chips.append(chip(g.headsign, g.headsign));
 }

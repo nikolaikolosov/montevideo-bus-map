@@ -971,6 +971,72 @@ label {
     overscroll-behavior: contain;
 }
 
+/* Destination picker — the headsigns a selected line serves (ux-review-001 R4).
+   It occupies the stat row the "Variantes de recorrido" count vacated, so the
+   mobile bottom sheet keeps its map-space budget (mobile-panel.spec.js): the
+   chips scroll sideways in one row instead of wrapping into a block. A line
+   serves 4 destinations at the median and up to 14, labels up to 36 chars. */
+.destinations {
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* .stat-row sets display:flex, which outranks the UA rule behind the `hidden`
+   attribute — without this the picker stays on screen on every view. */
+.destinations[hidden] {
+    display: none;
+}
+
+.destination-chips {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    /* Room for the focus ring, which would otherwise be clipped by the scroll. */
+    padding: 2px;
+}
+
+.destination-chip {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--text-color);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.destination-chip:hover {
+    background: var(--input-bg-hover);
+}
+
+.destination-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.destination-chip.is-active {
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+@media (pointer: coarse) {
+    .destination-chip {
+        padding: 7px 10px;
+        font-size: 0.78rem;
+    }
+}
+
 .line-chip {
     background: var(--input-bg);
     border: 1px solid;

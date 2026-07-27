@@ -13,6 +13,7 @@ import {
     getFilteredStopFeatures,
     buildVariantOrdinalMap,
     getLineColor,
+    getLineHeadsigns,
 } from '../../src/data.js';
 
 const routeFeature = (line, variant) => ({
@@ -166,5 +167,69 @@ describe('getLineColor', () => {
     it('falls back to the stable hash hue for lines missing from the palette', () => {
         expect(getLineColor('NO-SUCH-LINE')).toMatch(/^hsl\(/);
         expect(getLineColor('NO-SUCH-LINE')).toBe(getLineColor('NO-SUCH-LINE'));
+    });
+});
+
+describe('getLineHeadsigns (destination picker source)', () => {
+    /** A feature with an explicit headsign, so grouping can be exercised. */
+    const headed = (line, variant, headsign) => ({
+        ...routeFeature(line, variant),
+        properties: { DESC_LINEA: line, COD_VARIAN: variant, DESC_VARIA: headsign },
+    });
+
+    it('groups the variants that share a headsign', () => {
+        // Short turns and minor detours share a destination: picking it has to
+        // render every variant that gets there, not one of them.
+        buildIndexes(
+            {
+                type: 'FeatureCollection',
+                features: [
+                    headed('X', 'a', 'Pocitos'),
+                    headed('X', 'b', 'Pocitos'),
+                    headed('X', 'c', 'Aduana'),
+                ],
+            },
+            { type: 'FeatureCollection', features: [], patterns: {} },
+        );
+        const groups = getLineHeadsigns('X');
+        expect(groups).toEqual([
+            { headsign: 'Pocitos', variants: ['a', 'b'] },
+            { headsign: 'Aduana', variants: ['c'] },
+        ]);
+    });
+
+    it('leads with the destination most variants serve, then sorts by name', () => {
+        buildIndexes(
+            {
+                type: 'FeatureCollection',
+                features: [
+                    headed('Y', 'a', 'Zorrilla'),
+                    headed('Y', 'b', 'Belloni'),
+                    headed('Y', 'c', 'Manga'),
+                    headed('Y', 'd', 'Manga'),
+                ],
+            },
+            { type: 'FeatureCollection', features: [], patterns: {} },
+        );
+        expect(getLineHeadsigns('Y').map((g) => g.headsign)).toEqual([
+            'Manga', // two variants
+            'Belloni', // then alphabetical, never feed order
+            'Zorrilla',
+        ]);
+    });
+
+    it('skips variants with no headsign instead of offering a blank chip', () => {
+        buildIndexes(
+            {
+                type: 'FeatureCollection',
+                features: [headed('Z', 'a', ''), headed('Z', 'b', 'Centro')],
+            },
+            { type: 'FeatureCollection', features: [], patterns: {} },
+        );
+        expect(getLineHeadsigns('Z')).toEqual([{ headsign: 'Centro', variants: ['b'] }]);
+    });
+
+    it('returns nothing for a line that does not exist', () => {
+        expect(getLineHeadsigns('nope')).toEqual([]);
     });
 });

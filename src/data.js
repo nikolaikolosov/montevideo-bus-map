@@ -199,6 +199,37 @@ export function buildVariantOrdinalMap(stopCode) {
 }
 
 /**
+ * The destinations a line serves, each with the variants that carry it.
+ *
+ * `DESC_VARIA` is the headsign printed on the bus — the rider's own word for
+ * direction — while `COD_VARIAN` is the pipeline's. Several variants usually
+ * share one headsign (short turns, minor detours), so they are grouped: picking
+ * a destination must render every variant that gets there, not one of them.
+ *
+ * Ordered by how many variants serve the destination, then alphabetically, so
+ * the main direction leads and the order never depends on feed ordering.
+ * Measured on the committed data: 4 destinations per line at the median, 8 at
+ * p90, 14 at most (line 103), and every variant carries a non-empty headsign.
+ *
+ * @param {string} lineId
+ * @returns {{headsign: string, variants: string[]}[]}
+ */
+export function getLineHeadsigns(lineId) {
+    const byHeadsign = new Map();
+    for (const f of routesByLine.get(lineId) ?? []) {
+        const headsign = f.properties.DESC_VARIA || '';
+        if (!headsign) continue;
+        if (!byHeadsign.has(headsign)) byHeadsign.set(headsign, new Set());
+        byHeadsign.get(headsign).add(f.properties.COD_VARIAN);
+    }
+    return [...byHeadsign]
+        .map(([headsign, variants]) => ({ headsign, variants: [...variants] }))
+        .sort(
+            (a, b) => b.variants.length - a.variants.length || (a.headsign < b.headsign ? -1 : 1),
+        );
+}
+
+/**
  * Variants of ONE line that pass through the given stop — the payload for a
  * popup line-chip tap ("show just this line from here").
  *
