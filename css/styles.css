@@ -1216,15 +1216,16 @@ label {
         font-size: 0.68rem;
     }
 
-    .leaflet-control-zoom {
-        margin-top: 20px !important;
+    /* The right-hand control column, as a column — NOT per button. Naming each
+       control here is how the locate button ended up 5 px off the axis the
+       others share: it simply was not in the list. Anything added to this
+       column from now on inherits the inset and the spacing. */
+    .leaflet-top.leaflet-right .leaflet-control {
         margin-right: 15px !important;
     }
 
-    /* Keep the home control on the zoom buttons' vertical axis — they share
-       the 15px right margin the rule above gives the zoom control. */
-    .home-control {
-        margin-right: 15px !important;
+    .leaflet-top.leaflet-right .leaflet-control:first-child {
+        margin-top: 20px !important;
     }
 
     .popup-content h3 {
