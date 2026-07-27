@@ -148,6 +148,22 @@
   the window's axis, never from the reference's local heading, which on a jittery
   raw trace swings tens of degrees and would manufacture alternation out of
   digitisation noise.
+  **SELF-CROSS** had no matcher at all — every corridor crossing defaulted to
+  BUG — and the measure reported the first crossing segment's START vertex
+  rather than the crossing. On a peripheral line those segments run for
+  hundreds of metres (line E14's are 962 m and 416 m), so the finding sat 644 m
+  from the junction it described and the triage card showed the wrong place,
+  which is why its review could not settle anything. `measureSelfCrossings` now
+  reports the crossing point, and `rawCrossingNear` asks whether the digitised
+  data crosses itself within `SELF_CROSS_MATCH_M` of it — one trace with itself,
+  or two traces of the line with each other. Both explain a corridor crossing,
+  because the corridor is the merge of those traces: a route that leaves along
+  one street and returns along another legitimately draws a polyline that
+  crosses itself. At E14 the crossing point sits 0.0 m from the nearest trace
+  and two strands cross each other 0.1 m from it. The matcher rejects as well as
+  accepts: with smoothing disabled, line `124 Sd` develops a crossing 12.9 m off
+  the nearest trace with nothing in the data within 30 m, and stays BUG.
+
   The same density trap applies to **KINK**, and is closed the same way
   (`rawCornerSwing`). `rawKinkNear` asks whether one raw VERTEX turns like the
   corridor's, which a densely digitised corner cannot satisfy: the corridor
@@ -216,10 +232,11 @@ feature at that location (auto-classified with the same measure run on the
 raw paths); **BUG** — pipeline-introduced, must match a reviewed
 `known-bug` whitelist entry (`qa/route-geometry-whitelist.json`) or the gate
 fails; stale entries fail too, so the known-bug list can only burn down.
-Current state (2026-07-27): 11 whitelist entries — 10 `real` (every WOBBLE and
-KINK finding that was ever contested, each carrying its measurement) and
-**1 `known-bug`**: a single SELF-CROSS, the only class with no shape matcher, so
-its verdict still rests on the triage card alone. Down from 38 known-bug entries (13 KINK,
+Current state (2026-07-27): 11 whitelist entries, **all `real`** — every
+contested WOBBLE, KINK and SELF-CROSS finding now carries its own measurement,
+and **the known-bug list is empty**. Each of the three classes needed the same
+correction: compare the corridor against the data over the SAME stretch, rather
+than vertex-against-vertex. Down from 38 known-bug entries (13 KINK,
 22 WOBBLE, 2 SPIKE, 1 SELF-CROSS) at 2026-07-05, via node re-centring
 (brainstorm-008 PR-2) and the two reference upgrades.
 

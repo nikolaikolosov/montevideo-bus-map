@@ -29,6 +29,8 @@ import {
     meanStrandCurves,
     corridorFollowsData,
     rawCornerSwing,
+    rawCrossingNear,
+    measureSelfCrossings,
     ORACLE,
 } from '../../scripts/route_oracles.mjs';
 
@@ -242,6 +244,56 @@ describe('shape evidence: corner swing (2026-07-27)', () => {
         const away = trace(90, 9).map(([x, y]) => [x, y + 60 / M_LAT]); // 60 m aside
         const raw = trace(90, 9);
         expect(rawCornerSwing([away], raw[1], raw[raw.length - 2], 90)).toBeNull();
+    });
+});
+
+describe('shape evidence: self-crossing (2026-07-27)', () => {
+    // The class had no matcher at all — every corridor crossing defaulted to BUG
+    // — and the finding pointed at the first crossing segment's START vertex.
+    // On line E14 those segments run 962 m and 416 m, so the reported place was
+    // 644 m from the junction, which is why reviewing it from the triage card
+    // could not settle anything.
+    const M_LON = 92000;
+    const M_LAT = 111000;
+    const at = (xM, yM) => [xM / M_LON, yM / M_LAT];
+
+    it('reports the crossing point, not the segment that starts far away', () => {
+        // A long run east, then a short leg cutting across it at x = 800 m.
+        const section = { coords: [at(0, 0), at(1000, 0), at(800, -200), at(800, 200)] };
+        const [finding, ...rest] = measureSelfCrossings([section]);
+        expect(rest).toHaveLength(0);
+        expect(finding.at[0] * M_LON).toBeCloseTo(800, 0);
+        expect(finding.at[1] * M_LAT).toBeCloseTo(0, 0);
+        // The old behaviour reported coords[0], which is 800 m away — the exact
+        // failure that mislocated line E14 by 644 m.
+        expect(Math.abs(finding.at[0] - section.coords[0][0]) * M_LON).toBeGreaterThan(700);
+    });
+
+    it('explains a crossing where one trace crosses itself', () => {
+        const trace = [at(0, 0), at(1000, 0), at(800, -200), at(800, 200)];
+        expect(rawCrossingNear([trace], at(800, 0))).toBe(true);
+    });
+
+    it('explains a crossing where two traces of the line cross each other', () => {
+        // The E14 case: the route leaves along one street and returns along
+        // another, so no single trace crosses itself.
+        const out = [at(0, 0), at(1000, 0)];
+        const back = [at(800, -200), at(800, 200)];
+        expect(rawCrossingNear([out, back], at(800, 0))).toBe(true);
+    });
+
+    it('does not explain a crossing the data makes somewhere else', () => {
+        const out = [at(0, 0), at(1000, 0)];
+        const back = [at(800, -200), at(800, 200)];
+        // The data crosses at (800, 0); a corridor crossing 200 m away is not
+        // that junction.
+        expect(rawCrossingNear([out, back], at(600, 0))).toBe(false);
+    });
+
+    it('does not explain a crossing when the traces merely run parallel', () => {
+        const a = [at(0, 0), at(1000, 0)];
+        const b = [at(0, 40), at(1000, 40)];
+        expect(rawCrossingNear([a, b], at(500, 20))).toBe(false);
     });
 });
 

@@ -172,6 +172,11 @@ export const ORACLE = {
     // WOBBLE tracking bar. Corners are where carriageways separate most, so the
     // corridor can legitimately sit a full carriageway from either strand.
     KINK_SWING_MATCH_M: 30,
+
+    // SELF-CROSS: how close the digitised data must cross to the corridor's own
+    // crossing point to explain it. Streets in Montevideo are >= 80 m apart, so
+    // 30 m cannot pick up the next junction along; the CHORD budget again.
+    SELF_CROSS_MATCH_M: 30,
 };
 
 /** Flattens a prepared feature to [lon,lat][] paths. */
@@ -588,6 +593,22 @@ export function measureSpikes(sections) {
 }
 
 /** SELF-CROSS — a section polyline properly crossing itself. */
+/**
+ * Where two segments properly cross, or null when they do not.
+ * Measurement-side helper: the pipeline never needs this, only the oracles do.
+ */
+function intersectionPoint(a1, a2, b1, b2) {
+    if (!segmentsProperlyIntersect(a1, a2, b1, b2)) return null;
+    const dax = a2[0] - a1[0];
+    const day = a2[1] - a1[1];
+    const dbx = b2[0] - b1[0];
+    const dby = b2[1] - b1[1];
+    const den = dax * dby - day * dbx;
+    if (den === 0) return null;
+    const t = ((b1[0] - a1[0]) * dby - (b1[1] - a1[1]) * dbx) / den;
+    return [a1[0] + dax * t, a1[1] + day * t];
+}
+
 export function measureSelfCrossings(sections) {
     const out = [];
     for (const s of sections) {
@@ -595,13 +616,70 @@ export function measureSelfCrossings(sections) {
         for (let i = 0; i < c.length - 1; i++) {
             for (let j = i + 2; j < c.length - 1; j++) {
                 if (i === 0 && j === c.length - 2 && c[0] === c[c.length - 1]) continue;
-                if (segmentsProperlyIntersect(c[i], c[i + 1], c[j], c[j + 1])) {
-                    out.push({ at: c[i] });
-                }
+                // The CROSSING POINT, not the first segment's start vertex. On a
+                // peripheral line the crossing segments run for hundreds of
+                // metres — line E14's are 962 m and 416 m — so reporting the
+                // start put the finding 644 m from the place it describes, and
+                // the triage card showed the wrong junction.
+                const at = intersectionPoint(c[i], c[i + 1], c[j], c[j + 1]);
+                if (at) out.push({ at });
             }
         }
     }
     return out;
+}
+
+/**
+ * True when the digitised data crosses itself within SELF_CROSS_MATCH_M of `at`
+ * — either one trace crossing itself, or two traces of the line crossing each
+ * other. Both explain a corridor crossing: the corridor is the merge of those
+ * traces, so a route that leaves along one street and returns along another
+ * legitimately produces a polyline that crosses itself.
+ *
+ * @param {number[][][]} paths - digitised traces of one line
+ * @param {number[]} at - the corridor's crossing point
+ * @returns {boolean}
+ */
+export function rawCrossingNear(paths, at) {
+    const reach = ORACLE.SELF_CROSS_MATCH_M;
+    // Degrees of slack for the cheap box test, generous on both axes.
+    const pad = reach / 90000;
+    const nearBox = (p, q) =>
+        Math.min(p[0], q[0]) - pad <= at[0] &&
+        at[0] <= Math.max(p[0], q[0]) + pad &&
+        Math.min(p[1], q[1]) - pad <= at[1] &&
+        at[1] <= Math.max(p[1], q[1]) + pad;
+
+    // Only segments whose box contains the point can cross within reach of it.
+    const candidates = paths.map((path) => {
+        const segs = [];
+        for (let i = 0; i < path.length - 1; i++) {
+            if (nearBox(path[i], path[i + 1])) segs.push(i);
+        }
+        return segs;
+    });
+
+    const crossesNear = (p, i, q, j) => {
+        const x = intersectionPoint(p[i], p[i + 1], q[j], q[j + 1]);
+        return x !== null && segmentLengthM(x, at) <= reach;
+    };
+
+    for (let a = 0; a < paths.length; a++) {
+        const pa = paths[a];
+        for (const i of candidates[a]) {
+            // one trace crossing itself
+            for (const j of candidates[a]) {
+                if (j >= i + 2 && crossesNear(pa, i, pa, j)) return true;
+            }
+            // two traces of the same line crossing each other
+            for (let b = a + 1; b < paths.length; b++) {
+                for (const j of candidates[b]) {
+                    if (crossesNear(pa, i, paths[b], j)) return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 /** CHORD — corridor geometry farther than CHORD_MAX_M from every trace. */
@@ -758,7 +836,9 @@ export function measureLine(line, prepared) {
     add('SPIKE', measureSpikes(sections), (v) =>
         rawKinkNear(shapeRefs, v.at, v.turn) ? 'REAL' : 'BUG',
     );
-    add('SELF-CROSS', measureSelfCrossings(sections));
+    add('SELF-CROSS', measureSelfCrossings(sections), (v) =>
+        rawCrossingNear(paths, v.at) ? 'REAL' : 'BUG',
+    );
     add('CHORD', measureChords(sections, paths));
     add('CORNER-CUT', measureCornerCuts(sections, paths));
     for (const v of measurePhantomForks(sections, line)) {
