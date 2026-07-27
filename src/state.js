@@ -24,6 +24,12 @@ export const appState = {
 
     /** Label positions before screen clustering — re-grouped on every zoom. */
     labelCandidates: [],
+
+    /** @type {L.LayerGroup|null} Direction chevrons, rebuilt as the camera moves. */
+    routeArrowsLayer: null,
+
+    /** Traces the chevrons are placed along — empty when direction is ambiguous. */
+    arrowFeatures: [],
     /** @type {L.Layer|null} Currently selected/clicked stop marker */
     selectedStopLayer: null,
 };
@@ -38,5 +44,7 @@ export function resetLayers() {
     appState.globalStopsLayer = null;
     appState.routeLabelsLayer = null;
     appState.labelCandidates = [];
+    appState.routeArrowsLayer = null;
+    appState.arrowFeatures = [];
     appState.selectedStopLayer = null;
 }

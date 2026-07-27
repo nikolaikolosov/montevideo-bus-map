@@ -28,6 +28,7 @@ import {
     setView,
     openStopPopup,
     planJourney,
+    renderDownstream,
 } from './helpers.js';
 
 // 18 de Julio / Ejido — the densest shared corridor in the network.
@@ -41,6 +42,9 @@ const scenes = [
     { name: 'stop-4018-downstream-dark', theme: 'dark', stop: 4018 },
     { name: 'stop-4018-downstream-light', theme: 'light', stop: 4018 },
     { name: 'terminal-4967-empty-dark', theme: 'dark', stop: 4967 },
+    // Direction chevrons (R8): only a single line from an explicit variant set
+    // shows them, so this is the one scene that can catch a regression in them.
+    { name: 'downstream-4772-102-dark', theme: 'dark', downstream: [4772, '102'] },
     { name: 'linea-187-spur-dark', theme: 'dark', line: '187' },
     { name: 'corridor-zoom-12', theme: 'dark', line: '100', view: { zoom: 12 } },
     { name: 'corridor-zoom-15', theme: 'dark', line: '100', view: { zoom: 15 } },
@@ -93,6 +97,7 @@ for (const scene of scenes) {
         await openMap(page, { theme: scene.theme, lang: scene.lang });
         if (scene.line) await renderLine(page, scene.line);
         if (scene.stop) await renderStopRoutes(page, scene.stop);
+        if (scene.downstream) await renderDownstream(page, ...scene.downstream);
         if (scene.journey) await planJourney(page, ...scene.journey);
         if (scene.popup) await openStopPopup(page, scene.popup);
         if (scene.view) await setView(page, scene.view.center ?? CORRIDOR_CENTER, scene.view.zoom);

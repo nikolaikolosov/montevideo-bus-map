@@ -971,6 +971,21 @@ label {
     overscroll-behavior: contain;
 }
 
+/* Direction chevrons along a single-line, single-direction render (R8 / F4).
+   A CSS triangle so there is no image to load and it inherits the line colour;
+   the marker is rotated to the local heading. Decorative — aria-hidden, never
+   interactive, and it must not eat taps meant for the stops underneath. */
+.route-arrow {
+    width: 0;
+    height: 0;
+    margin: -5px 0 0 -4px;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid currentColor;
+    opacity: 0.85;
+    pointer-events: none;
+}
+
 /* Destination picker — the headsigns a selected line serves (ux-review-001 R4).
    It occupies the stat row the "Variantes de recorrido" count vacated, so the
    mobile bottom sheet keeps its map-space budget (mobile-panel.spec.js): the

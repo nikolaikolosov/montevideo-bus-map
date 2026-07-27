@@ -6,6 +6,13 @@ export const CONFIG = {
     // 48 px is a touch target's worth of separation: closer than that and two
     // chips are the same place as far as a rider is concerned.
     LABEL_MIN_GAP_PX: 48,
+    // Direction chevrons (ux-review-001 R8, finding F4). Spacing is in SCREEN
+    // pixels for the same reason label clustering is: a ground spacing would
+    // crowd at city zoom and vanish at street zoom. Only the arrows inside the
+    // padded viewport are built, so the count follows the screen, not the route
+    // length — a 10 km trace at zoom 17 would otherwise want hundreds.
+    ARROW_GAP_PX: 110,
+    ARROW_VIEWPORT_PAD_PX: 60,
     GOLDEN_RATIO: 0.618033988749895,
     MAP_CENTER: [-34.88, -56.16],
     MAP_ZOOM: 12,

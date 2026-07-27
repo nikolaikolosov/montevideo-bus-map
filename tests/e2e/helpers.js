@@ -69,6 +69,23 @@ export async function renderStopRoutes(page, stopCode) {
 }
 
 /**
+ * Renders ONE line downstream from a stop, exactly as tapping its popup chip
+ * would — the view where travel direction is well defined, so the chevrons show.
+ */
+export async function renderDownstream(page, stopCode, line) {
+    await page.evaluate(
+        ([c, l]) => {
+            location.hash = `#/parada/${c}/linea/${encodeURIComponent(l)}`;
+        },
+        [stopCode, line],
+    );
+    await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
+    await page.waitForFunction(
+        () => !window.__mvdMap._animatingZoom && !window.__mvdMap._panAnim?._inProgress,
+    );
+}
+
+/**
  * Plans a stop-to-stop journey exactly as the popup buttons would and waits
  * for the itinerary to be drawn and the camera to settle (renderJourney ends
  * with an animated fitBounds — same trap as renderLine).
