@@ -14,12 +14,14 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
     buildIndexes,
+    getFilteredRouteFeatures,
     routesByLine,
     routesByVariant,
     stopLinesMap,
     stopsByVariant,
     uniqueStopsData,
 } from '../../src/data.js';
+import { projectPointOnSegment, M_PER_DEG_LON, M_PER_DEG_LAT } from '../../src/geometry.js';
 import { buildSections } from '../../src/bundling.js';
 import { prepareRouteFeature } from '../../src/map.js';
 
@@ -346,5 +348,71 @@ describe('frozen edge cases', () => {
         const maxVariant = Math.max(...prepared.map((f) => polyLength(f.geometry.coordinates)));
         const total = sections.reduce((a, s) => a + polyLength(s.coords), 0);
         expect(total * LEN_SLACK).toBeGreaterThanOrEqual(maxVariant);
+    });
+});
+
+describe('corridor sits on the mean of its strands (brainstorm-008 PR-2)', () => {
+    // A corridor representing N strands belongs between them. Before the
+    // re-centring stage a canonical node sat at the mean of whichever VERTICES
+    // clustered into it, so its lateral position depended on vertex phase: a
+    // node that caught one ida and one vuelta vertex landed on the centreline
+    // while its neighbour that caught only ida sat ~half the carriageway
+    // separation to the side. That alternation is the WOBBLE the oracles
+    // flagged at 6-15 m on 25 sites.
+    //
+    // Synthetic fixtures do not reproduce it (a clean straight pair averages out
+    // either way), so this is asserted on real geometry. Measured over these
+    // five lines: mean offset 4.81 m and worst 26.0 m before, 1.15 m and 14.9 m
+    // after — the residue being smoothing and simplification, which run later.
+    const LINES = ['104', '100', '21', '180', '199'];
+    const REACH_DEG = 0.00033; // 1.5 x cluster tolerance, the re-centring reach
+
+    it('every corridor vertex lies near the mean of the strands under it', () => {
+        let worst = 0;
+        let sum = 0;
+        let n = 0;
+        for (const line of LINES) {
+            const features = getFilteredRouteFeatures([line], null)
+                .map((f) => prepareRouteFeature(f, null))
+                .filter(Boolean);
+            const strands = [];
+            for (const f of features) {
+                const g = f.geometry;
+                const parts = g.type === 'LineString' ? [g.coordinates] : g.coordinates;
+                for (const part of parts) if (part && part.length >= 2) strands.push(part);
+            }
+            if (strands.length < 2) continue;
+
+            for (const sec of buildSections(features)) {
+                for (const [x, y] of sec.coords) {
+                    const near = [];
+                    for (const st of strands) {
+                        let best = null;
+                        for (let i = 1; i < st.length; i++) {
+                            const r = projectPointOnSegment(
+                                x,
+                                y,
+                                st[i - 1][0],
+                                st[i - 1][1],
+                                st[i][0],
+                                st[i][1],
+                            );
+                            if (!best || r.d2 < best.d2) best = r;
+                        }
+                        if (best && best.d2 <= REACH_DEG * REACH_DEG) near.push(best);
+                    }
+                    if (near.length < 2) continue; // nothing to average against
+                    const mx = near.reduce((a, p) => a + p.x, 0) / near.length;
+                    const my = near.reduce((a, p) => a + p.y, 0) / near.length;
+                    const off = Math.hypot((x - mx) * M_PER_DEG_LON, (y - my) * M_PER_DEG_LAT);
+                    worst = Math.max(worst, off);
+                    sum += off;
+                    n += 1;
+                }
+            }
+        }
+        expect(n).toBeGreaterThan(200); // not vacuous
+        expect(sum / n, 'mean offset from the strand mean').toBeLessThan(2.5);
+        expect(worst, 'worst offset from the strand mean').toBeLessThan(20);
     });
 });

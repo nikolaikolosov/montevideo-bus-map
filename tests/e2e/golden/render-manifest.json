@@ -1,8 +1,8 @@
 {
  "2": {
-  "sections": 30,
+  "sections": 41,
   "joints": 0,
-  "totalPoints": 217,
+  "totalPoints": 183,
   "colors": [
    "#d43b88"
   ],
@@ -19,9 +19,9 @@
   "labels": 10
  },
  "17": {
-  "sections": 30,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 164,
+  "totalPoints": 155,
   "colors": [
    "#049583"
   ],
@@ -38,9 +38,9 @@
   "labels": 4
  },
  "21": {
-  "sections": 71,
+  "sections": 38,
   "joints": 0,
-  "totalPoints": 264,
+  "totalPoints": 166,
   "colors": [
    "#ad7ff4"
   ],
@@ -57,9 +57,9 @@
   "labels": 6
  },
  "60": {
-  "sections": 25,
+  "sections": 22,
   "joints": 0,
-  "totalPoints": 134,
+  "totalPoints": 121,
   "colors": [
    "#cb8e07"
   ],
@@ -76,7 +76,7 @@
   "labels": 9
  },
  "62": {
-  "sections": 13,
+  "sections": 15,
   "joints": 0,
   "totalPoints": 75,
   "colors": [
@@ -95,9 +95,9 @@
   "labels": 4
  },
  "64": {
-  "sections": 21,
+  "sections": 24,
   "joints": 0,
-  "totalPoints": 132,
+  "totalPoints": 104,
   "colors": [
    "#3378f5"
   ],
@@ -114,9 +114,9 @@
   "labels": 5
  },
  "71": {
-  "sections": 30,
+  "sections": 16,
   "joints": 0,
-  "totalPoints": 136,
+  "totalPoints": 74,
   "colors": [
    "#88ab00"
   ],
@@ -133,9 +133,9 @@
   "labels": 5
  },
  "76": {
-  "sections": 42,
+  "sections": 45,
   "joints": 0,
-  "totalPoints": 202,
+  "totalPoints": 183,
   "colors": [
    "#20d4b6"
   ],
@@ -146,15 +146,15 @@
    -34.9271,
    -56.2557,
    -34.8625,
-   -56.1508
+   -56.1509
   ],
   "stops": 169,
   "labels": 6
  },
  "79": {
-  "sections": 31,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 139,
+  "totalPoints": 131,
   "colors": [
    "#73e7ff"
   ],
@@ -165,7 +165,7 @@
    -34.9053,
    -56.1992,
    -34.8482,
-   -56.1323
+   -56.1324
   ],
   "stops": 101,
   "labels": 5
@@ -173,7 +173,7 @@
  "100": {
   "sections": 11,
   "joints": 0,
-  "totalPoints": 105,
+  "totalPoints": 70,
   "colors": [
    "#0ca7eb"
   ],
@@ -192,7 +192,7 @@
  "102": {
   "sections": 12,
   "joints": 0,
-  "totalPoints": 92,
+  "totalPoints": 82,
   "colors": [
    "#fe9594"
   ],
@@ -209,9 +209,9 @@
   "labels": 15
  },
  "103": {
-  "sections": 27,
+  "sections": 24,
   "joints": 0,
-  "totalPoints": 196,
+  "totalPoints": 134,
   "colors": [
    "#7feccf"
   ],
@@ -228,9 +228,9 @@
   "labels": 20
  },
  "104": {
-  "sections": 52,
+  "sections": 29,
   "joints": 0,
-  "totalPoints": 239,
+  "totalPoints": 174,
   "colors": [
    "#fccb7e"
   ],
@@ -247,9 +247,9 @@
   "labels": 8
  },
  "105": {
-  "sections": 23,
+  "sections": 20,
   "joints": 0,
-  "totalPoints": 131,
+  "totalPoints": 122,
   "colors": [
    "#60d291"
   ],
@@ -268,7 +268,7 @@
  "106": {
   "sections": 3,
   "joints": 0,
-  "totalPoints": 65,
+  "totalPoints": 63,
   "colors": [
    "#8bb9fd"
   ],
@@ -287,7 +287,7 @@
  "109": {
   "sections": 11,
   "joints": 0,
-  "totalPoints": 94,
+  "totalPoints": 78,
   "colors": [
    "#d4cdfe"
   ],
@@ -304,9 +304,9 @@
   "labels": 15
  },
  "110": {
-  "sections": 14,
+  "sections": 10,
   "joints": 0,
-  "totalPoints": 118,
+  "totalPoints": 93,
   "colors": [
    "#f26c52"
   ],
@@ -323,9 +323,9 @@
   "labels": 15
  },
  "111": {
-  "sections": 20,
+  "sections": 18,
   "joints": 0,
-  "totalPoints": 114,
+  "totalPoints": 92,
   "colors": [
    "#8fa907"
   ],
@@ -342,9 +342,9 @@
   "labels": 13
  },
  "112": {
-  "sections": 31,
+  "sections": 24,
   "joints": 0,
-  "totalPoints": 173,
+  "totalPoints": 142,
   "colors": [
    "#049677"
   ],
@@ -361,9 +361,9 @@
   "labels": 15
  },
  "113": {
-  "sections": 19,
+  "sections": 17,
   "joints": 0,
-  "totalPoints": 90,
+  "totalPoints": 82,
   "colors": [
    "#dd6cbe"
   ],
@@ -380,9 +380,9 @@
   "labels": 10
  },
  "115": {
-  "sections": 26,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 127,
+  "totalPoints": 111,
   "colors": [
    "#a37800"
   ],
@@ -401,7 +401,7 @@
  "116": {
   "sections": 12,
   "joints": 0,
-  "totalPoints": 74,
+  "totalPoints": 71,
   "colors": [
    "#a1c75e"
   ],
@@ -412,7 +412,7 @@
    -34.9205,
    -56.2139,
    -34.9034,
-   -56.1349
+   -56.135
   ],
   "stops": 72,
   "labels": 6
@@ -420,7 +420,7 @@
  "117": {
   "sections": 11,
   "joints": 0,
-  "totalPoints": 60,
+  "totalPoints": 56,
   "colors": [
    "#f1677f"
   ],
@@ -437,9 +437,9 @@
   "labels": 6
  },
  "121": {
-  "sections": 10,
+  "sections": 11,
   "joints": 0,
-  "totalPoints": 72,
+  "totalPoints": 69,
   "colors": [
    "#9e56dc"
   ],
@@ -456,9 +456,9 @@
   "labels": 5
  },
  "124": {
-  "sections": 27,
+  "sections": 19,
   "joints": 0,
-  "totalPoints": 164,
+  "totalPoints": 133,
   "colors": [
    "#e9780d"
   ],
@@ -475,7 +475,7 @@
   "labels": 9
  },
  "125": {
-  "sections": 15,
+  "sections": 18,
   "joints": 0,
   "totalPoints": 96,
   "colors": [
@@ -496,7 +496,7 @@
  "127": {
   "sections": 30,
   "joints": 0,
-  "totalPoints": 193,
+  "totalPoints": 151,
   "colors": [
    "#a07a00"
   ],
@@ -515,7 +515,7 @@
  "128": {
   "sections": 25,
   "joints": 0,
-  "totalPoints": 155,
+  "totalPoints": 141,
   "colors": [
    "#9cb4fd"
   ],
@@ -532,9 +532,9 @@
   "labels": 9
  },
  "130": {
-  "sections": 29,
+  "sections": 13,
   "joints": 0,
-  "totalPoints": 155,
+  "totalPoints": 99,
   "colors": [
    "#fec6aa"
   ],
@@ -553,7 +553,7 @@
  "133": {
   "sections": 25,
   "joints": 0,
-  "totalPoints": 145,
+  "totalPoints": 133,
   "colors": [
    "#e8ab3e"
   ],
@@ -570,9 +570,9 @@
   "labels": 6
  },
  "135": {
-  "sections": 28,
+  "sections": 19,
   "joints": 0,
-  "totalPoints": 146,
+  "totalPoints": 105,
   "colors": [
    "#0eb590"
   ],
@@ -589,9 +589,9 @@
   "labels": 3
  },
  "137": {
-  "sections": 45,
+  "sections": 35,
   "joints": 0,
-  "totalPoints": 234,
+  "totalPoints": 176,
   "colors": [
    "#d7397b"
   ],
@@ -608,9 +608,9 @@
   "labels": 10
  },
  "140": {
-  "sections": 29,
+  "sections": 35,
   "joints": 0,
-  "totalPoints": 163,
+  "totalPoints": 159,
   "colors": [
    "#90b8fd"
   ],
@@ -627,9 +627,9 @@
   "labels": 4
  },
  "141": {
-  "sections": 12,
+  "sections": 13,
   "joints": 0,
-  "totalPoints": 67,
+  "totalPoints": 71,
   "colors": [
    "#febde5"
   ],
@@ -646,9 +646,9 @@
   "labels": 4
  },
  "142": {
-  "sections": 16,
+  "sections": 13,
   "joints": 0,
-  "totalPoints": 125,
+  "totalPoints": 108,
   "colors": [
    "#c4a4fd"
   ],
@@ -665,9 +665,9 @@
   "labels": 10
  },
  "143": {
-  "sections": 19,
+  "sections": 17,
   "joints": 0,
-  "totalPoints": 83,
+  "totalPoints": 72,
   "colors": [
    "#ea689d"
   ],
@@ -684,9 +684,9 @@
   "labels": 3
  },
  "144": {
-  "sections": 23,
+  "sections": 24,
   "joints": 0,
-  "totalPoints": 125,
+  "totalPoints": 110,
   "colors": [
    "#fa9e56"
   ],
@@ -703,9 +703,9 @@
   "labels": 8
  },
  "145": {
-  "sections": 44,
+  "sections": 46,
   "joints": 0,
-  "totalPoints": 282,
+  "totalPoints": 202,
   "colors": [
    "#0490a5"
   ],
@@ -722,9 +722,9 @@
   "labels": 15
  },
  "147": {
-  "sections": 33,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 173,
+  "totalPoints": 164,
   "colors": [
    "#fa90c2"
   ],
@@ -741,9 +741,9 @@
   "labels": 13
  },
  "148": {
-  "sections": 27,
+  "sections": 25,
   "joints": 0,
-  "totalPoints": 184,
+  "totalPoints": 154,
   "colors": [
    "#049b38"
   ],
@@ -753,16 +753,16 @@
   "bbox": [
    -34.9107,
    -56.2705,
-   -34.7611,
+   -34.7612,
    -56.1762
   ],
   "stops": 173,
   "labels": 12
  },
  "149": {
-  "sections": 35,
+  "sections": 33,
   "joints": 0,
-  "totalPoints": 209,
+  "totalPoints": 170,
   "colors": [
    "#f6a24e"
   ],
@@ -781,7 +781,7 @@
  "150": {
   "sections": 18,
   "joints": 0,
-  "totalPoints": 138,
+  "totalPoints": 124,
   "colors": [
    "#81ad16"
   ],
@@ -791,16 +791,16 @@
   "bbox": [
    -34.9046,
    -56.2202,
-   -34.7419,
+   -34.742,
    -56.1762
   ],
   "stops": 177,
   "labels": 4
  },
  "151": {
-  "sections": 43,
+  "sections": 27,
   "joints": 0,
-  "totalPoints": 253,
+  "totalPoints": 190,
   "colors": [
    "#6897fd"
   ],
@@ -811,15 +811,15 @@
    -34.9049,
    -56.2535,
    -34.7961,
-   -56.0833
+   -56.0834
   ],
   "stops": 220,
   "labels": 13
  },
  "155": {
-  "sections": 27,
+  "sections": 21,
   "joints": 0,
-  "totalPoints": 157,
+  "totalPoints": 132,
   "colors": [
    "#bca8fd"
   ],
@@ -836,9 +836,9 @@
   "labels": 6
  },
  "156": {
-  "sections": 18,
+  "sections": 15,
   "joints": 0,
-  "totalPoints": 106,
+  "totalPoints": 88,
   "colors": [
    "#b9d7fe"
   ],
@@ -857,7 +857,7 @@
  "157": {
   "sections": 16,
   "joints": 0,
-  "totalPoints": 115,
+  "totalPoints": 110,
   "colors": [
    "#9bc963"
   ],
@@ -874,9 +874,9 @@
   "labels": 9
  },
  "158": {
-  "sections": 23,
+  "sections": 20,
   "joints": 0,
-  "totalPoints": 145,
+  "totalPoints": 138,
   "colors": [
    "#a3e8aa"
   ],
@@ -886,16 +886,16 @@
   "bbox": [
    -34.9107,
    -56.2139,
-   -34.8064,
-   -56.1621
+   -34.8065,
+   -56.1622
   ],
   "stops": 144,
   "labels": 12
  },
  "163": {
-  "sections": 40,
+  "sections": 34,
   "joints": 0,
-  "totalPoints": 204,
+  "totalPoints": 176,
   "colors": [
    "#fec4bc"
   ],
@@ -912,9 +912,9 @@
   "labels": 9
  },
  "169": {
-  "sections": 36,
+  "sections": 23,
   "joints": 0,
-  "totalPoints": 187,
+  "totalPoints": 117,
   "colors": [
    "#4db550"
   ],
@@ -931,9 +931,9 @@
   "labels": 16
  },
  "174": {
-  "sections": 50,
+  "sections": 36,
   "joints": 0,
-  "totalPoints": 228,
+  "totalPoints": 167,
   "colors": [
    "#de3f20"
   ],
@@ -943,16 +943,16 @@
   "bbox": [
    -34.9271,
    -56.2601,
-   -34.7873,
+   -34.7874,
    -56.1401
   ],
   "stops": 207,
   "labels": 16
  },
  "175": {
-  "sections": 21,
+  "sections": 15,
   "joints": 0,
-  "totalPoints": 172,
+  "totalPoints": 128,
   "colors": [
    "#49d3a1"
   ],
@@ -963,15 +963,15 @@
    -34.9053,
    -56.2193,
    -34.7258,
-   -56.1486
+   -56.1487
   ],
   "stops": 190,
   "labels": 11
  },
  "180": {
-  "sections": 31,
+  "sections": 22,
   "joints": 0,
-  "totalPoints": 144,
+  "totalPoints": 90,
   "colors": [
    "#00d4c0"
   ],
@@ -982,15 +982,15 @@
    -34.9107,
    -56.2139,
    -34.8492,
-   -56.1483
+   -56.1484
   ],
   "stops": 89,
   "labels": 10
  },
  "181": {
-  "sections": 17,
+  "sections": 18,
   "joints": 0,
-  "totalPoints": 106,
+  "totalPoints": 102,
   "colors": [
    "#5471f5"
   ],
@@ -1007,9 +1007,9 @@
   "labels": 8
  },
  "182": {
-  "sections": 32,
+  "sections": 29,
   "joints": 0,
-  "totalPoints": 175,
+  "totalPoints": 130,
   "colors": [
    "#d23c8f"
   ],
@@ -1026,9 +1026,9 @@
   "labels": 5
  },
  "183": {
-  "sections": 18,
+  "sections": 15,
   "joints": 0,
-  "totalPoints": 118,
+  "totalPoints": 98,
   "colors": [
    "#d98506"
   ],
@@ -1045,9 +1045,9 @@
   "labels": 10
  },
  "185": {
-  "sections": 48,
+  "sections": 43,
   "joints": 0,
-  "totalPoints": 246,
+  "totalPoints": 179,
   "colors": [
    "#dc9af1"
   ],
@@ -1058,15 +1058,15 @@
    -34.9111,
    -56.2796,
    -34.8544,
-   -56.135
+   -56.1349
   ],
   "stops": 165,
   "labels": 17
  },
  "186": {
-  "sections": 41,
+  "sections": 42,
   "joints": 0,
-  "totalPoints": 218,
+  "totalPoints": 182,
   "colors": [
    "#95a707"
   ],
@@ -1083,9 +1083,9 @@
   "labels": 7
  },
  "187": {
-  "sections": 37,
+  "sections": 23,
   "joints": 0,
-  "totalPoints": 137,
+  "totalPoints": 94,
   "colors": [
    "#72e8fc"
   ],
@@ -1102,9 +1102,9 @@
   "labels": 7
  },
  "188": {
-  "sections": 16,
+  "sections": 14,
   "joints": 0,
-  "totalPoints": 104,
+  "totalPoints": 69,
   "colors": [
    "#e26ab3"
   ],
@@ -1115,15 +1115,15 @@
    -34.9107,
    -56.2139,
    -34.873,
-   -56.1646
+   -56.1647
   ],
   "stops": 75,
   "labels": 6
  },
  "191": {
-  "sections": 29,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 145,
+  "totalPoints": 135,
   "colors": [
    "#b17df1"
   ],
@@ -1140,9 +1140,9 @@
   "labels": 8
  },
  "192": {
-  "sections": 49,
+  "sections": 39,
   "joints": 0,
-  "totalPoints": 189,
+  "totalPoints": 133,
   "colors": [
    "#fec7a3"
   ],
@@ -1150,7 +1150,7 @@
    4
   ],
   "bbox": [
-   -34.9257,
+   -34.9256,
    -56.1704,
    -34.7975,
    -56.1362
@@ -1159,9 +1159,9 @@
   "labels": 9
  },
  "195": {
-  "sections": 45,
+  "sections": 39,
   "joints": 0,
-  "totalPoints": 225,
+  "totalPoints": 188,
   "colors": [
    "#d171d1"
   ],
@@ -1178,9 +1178,9 @@
   "labels": 7
  },
  "199": {
-  "sections": 27,
+  "sections": 18,
   "joints": 0,
-  "totalPoints": 137,
+  "totalPoints": 103,
   "colors": [
    "#6c6af3"
   ],
@@ -1197,9 +1197,9 @@
   "labels": 8
  },
  "300": {
-  "sections": 26,
+  "sections": 20,
   "joints": 0,
-  "totalPoints": 128,
+  "totalPoints": 90,
   "colors": [
    "#d59cf8"
   ],
@@ -1216,9 +1216,9 @@
   "labels": 13
  },
  "306": {
-  "sections": 58,
+  "sections": 43,
   "joints": 0,
-  "totalPoints": 285,
+  "totalPoints": 233,
   "colors": [
    "#dd410d"
   ],
@@ -1235,9 +1235,9 @@
   "labels": 17
  },
  "316": {
-  "sections": 40,
+  "sections": 24,
   "joints": 0,
-  "totalPoints": 232,
+  "totalPoints": 139,
   "colors": [
    "#4b74f6"
   ],
@@ -1254,9 +1254,9 @@
   "labels": 12
  },
  "328": {
-  "sections": 37,
+  "sections": 45,
   "joints": 0,
-  "totalPoints": 202,
+  "totalPoints": 194,
   "colors": [
    "#0dadcf"
   ],
@@ -1273,9 +1273,9 @@
   "labels": 5
  },
  "329": {
-  "sections": 63,
+  "sections": 44,
   "joints": 0,
-  "totalPoints": 285,
+  "totalPoints": 228,
   "colors": [
    "#d7db84"
   ],
@@ -1285,16 +1285,16 @@
   "bbox": [
    -34.9271,
    -56.2705,
-   -34.7611,
+   -34.7612,
    -56.135
   ],
   "stops": 236,
   "labels": 11
  },
  "330": {
-  "sections": 25,
+  "sections": 13,
   "joints": 0,
-  "totalPoints": 136,
+  "totalPoints": 82,
   "colors": [
    "#a752d4"
   ],
@@ -1305,15 +1305,15 @@
    -34.9064,
    -56.2024,
    -34.806,
-   -56.1424
+   -56.1425
   ],
   "stops": 105,
   "labels": 9
  },
  "370": {
-  "sections": 39,
+  "sections": 40,
   "joints": 0,
-  "totalPoints": 222,
+  "totalPoints": 202,
   "colors": [
    "#f26966"
   ],
@@ -1330,9 +1330,9 @@
   "labels": 10
  },
  "396": {
-  "sections": 25,
+  "sections": 24,
   "joints": 0,
-  "totalPoints": 150,
+  "totalPoints": 136,
   "colors": [
    "#febfde"
   ],
@@ -1349,9 +1349,9 @@
   "labels": 6
  },
  "402": {
-  "sections": 19,
+  "sections": 22,
   "joints": 0,
-  "totalPoints": 139,
+  "totalPoints": 132,
   "colors": [
    "#f4befe"
   ],
@@ -1370,7 +1370,7 @@
  "404": {
   "sections": 23,
   "joints": 0,
-  "totalPoints": 138,
+  "totalPoints": 102,
   "colors": [
    "#e6d67e"
   ],
@@ -1387,9 +1387,9 @@
   "labels": 8
  },
  "405": {
-  "sections": 25,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 163,
+  "totalPoints": 150,
   "colors": [
    "#049a46"
   ],
@@ -1406,9 +1406,9 @@
   "labels": 12
  },
  "407": {
-  "sections": 24,
+  "sections": 25,
   "joints": 0,
-  "totalPoints": 138,
+  "totalPoints": 125,
   "colors": [
    "#16cdea"
   ],
@@ -1417,7 +1417,7 @@
   ],
   "bbox": [
    -34.9144,
-   -56.2031,
+   -56.2029,
    -34.8699,
    -56.0835
   ],
@@ -1425,9 +1425,9 @@
   "labels": 3
  },
  "409": {
-  "sections": 36,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 181,
+  "totalPoints": 157,
   "colors": [
    "#bd9607"
   ],
@@ -1444,9 +1444,9 @@
   "labels": 9
  },
  "427": {
-  "sections": 60,
+  "sections": 46,
   "joints": 0,
-  "totalPoints": 288,
+  "totalPoints": 227,
   "colors": [
    "#79ecd7"
   ],
@@ -1463,9 +1463,9 @@
   "labels": 12
  },
  "456": {
-  "sections": 48,
+  "sections": 22,
   "joints": 0,
-  "totalPoints": 178,
+  "totalPoints": 103,
   "colors": [
    "#1dcaf7"
   ],
@@ -1482,9 +1482,9 @@
   "labels": 7
  },
  "468": {
-  "sections": 46,
+  "sections": 31,
   "joints": 0,
-  "totalPoints": 248,
+  "totalPoints": 198,
   "colors": [
    "#ab50d0"
   ],
@@ -1501,9 +1501,9 @@
   "labels": 11
  },
  "494": {
-  "sections": 49,
+  "sections": 36,
   "joints": 0,
-  "totalPoints": 258,
+  "totalPoints": 207,
   "colors": [
    "#fe9b5f"
   ],
@@ -1520,9 +1520,9 @@
   "labels": 10
  },
  "495": {
-  "sections": 32,
+  "sections": 23,
   "joints": 0,
-  "totalPoints": 166,
+  "totalPoints": 127,
   "colors": [
    "#febde9"
   ],
@@ -1531,7 +1531,7 @@
   ],
   "bbox": [
    -34.9049,
-   -56.3393,
+   -56.3392,
    -34.8343,
    -56.1242
   ],
@@ -1539,9 +1539,9 @@
   "labels": 5
  },
  "505": {
-  "sections": 39,
+  "sections": 22,
   "joints": 0,
-  "totalPoints": 192,
+  "totalPoints": 117,
   "colors": [
    "#0287cf"
   ],
@@ -1558,9 +1558,9 @@
   "labels": 7
  },
  "522": {
-  "sections": 31,
+  "sections": 26,
   "joints": 0,
-  "totalPoints": 181,
+  "totalPoints": 153,
   "colors": [
    "#c36200"
   ],
@@ -1577,9 +1577,9 @@
   "labels": 6
  },
  "524": {
-  "sections": 15,
+  "sections": 17,
   "joints": 0,
-  "totalPoints": 99,
+  "totalPoints": 84,
   "colors": [
    "#dfd981"
   ],
@@ -1596,9 +1596,9 @@
   "labels": 4
  },
  "526": {
-  "sections": 36,
+  "sections": 43,
   "joints": 0,
-  "totalPoints": 194,
+  "totalPoints": 197,
   "colors": [
    "#f16779"
   ],
@@ -1615,9 +1615,9 @@
   "labels": 6
  },
  "538": {
-  "sections": 32,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 162,
+  "totalPoints": 145,
   "colors": [
    "#0184dd"
   ],
@@ -1634,9 +1634,9 @@
   "labels": 6
  },
  "546": {
-  "sections": 29,
+  "sections": 26,
   "joints": 0,
-  "totalPoints": 134,
+  "totalPoints": 116,
   "colors": [
    "#038fac"
   ],
@@ -1653,9 +1653,9 @@
   "labels": 4
  },
  "582": {
-  "sections": 33,
+  "sections": 28,
   "joints": 0,
-  "totalPoints": 143,
+  "totalPoints": 129,
   "colors": [
    "#c4d3fe"
   ],
@@ -1672,9 +1672,9 @@
   "labels": 4
  },
  "124 Sd": {
-  "sections": 24,
+  "sections": 19,
   "joints": 0,
-  "totalPoints": 166,
+  "totalPoints": 139,
   "colors": [
    "#5d6ff5"
   ],
@@ -1710,9 +1710,9 @@
   "labels": 2
  },
  "Bt2": {
-  "sections": 30,
+  "sections": 21,
   "joints": 0,
-  "totalPoints": 229,
+  "totalPoints": 199,
   "colors": [
    "#dc3860"
   ],
@@ -1731,7 +1731,7 @@
  "Ce1": {
   "sections": 7,
   "joints": 0,
-  "totalPoints": 45,
+  "totalPoints": 35,
   "colors": [
    "#fec0d5"
   ],
@@ -1750,7 +1750,7 @@
  "Ce2": {
   "sections": 6,
   "joints": 0,
-  "totalPoints": 34,
+  "totalPoints": 31,
   "colors": [
    "#0eb68b"
   ],
@@ -1767,9 +1767,9 @@
   "labels": 4
  },
  "D1": {
-  "sections": 29,
-  "joints": 0,
-  "totalPoints": 204,
+  "sections": 13,
+  "joints": 1,
+  "totalPoints": 139,
   "colors": [
    "#ca74da"
   ],
@@ -1777,18 +1777,18 @@
    4
   ],
   "bbox": [
-   -34.9153,
+   -34.9152,
    -56.2136,
    -34.8773,
-   -56.0559
+   -56.056
   ],
   "stops": 61,
   "labels": 4
  },
  "D5": {
-  "sections": 20,
+  "sections": 13,
   "joints": 0,
-  "totalPoints": 144,
+  "totalPoints": 111,
   "colors": [
    "#0daec7"
   ],
@@ -1805,9 +1805,9 @@
   "labels": 5
  },
  "D8": {
-  "sections": 33,
+  "sections": 15,
   "joints": 0,
-  "totalPoints": 184,
+  "totalPoints": 108,
   "colors": [
    "#fe9a6c"
   ],
@@ -1817,16 +1817,16 @@
   "bbox": [
    -34.9107,
    -56.2139,
-   -34.7759,
+   -34.776,
    -56.0436
   ],
   "stops": 116,
   "labels": 8
  },
  "D9": {
-  "sections": 13,
+  "sections": 10,
   "joints": 0,
-  "totalPoints": 105,
+  "totalPoints": 83,
   "colors": [
    "#bf6500"
   ],
@@ -1843,9 +1843,9 @@
   "labels": 5
  },
  "D10": {
-  "sections": 27,
+  "sections": 23,
   "joints": 0,
-  "totalPoints": 152,
+  "totalPoints": 117,
   "colors": [
    "#caba40"
   ],
@@ -1862,9 +1862,9 @@
   "labels": 5
  },
  "D11": {
-  "sections": 16,
+  "sections": 10,
   "joints": 0,
-  "totalPoints": 109,
+  "totalPoints": 97,
   "colors": [
    "#048fa8"
   ],
@@ -1883,7 +1883,7 @@
  "E14": {
   "sections": 5,
   "joints": 0,
-  "totalPoints": 76,
+  "totalPoints": 62,
   "colors": [
    "#de3951"
   ],
@@ -1902,7 +1902,7 @@
  "G3": {
   "sections": 6,
   "joints": 0,
-  "totalPoints": 40,
+  "totalPoints": 39,
   "colors": [
    "#70e9f5"
   ],
@@ -1921,7 +1921,7 @@
  "G6": {
   "sections": 5,
   "joints": 0,
-  "totalPoints": 19,
+  "totalPoints": 20,
   "colors": [
    "#68d18c"
   ],
@@ -1940,7 +1940,7 @@
  "G8": {
   "sections": 14,
   "joints": 0,
-  "totalPoints": 83,
+  "totalPoints": 79,
   "colors": [
    "#db3867"
   ],
@@ -1948,7 +1948,7 @@
    4
   ],
   "bbox": [
-   -34.7995,
+   -34.7996,
    -56.2343,
    -34.7307,
    -56.1808
@@ -1959,7 +1959,7 @@
  "G10": {
   "sections": 12,
   "joints": 0,
-  "totalPoints": 87,
+  "totalPoints": 86,
   "colors": [
    "#038ac4"
   ],
@@ -1969,7 +1969,7 @@
   "bbox": [
    -34.8038,
    -56.3187,
-   -34.7231,
+   -34.7232,
    -56.2215
   ],
   "stops": 104,
@@ -1978,7 +1978,7 @@
  "G11": {
   "sections": 7,
   "joints": 0,
-  "totalPoints": 68,
+  "totalPoints": 61,
   "colors": [
    "#fec6a7"
   ],
@@ -1997,7 +1997,7 @@
  "L1": {
   "sections": 13,
   "joints": 0,
-  "totalPoints": 63,
+  "totalPoints": 61,
   "colors": [
    "#da6dc3"
   ],
@@ -2006,7 +2006,7 @@
   ],
   "bbox": [
    -34.8706,
-   -56.3754,
+   -56.3753,
    -34.8101,
    -56.2725
   ],
@@ -2016,7 +2016,7 @@
  "L2": {
   "sections": 5,
   "joints": 0,
-  "totalPoints": 29,
+  "totalPoints": 23,
   "colors": [
    "#1f9b00"
   ],
@@ -2033,9 +2033,9 @@
   "labels": 6
  },
  "L3": {
-  "sections": 18,
+  "sections": 6,
   "joints": 0,
-  "totalPoints": 111,
+  "totalPoints": 79,
   "colors": [
    "#f891c7"
   ],
@@ -2044,17 +2044,17 @@
   ],
   "bbox": [
    -34.8607,
-   -56.2535,
-   -34.7977,
+   -56.2534,
+   -34.7976,
    -56.2147
   ],
   "stops": 102,
   "labels": 4
  },
  "L4": {
-  "sections": 7,
+  "sections": 5,
   "joints": 0,
-  "totalPoints": 30,
+  "totalPoints": 22,
   "colors": [
    "#4076f5"
   ],
@@ -2063,7 +2063,7 @@
   ],
   "bbox": [
    -34.8734,
-   -56.2546,
+   -56.2545,
    -34.8583,
    -56.2487
   ],
@@ -2090,9 +2090,9 @@
   "labels": 2
  },
  "L6": {
-  "sections": 8,
+  "sections": 3,
   "joints": 0,
-  "totalPoints": 47,
+  "totalPoints": 34,
   "colors": [
    "#589300"
   ],
@@ -2109,9 +2109,9 @@
   "labels": 2
  },
  "L7": {
-  "sections": 19,
+  "sections": 14,
   "joints": 0,
-  "totalPoints": 131,
+  "totalPoints": 93,
   "colors": [
    "#905de6"
   ],
@@ -2130,7 +2130,7 @@
  "L8": {
   "sections": 2,
   "joints": 0,
-  "totalPoints": 43,
+  "totalPoints": 42,
   "colors": [
    "#b04ecc"
   ],
@@ -2149,7 +2149,7 @@
  "L9": {
   "sections": 5,
   "joints": 0,
-  "totalPoints": 38,
+  "totalPoints": 32,
   "colors": [
    "#febfdb"
   ],
@@ -2166,9 +2166,9 @@
   "labels": 4
  },
  "L12": {
-  "sections": 21,
+  "sections": 18,
   "joints": 0,
-  "totalPoints": 97,
+  "totalPoints": 84,
   "colors": [
    "#c6e18e"
   ],
@@ -2179,15 +2179,15 @@
    -34.9038,
    -56.2756,
    -34.8729,
-   -56.2456
+   -56.2455
   ],
   "stops": 82,
   "labels": 4
  },
  "L13": {
-  "sections": 8,
+  "sections": 5,
   "joints": 0,
-  "totalPoints": 38,
+  "totalPoints": 30,
   "colors": [
    "#0289c9"
   ],
@@ -2206,7 +2206,7 @@
  "L14": {
   "sections": 5,
   "joints": 0,
-  "totalPoints": 33,
+  "totalPoints": 30,
   "colors": [
    "#0286d5"
   ],
@@ -2223,9 +2223,9 @@
   "labels": 3
  },
  "L15": {
-  "sections": 12,
+  "sections": 15,
   "joints": 0,
-  "totalPoints": 69,
+  "totalPoints": 66,
   "colors": [
    "#b0adfd"
   ],
@@ -2236,7 +2236,7 @@
    -34.8797,
    -56.3749,
    -34.8434,
-   -56.249
+   -56.2489
   ],
   "stops": 115,
   "labels": 3
@@ -2244,7 +2244,7 @@
  "L16": {
   "sections": 4,
   "joints": 0,
-  "totalPoints": 25,
+  "totalPoints": 23,
   "colors": [
    "#cf5500"
   ],
@@ -2261,9 +2261,9 @@
   "labels": 3
  },
  "L19": {
-  "sections": 12,
+  "sections": 9,
   "joints": 0,
-  "totalPoints": 59,
+  "totalPoints": 51,
   "colors": [
    "#d3dd87"
   ],
@@ -2272,7 +2272,7 @@
   ],
   "bbox": [
    -34.8875,
-   -56.3393,
+   -56.3392,
    -34.8343,
    -56.2725
   ],
@@ -2280,9 +2280,9 @@
   "labels": 3
  },
  "L20": {
-  "sections": 13,
+  "sections": 15,
   "joints": 0,
-  "totalPoints": 74,
+  "totalPoints": 76,
   "colors": [
    "#da4700"
   ],
@@ -2301,7 +2301,7 @@
  "L22": {
   "sections": 3,
   "joints": 0,
-  "totalPoints": 31,
+  "totalPoints": 30,
   "colors": [
    "#c742a7"
   ],
@@ -2320,7 +2320,7 @@
  "L23": {
   "sections": 7,
   "joints": 0,
-  "totalPoints": 47,
+  "totalPoints": 44,
   "colors": [
    "#71ebe7"
   ],
@@ -2337,9 +2337,9 @@
   "labels": 2
  },
  "L24": {
-  "sections": 11,
+  "sections": 8,
   "joints": 0,
-  "totalPoints": 63,
+  "totalPoints": 50,
   "colors": [
    "#d1cefe"
   ],
@@ -2347,7 +2347,7 @@
    4
   ],
   "bbox": [
-   -34.861,
+   -34.8609,
    -56.2434,
    -34.8276,
    -56.2087
@@ -2375,9 +2375,9 @@
   "labels": 3
  },
  "L26": {
-  "sections": 15,
+  "sections": 14,
   "joints": 0,
-  "totalPoints": 62,
+  "totalPoints": 52,
   "colors": [
    "#abdbfe"
   ],
@@ -2394,9 +2394,9 @@
   "labels": 3
  },
  "L28": {
-  "sections": 10,
+  "sections": 7,
   "joints": 0,
-  "totalPoints": 58,
+  "totalPoints": 42,
   "colors": [
    "#217bf4"
   ],
@@ -2406,16 +2406,16 @@
   "bbox": [
    -34.8607,
    -56.2498,
-   -34.8275,
+   -34.8276,
    -56.2147
   ],
   "stops": 68,
   "labels": 4
  },
  "L29": {
-  "sections": 20,
+  "sections": 17,
   "joints": 0,
-  "totalPoints": 106,
+  "totalPoints": 89,
   "colors": [
    "#67c1fd"
   ],
@@ -2423,7 +2423,7 @@
    4
   ],
   "bbox": [
-   -34.861,
+   -34.8609,
    -56.2358,
    -34.7817,
    -56.1929
@@ -2432,9 +2432,9 @@
   "labels": 3
  },
  "L30": {
-  "sections": 3,
+  "sections": 4,
   "joints": 0,
-  "totalPoints": 11,
+  "totalPoints": 13,
   "colors": [
    "#00b96d"
   ],
@@ -2453,7 +2453,7 @@
  "L31": {
   "sections": 7,
   "joints": 0,
-  "totalPoints": 30,
+  "totalPoints": 26,
   "colors": [
    "#fe8fb9"
   ],
@@ -2470,9 +2470,9 @@
   "labels": 4
  },
  "L32": {
-  "sections": 9,
+  "sections": 4,
   "joints": 0,
-  "totalPoints": 41,
+  "totalPoints": 26,
   "colors": [
    "#04919c"
   ],
@@ -2489,9 +2489,9 @@
   "labels": 4
  },
  "L33": {
-  "sections": 10,
+  "sections": 8,
   "joints": 0,
-  "totalPoints": 47,
+  "totalPoints": 36,
   "colors": [
    "#9fe9ae"
   ],
@@ -2510,7 +2510,7 @@
  "L35": {
   "sections": 2,
   "joints": 0,
-  "totalPoints": 18,
+  "totalPoints": 20,
   "colors": [
    "#8d8bfd"
   ],
@@ -2546,9 +2546,9 @@
   "labels": 4
  },
  "L38": {
-  "sections": 9,
+  "sections": 11,
   "joints": 0,
-  "totalPoints": 45,
+  "totalPoints": 51,
   "colors": [
    "#038bbf"
   ],
@@ -2567,7 +2567,7 @@
  "L39": {
   "sections": 10,
   "joints": 0,
-  "totalPoints": 38,
+  "totalPoints": 35,
   "colors": [
    "#61b341"
   ],
@@ -2603,9 +2603,9 @@
   "labels": 3
  },
  "L41": {
-  "sections": 12,
+  "sections": 13,
   "joints": 0,
-  "totalPoints": 58,
+  "totalPoints": 60,
   "colors": [
    "#94b7fd"
   ],
@@ -2641,9 +2641,9 @@
   "labels": 5
  },
  "L77": {
-  "sections": 11,
+  "sections": 6,
   "joints": 0,
-  "totalPoints": 74,
+  "totalPoints": 52,
   "colors": [
    "#00cdf0"
   ],
@@ -2654,7 +2654,7 @@
    -34.8761,
    -56.2793,
    -34.8343,
-   -56.249
+   -56.2489
   ],
   "stops": 82,
   "labels": 2

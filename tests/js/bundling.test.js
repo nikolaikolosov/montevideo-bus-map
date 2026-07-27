@@ -68,6 +68,40 @@ describe('buildSections', () => {
     });
 });
 
+describe('node re-centring on strands (brainstorm-008 PR-2)', () => {
+    const SEP = 0.00013; // ≈ 14 m, the measured P90 ida/vuelta offset
+    /** Gentle S-curve centreline, so simplification keeps interior vertices. */
+    const centreY = (x) => 0.0004 * Math.sin(x / 0.0004);
+    /**
+     * The two carriageways of one line, sampled OUT OF PHASE: no vertex of one
+     * lines up with a vertex of the other, which is what made clustering
+     * phase-dependent and produced the sawtooth.
+     */
+    const pair = () => {
+        const strand = (offset, phase) =>
+            Array.from({ length: 24 }, (_, i) => {
+                const x = i * 0.0002 + phase;
+                return [x, centreY(x) + offset];
+            });
+        const feat = (coords, variant) => ({
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: coords },
+            properties: { DESC_LINEA: '1', COD_VARIAN: variant, DESC_VARIA: variant },
+        });
+        return [feat(strand(SEP / 2, 0), 'ida'), feat(strand(-SEP / 2, 0.0001), 'vuelta')];
+    };
+
+    it('leaves a lone strand where it is', () => {
+        // Nothing to average against: a single carriageway must not be moved.
+        const sections = buildSections([pair()[0]]);
+        const pts = sections.flatMap((s) => s.coords);
+        expect(pts.length).toBeGreaterThan(2);
+        const worst = Math.max(...pts.map(([x, y]) => Math.abs(y - centreY(x) - SEP / 2)));
+        // Only smoothing/simplification may move it, never the re-centring.
+        expect(worst).toBeLessThan(CONFIG.BUNDLE_SMOOTH_MAX_SHIFT_DEG + 1e-9);
+    });
+});
+
 describe('smoothPath (anti-sawtooth smoothing)', () => {
     it('flattens an alternating sawtooth while pinning the endpoints', () => {
         const saw = [
