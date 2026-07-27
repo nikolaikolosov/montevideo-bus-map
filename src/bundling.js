@@ -143,6 +143,123 @@ export function simplifyPath(coords, eps) {
  * @param {object[]} features - cleaned GeoJSON Feature[] (LineString/MultiLineString)
  * @returns {Section[]}
  */
+/**
+ * Hard stop for the graph-cleanup fixpoint loops. Both loops strictly remove a
+ * node or an edge per iteration, so they terminate on their own; this only
+ * turns a hypothetical non-monotonic edit into a loud failure instead of a hang.
+ * The observed maximum on the committed data is 3.
+ */
+/**
+ * Re-places every canonical node at the mean of the strands that pass it,
+ * instead of leaving it at the mean of whichever vertices clustered into it.
+ *
+ * This is the wobble mechanism. A node is the running mean of its clustered
+ * vertices, so its lateral position depends on WHICH strands contributed: a node
+ * that caught one ida and one vuelta vertex sits on the centreline, while its
+ * neighbour that caught only ida sits ~half the carriageway separation to the
+ * side. Whether both strands land in one cluster is a matter of vertex phase,
+ * not of geometry, so the corridor alternates between centreline and kerb — a
+ * sawtooth of up to the full ida/vuelta offset (P90 14.2 m on the committed
+ * data, and the WOBBLE artifacts measured 6–15 m).
+ *
+ * Projection is phase-independent: every strand has a nearest point at every
+ * position along the corridor, whether or not it has a vertex there. Averaging
+ * those projections puts the node where a corridor representing N strands
+ * belongs — between them, consistently.
+ *
+ * Mutates `nodes` in place, before on-path insertion, so every later stage sees
+ * one position per node.
+ *
+ * @param {{x: number, y: number}[]} nodes
+ * @param {{coords: number[][], bbox: number[]}[]} paths - all strands
+ * @param {number} maxDist - how far a strand may be and still count (degrees)
+ */
+function recentreNodes(nodes, paths, maxDist) {
+    if (paths.length < 2) return;
+    const maxD2 = maxDist * maxDist;
+
+    // Uniform grid over every strand segment, cell = maxDist, so a node only
+    // tests the segments in its 3×3 neighbourhood. Without it this is
+    // nodes × strands × segments — 8 s on a whole-network render.
+    /** @type {Map<string, number[]>} cell key → flat [pathIdx, segIdx, …] */
+    const grid = new Map();
+    const put = (cx, cy, pi, si) => {
+        const key = `${cx}_${cy}`;
+        let cell = grid.get(key);
+        if (!cell) grid.set(key, (cell = []));
+        cell.push(pi, si);
+    };
+    for (let pi = 0; pi < paths.length; pi++) {
+        const coords = paths[pi].coords;
+        for (let si = 1; si < coords.length; si++) {
+            const [ax, ay] = coords[si - 1];
+            const [bx, by] = coords[si];
+            const x0 = Math.floor(Math.min(ax, bx) / maxDist);
+            const x1 = Math.floor(Math.max(ax, bx) / maxDist);
+            const y0 = Math.floor(Math.min(ay, by) / maxDist);
+            const y1 = Math.floor(Math.max(ay, by) / maxDist);
+            for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) put(cx, cy, pi, si);
+        }
+    }
+
+    /** Best squared distance per contributing strand, reused per node. */
+    const bestD2 = new Map();
+    const bestPt = new Map();
+    const moved = nodes.map((nd) => {
+        bestD2.clear();
+        bestPt.clear();
+        const cx = Math.floor(nd.x / maxDist);
+        const cy = Math.floor(nd.y / maxDist);
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const cell = grid.get(`${cx + dx}_${cy + dy}`);
+                if (!cell) continue;
+                for (let k = 0; k < cell.length; k += 2) {
+                    const pi = cell[k];
+                    const coords = paths[pi].coords;
+                    const si = cell[k + 1];
+                    const [ax, ay] = coords[si - 1];
+                    const [bx, by] = coords[si];
+                    const r = projectPointOnSegment(nd.x, nd.y, ax, ay, bx, by);
+                    if (r.d2 > maxD2) continue;
+                    const prev = bestD2.get(pi);
+                    if (prev === undefined || r.d2 < prev) {
+                        bestD2.set(pi, r.d2);
+                        bestPt.set(pi, [r.x, r.y]);
+                    }
+                }
+            }
+        }
+        // One strand in range means nothing to average — leave the node alone
+        // rather than snapping the corridor onto a single carriageway.
+        if (bestPt.size < 2) return null;
+        let sx = 0;
+        let sy = 0;
+        for (const [px, py] of bestPt.values()) {
+            sx += px;
+            sy += py;
+        }
+        return [sx / bestPt.size, sy / bestPt.size];
+    });
+
+    for (let i = 0; i < nodes.length; i++) {
+        if (!moved[i]) continue;
+        nodes[i].x = moved[i][0];
+        nodes[i].y = moved[i][1];
+    }
+}
+
+/**
+ * How far a strand may sit from a corridor vertex and still be averaged into it,
+ * as a multiple of the cluster radius. A contributing strand's vertices are
+ * within one radius of the node by construction; 1.5 admits its projection
+ * where that strand is digitised sparsely, without reaching the next street
+ * (≥80 m apart in Montevideo, i.e. > 3 radii).
+ */
+const RECENTRE_REACH = 1.5;
+
+const CLEANUP_PASS_GUARD = 64;
+
 export function buildSections(features) {
     const TOL = CONFIG.BUNDLE_TOLERANCE_DEG;
     const tolSq = TOL * TOL;
@@ -160,6 +277,22 @@ export function buildSections(features) {
         }
     }
     if (paths.length === 0) return [];
+
+    // Bounding box per strand: recentreOnStrands rejects most strands per vertex
+    // with a box test before touching their segments.
+    for (const p of paths) {
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (const [x, y] of p.coords) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+        }
+        p.bbox = [minX, minY, maxX, maxY];
+    }
 
     // --- 1. Cluster vertices into canonical nodes ---------------------------
     /** @type {{x: number, y: number, sx: number, sy: number, n: number}[]} */
@@ -214,6 +347,14 @@ export function buildSections(features) {
         }
         return seq;
     });
+
+    // Re-centre every canonical node on the strands that actually pass it.
+    // Done ONCE PER NODE rather than per section: a node on a section boundary
+    // belongs to two bundles with different strand sets, and re-centring it
+    // separately for each gave it two positions — the corridors stopped
+    // stitching there and produced fresh SELF-CROSS and SPIKE artifacts at
+    // exactly those boundaries. One position per node keeps R-CONTINUOUS.
+    recentreNodes(nodes, paths, TOL * RECENTRE_REACH);
 
     // --- 2. Insert on-path nodes into long segments -------------------------
     // A sparse trace may jump A→C where a denser trace goes A→B→C along the
@@ -381,8 +522,20 @@ export function buildSections(features) {
         adj.delete(q);
     };
 
-    for (let pass = 0; pass < 4; pass++) {
+    // Run to a fixpoint instead of a fixed pass count. Each pass strictly
+    // removes nodes, so the loop is monotonic and must terminate; the guard is a
+    // backstop against a future non-monotonic edit, not an expected limit.
+    // Measured over the whole-network render plus all 140 single-line renders:
+    // the loop converges in 1 pass 117 times, 2 passes 23, 3 passes once, and
+    // never had work left at the old cap of 4 — so this changes no output today
+    // and exists so that a denser feed cannot silently leave cleanup undone.
+    for (let pass = 0; pass < CLEANUP_PASS_GUARD; pass++) {
         let merges = 0;
+        if (pass === CLEANUP_PASS_GUARD - 1) {
+            throw new Error(
+                `buildSections: diamond merge did not converge in ${CLEANUP_PASS_GUARD} passes`,
+            );
+        }
         for (const u of [...adj.keys()]) {
             const nbrs = adj.get(u);
             if (!nbrs || nbrs.size < 2) continue;
@@ -418,8 +571,16 @@ export function buildSections(features) {
     // (b) Triangle dissolve: an edge u→v that skips over a node w lying on
     //     its path (w adjacent to both u and v, close to the chord) is folded
     //     into u→w and w→v so both variants produce identical edges.
-    for (let pass = 0; pass < 3; pass++) {
+    // Fixpoint, same reasoning as the diamond merge above: each pass strictly
+    // removes an edge. Measured: converges in 1 pass 108 times, 2 passes 33,
+    // never with work left at the old cap of 3.
+    for (let pass = 0; pass < CLEANUP_PASS_GUARD; pass++) {
         let dissolved = 0;
+        if (pass === CLEANUP_PASS_GUARD - 1) {
+            throw new Error(
+                `buildSections: triangle dissolve did not converge in ${CLEANUP_PASS_GUARD} passes`,
+            );
+        }
         for (const [key, e] of [...edges]) {
             if (!edges.has(key)) continue;
             const { a, b } = e;

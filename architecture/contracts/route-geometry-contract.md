@@ -24,7 +24,7 @@
 |---|---|---|---|
 | S0 raw | `routes.json` | — | per-variant [lon,lat] traces, 1–5 m jitter |
 | S1 prepare | `prepareRouteFeature` → `cleanCoordinates`, `trimToStops`, optional `truncateLineDownstream` (src/map.js, src/utils.js) | trace → revenue-segment trace | endpoints ON the trace (projection); no foreign coordinates; near-duplicate vertices dropped |
-| S2 bundle | `buildSections` (src/bundling.js): cluster → node sequences → on-path insertion → edge graph → diamond merge + triangle dissolve → chain merge → `smoothPath` → `simplifyPath` | traces of displayed lines → corridor sections | composition conserved; per-operator displacement ≤ budget (ladder below); corridors within CHORD budget of the traces |
+| S2 bundle | `buildSections` (src/bundling.js): cluster → node sequences → **re-centre nodes on their strands** → on-path insertion → edge graph → diamond merge + triangle dissolve (both to a fixpoint) → chain merge → `smoothPath` → `simplifyPath` | traces of displayed lines → corridor sections | composition conserved; per-operator displacement ≤ budget (ladder below); corridors within CHORD budget of the traces |
 | S3 joints | `buildJoints` (src/bundling.js) | sections → joint descriptors | every line continuing through a 2-section node is stitched; ≥3-section nodes untouched |
 | S4 render | `OffsetPolyline` / `OffsetJoint` (src/offsetline.js), slot order in src/map.js | sections + joints → pixel strands | offsets computed per zoom in pixel space with ONE shared math; global slot order (no side swaps) |
 
@@ -51,6 +51,24 @@
   14,001 corridor vertices ended up beyond ~11 m, the worst at 21.7 m, which ate
   the headroom `CHORD_MAX_M = 30` is derived from (audit G-1, fixed 2026-07-26;
   `verify:scales` now asserts the effective displacement, not the constant).
+- **R-REPRESENTATIVE.** A corridor representing N strands lies at the mean of
+  those strands, and its position does not depend on which of their VERTICES
+  happened to cluster together. Clustering alone violates this: a node that
+  caught one ida and one vuelta vertex sits on the centreline while its
+  neighbour that caught only ida sits ~half the carriageway separation aside, so
+  the corridor alternates with vertex phase — that alternation was 25 of the 38
+  accepted WOBBLE/KINK artifacts. `recentreNodes` re-places every node at the
+  mean of the strands within 1.5 × the cluster radius, ONCE PER NODE so a node
+  shared by two bundles keeps one position (per-section re-centring split
+  boundary nodes in two and produced fresh SELF-CROSS and SPIKE artifacts).
+  Asserted on real geometry in `route-invariants.test.js`: mean offset from the
+  strand mean 4.81 m → 1.15 m, worst 26.0 m → 14.9 m (brainstorm-008 PR-2).
+- **R-CONVERGE.** Graph-cleanup loops run to a fixpoint, not a fixed pass count.
+  Each pass strictly removes a node or an edge, so termination is structural; the
+  guard exists to turn a non-monotonic edit into a loud failure. The old caps
+  (4 diamond / 3 triangle) never bound on the committed data — measured 1–3
+  passes across all 141 renders — so this changes no output, it removes the
+  possibility of silently leaving cleanup undone on a denser feed.
 - **R-CONSERVE.** Graph cleanup (diamond merge, triangle dissolve, section
   chaining) preserves the (line, variant) composition — nothing gains or
   loses a line silently (edge merges union `variantsByLine`).

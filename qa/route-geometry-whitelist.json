@@ -1,17 +1,6 @@
 {
-  "_comment": "Reviewed exceptions for scripts/verify_route_oracles.mjs. real = genuine street/data geometry (evidence in reason); known-bug = accepted pipeline artifact awaiting the PR-2 mechanism upgrade. Regenerate candidates with --write-whitelist, review in the triage gallery, prune stale entries as fixes land. Entries re-keyed on 2026-07-26 carry that fact in their reason: they were accepted on numeric evidence (same artifact classes and magnitudes as the existing burn-down set) without a per-card gallery review.",
+  "_comment": "Reviewed exceptions for scripts/verify_route_oracles.mjs. real = genuine street/data geometry (evidence in reason); known-bug = accepted pipeline artifact. Regenerate candidates with --write-whitelist, review in the triage gallery, prune stale entries as fixes land. Cut from 38 to 13 entries on 2026-07-27 by the node re-centring stage (brainstorm-008 PR-2).",
   "entries": [
-    {
-      "class": "WOBBLE",
-      "line": "2",
-      "lonLat": [
-        -56.219697,
-        -34.825705
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":15.2}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
     {
       "class": "WOBBLE",
       "line": "2",
@@ -22,105 +11,6 @@
       "radiusM": 30,
       "status": "known-bug",
       "reason": "Pipeline-introduced wobble {\"devM\":8.9}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "64",
-      "lonLat": [
-        -56.081259,
-        -34.886596
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":11.7}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "71",
-      "lonLat": [
-        -56.14879,
-        -34.88721
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":9.1}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "100",
-      "lonLat": [
-        -56.13367,
-        -34.85851
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "112",
-      "lonLat": [
-        -56.1587,
-        -34.88762
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":8.3}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "125",
-      "lonLat": [
-        -56.2162,
-        -34.85944
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.5}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "128",
-      "lonLat": [
-        -56.15911,
-        -34.91236
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":7.6}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "135",
-      "lonLat": [
-        -56.21004,
-        -34.86438
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.2}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "135",
-      "lonLat": [
-        -56.20607,
-        -34.86825
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.5}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "186",
-      "lonLat": [
-        -56.21973,
-        -34.85671
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":7.9}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
       "class": "KINK",
@@ -134,50 +24,6 @@
       "reason": "Pipeline-introduced kink {\"turn\":99}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
-      "class": "KINK",
-      "line": "316",
-      "lonLat": [
-        -56.067804,
-        -34.791156
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":91}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "402",
-      "lonLat": [
-        -56.13363,
-        -34.85961
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.3}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "405",
-      "lonLat": [
-        -56.13377,
-        -34.86182
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.9}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "427",
-      "lonLat": [
-        -56.217481,
-        -34.85851
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.3}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
       "class": "WOBBLE",
       "line": "468",
       "lonLat": [
@@ -187,61 +33,6 @@
       "radiusM": 30,
       "status": "known-bug",
       "reason": "Pipeline-introduced wobble {\"devM\":10.1}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "494",
-      "lonLat": [
-        -56.34929,
-        -34.80373
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":13}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "Bt2",
-      "lonLat": [
-        -56.072305,
-        -34.89732
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":8.3}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "Bt2",
-      "lonLat": [
-        -56.170957,
-        -34.921399
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.9}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "D5",
-      "lonLat": [
-        -56.18988,
-        -34.89671
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.7}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "D8",
-      "lonLat": [
-        -56.141662,
-        -34.855889
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.1}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Reviewed via npm run triage:oracles."
     },
     {
       "class": "SELF-CROSS",
@@ -278,50 +69,6 @@
     },
     {
       "class": "KINK",
-      "line": "21",
-      "lonLat": [
-        -56.083504,
-        -34.881768
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":135}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Same locus as the SPIKE {\"turn\":180} this change removed (9 m away), reduced in severity. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "60",
-      "lonLat": [
-        -56.073974,
-        -34.891649
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":8.5}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "64",
-      "lonLat": [
-        -56.07401,
-        -34.891674
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":7.9}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
-    },
-    {
-      "class": "DUPLICATE",
-      "line": "79",
-      "lonLat": [
-        -56.132468,
-        -34.854025
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced duplicate {\"latM\":11.4}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
-    },
-    {
-      "class": "KINK",
       "line": "163",
       "lonLat": [
         -56.163523,
@@ -343,81 +90,70 @@
       "reason": "Pipeline-introduced kink {\"turn\":74}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
     },
     {
-      "class": "KINK",
-      "line": "316",
+      "class": "WOBBLE",
+      "line": "151",
       "lonLat": [
-        -56.068031,
-        -34.790914
+        -56.187451,
+        -34.881669
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":87}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+      "reason": "Pipeline-introduced wobble {\"devM\":11.4}; accepted pending further mechanism work. Re-keyed 2026-07-27 when node re-centring (brainstorm-008 PR-2) cut the accepted set from 38 to 13 — DUPLICATE and SPIKE to zero, KINK 11 to 2, WOBBLE 25 to 10. Reviewed in the triage gallery (npm run triage:oracles, trustworthy since the clipping fix in PR #33): the corridor lies between its strands and follows them, and the flagged deviation is what averaging two carriageways leaves on a curved street. Recorded as known-bug rather than real because a per-site REAL verdict needs a closer look at each street than this review gave it."
     },
     {
       "class": "WOBBLE",
-      "line": "329",
+      "line": "180",
       "lonLat": [
-        -56.17574,
-        -34.87188
+        -56.164758,
+        -34.896757
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "Pipeline-introduced wobble {\"devM\":6.3}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+      "reason": "Pipeline-introduced wobble {\"devM\":7.1}; accepted pending further mechanism work. Re-keyed 2026-07-27 when node re-centring (brainstorm-008 PR-2) cut the accepted set from 38 to 13 — DUPLICATE and SPIKE to zero, KINK 11 to 2, WOBBLE 25 to 10. Reviewed in the triage gallery (npm run triage:oracles, trustworthy since the clipping fix in PR #33): the corridor lies between its strands and follows them, and the flagged deviation is what averaging two carriageways leaves on a curved street. Recorded as known-bug rather than real because a per-site REAL verdict needs a closer look at each street than this review gave it."
     },
     {
-      "class": "KINK",
-      "line": "409",
+      "class": "WOBBLE",
+      "line": "199",
       "lonLat": [
-        -56.25236,
-        -34.811561
+        -56.17452,
+        -34.87027
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":82}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+      "reason": "Pipeline-introduced wobble {\"devM\":9.7}; accepted pending further mechanism work. Re-keyed 2026-07-27 when node re-centring (brainstorm-008 PR-2) cut the accepted set from 38 to 13 — DUPLICATE and SPIKE to zero, KINK 11 to 2, WOBBLE 25 to 10. Reviewed in the triage gallery (npm run triage:oracles, trustworthy since the clipping fix in PR #33): the corridor lies between its strands and follows them, and the flagged deviation is what averaging two carriageways leaves on a curved street. Recorded as known-bug rather than real because a per-site REAL verdict needs a closer look at each street than this review gave it."
     },
     {
-      "class": "KINK",
+      "class": "WOBBLE",
       "line": "494",
       "lonLat": [
-        -56.263648,
-        -34.83831
+        -56.14981,
+        -34.894264
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":90}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+      "reason": "Pipeline-introduced wobble {\"devM\":11.7}; accepted pending further mechanism work. Re-keyed 2026-07-27 when node re-centring (brainstorm-008 PR-2) cut the accepted set from 38 to 13 — DUPLICATE and SPIKE to zero, KINK 11 to 2, WOBBLE 25 to 10. Reviewed in the triage gallery (npm run triage:oracles, trustworthy since the clipping fix in PR #33): the corridor lies between its strands and follows them, and the flagged deviation is what averaging two carriageways leaves on a curved street. Recorded as known-bug rather than real because a per-site REAL verdict needs a closer look at each street than this review gave it."
     },
     {
-      "class": "KINK",
-      "line": "D8",
+      "class": "WOBBLE",
+      "line": "Bt2",
       "lonLat": [
-        -56.108904,
-        -34.828655
+        -56.09992,
+        -34.897304
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":79}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+      "reason": "Pipeline-introduced wobble {\"devM\":7.1}; accepted pending further mechanism work. Re-keyed 2026-07-27 when node re-centring (brainstorm-008 PR-2) cut the accepted set from 38 to 13 — DUPLICATE and SPIKE to zero, KINK 11 to 2, WOBBLE 25 to 10. Reviewed in the triage gallery (npm run triage:oracles, trustworthy since the clipping fix in PR #33): the corridor lies between its strands and follows them, and the flagged deviation is what averaging two carriageways leaves on a curved street. Recorded as known-bug rather than real because a per-site REAL verdict needs a closer look at each street than this review gave it."
     },
     {
-      "class": "KINK",
-      "line": "L3",
+      "class": "WOBBLE",
+      "line": "D1",
       "lonLat": [
-        -56.252353,
-        -34.811571
+        -56.112251,
+        -34.896483
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":86}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
-    },
-    {
-      "class": "KINK",
-      "line": "L7",
-      "lonLat": [
-        -56.252331,
-        -34.811594
-      ],
-      "radiusM": 30,
-      "status": "known-bug",
-      "reason": "Pipeline-introduced kink {\"turn\":81}; accepted pending the mechanism upgrade (brainstorm-008 V2, PR-2). Re-keyed 2026-07-26 when the cumulative smoothing clamp (audit G-1) moved corridor geometry and the corrected DUPLICATE lateral measure (audit G-3) re-scored separations: 13 artifact sites went away — including BOTH turn-180 spikes — and these took their place at the same total of 38. Verified numerically (class, locus, magnitude within the range of the already-accepted set); NOT re-reviewed card-by-card in the triage gallery."
+      "reason": "Pipeline-introduced wobble {\"devM\":6.3}; accepted pending further mechanism work. Re-keyed 2026-07-27 when node re-centring (brainstorm-008 PR-2) cut the accepted set from 38 to 13 — DUPLICATE and SPIKE to zero, KINK 11 to 2, WOBBLE 25 to 10. Reviewed in the triage gallery (npm run triage:oracles, trustworthy since the clipping fix in PR #33): the corridor lies between its strands and follows them, and the flagged deviation is what averaging two carriageways leaves on a curved street. Recorded as known-bug rather than real because a per-site REAL verdict needs a closer look at each street than this review gave it."
     }
   ]
 }
