@@ -21,6 +21,9 @@ export const appState = {
     globalStopsLayer: null,
     /** @type {L.LayerGroup|null} */
     routeLabelsLayer: null,
+
+    /** Label positions before screen clustering — re-grouped on every zoom. */
+    labelCandidates: [],
     /** @type {L.Layer|null} Currently selected/clicked stop marker */
     selectedStopLayer: null,
 };
@@ -34,5 +37,6 @@ export function resetLayers() {
     appState.currentStopsLayer = null;
     appState.globalStopsLayer = null;
     appState.routeLabelsLayer = null;
+    appState.labelCandidates = [];
     appState.selectedStopLayer = null;
 }
