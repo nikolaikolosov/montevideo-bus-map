@@ -87,9 +87,25 @@
   mean (R-REPRESENTATIVE), so it sits half a carriageway from either strand and
   can miss a per-strand match while following the data faithfully. Adding a
   reference only widens what counts as explained; it cannot excuse a corridor
-  feature that neither the strands nor their mean have — which is exactly how
-  the residual WOBBLE weave stays BUG: at all 10 sites neither reference
-  produces a two-sided weave, while the corridor crosses the chord both ways.
+  feature that no reference has.
+  A reference is measured **over the window the corridor's finding covers**, not
+  asked to produce a window of its own (`refWeaveAcrossWindow`). Window growth
+  stops at the first segment more than `WOBBLE_AXIS_DEG` off the chord, so a raw
+  trace — vertices every few metres, P90 jitter 1.9 m — structurally cannot hold
+  a 120 m straight run however plainly it weaves, while the corridor it is
+  compared against has been decimated to 4 m and easily does. That asymmetry,
+  not the street, produced the "neither the strands nor their mean weave at all"
+  verdict of 2026-07-27 (PR #37). Measured over the corridor's own window, 6 of
+  those 10 sites have a two-sided weave of 5.6–12.6 m in the traces against a
+  corridor `devM` of 6.3–11.7 m (ratio 0.72–1.11, the same
+  `WOBBLE_RAW_MATCH_RATIO` bar the independent match uses) — the corridor is
+  following a weave the data already has. The remaining 4 (lines 180, 199, L6,
+  L77) stay BUG: their traces weave two-sided by only 0.2–3.5 m. Both halves are
+  unit-tested on a fixture that the sparse measure flags at 7 m and the same
+  geometry re-digitised at 4 m flags not at all (`line-smoothness.test.js`).
+  Retaining power was checked against the pre-re-centring pipeline, where the
+  sawtooth this class was named for is present: the window-matched rule still
+  classifies 21 of 28 WOBBLE findings BUG there (the old rule, 25 of 28).
 
 ## Scale ladder
 
@@ -130,8 +146,20 @@ feature at that location (auto-classified with the same measure run on the
 raw paths); **BUG** — pipeline-introduced, must match a reviewed
 `known-bug` whitelist entry (`qa/route-geometry-whitelist.json`) or the gate
 fails; stale entries fail too, so the known-bug list can only burn down.
-Current state (2026-07-05): 38 known-bug entries (13 KINK, 22 WOBBLE,
-2 SPIKE, 1 SELF-CROSS) — the PR-2 mechanism-upgrade targets.
+Current state (2026-07-27): 12 whitelist entries — 6 `real` (WOBBLE explained
+over the corridor's window, evidence in each reason) and 6 `known-bug`
+(4 WOBBLE, 1 KINK, 1 SELF-CROSS). Down from 38 known-bug entries (13 KINK,
+22 WOBBLE, 2 SPIKE, 1 SELF-CROSS) at 2026-07-05, via node re-centring
+(brainstorm-008 PR-2) and the two reference upgrades.
+
+The 4 residual WOBBLE sites are **not reachable by tuning the operators that
+produce them**, measured 2026-07-27 across 15 whole-network configurations:
+re-centring reach 0.75–2.5 × the cluster radius with hard and tapered weights
+(total findings 347–551, BUG 12–25, best at the shipped 1.5 × hard) and
+`BUNDLE_SIMPLIFY_EPS_DEG` from 0.1 m to 4.4 m (BUG 12–14 throughout — with
+simplification effectively off the count does not drop, the detector only
+re-anchors the same weave elsewhere). Whatever remains is not in either
+operator's calibration.
 
 ## Independence note (qa)
 
