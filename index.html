@@ -251,6 +251,25 @@
             data-i18n-aria="map.aria"
         ></div>
 
+        <!-- First-use hint (ux-review-001 R7, finding F6): the all-stops entry
+             view answers no job by itself and nothing tells a first-time visitor
+             that stops are tappable. Overlays the map so it costs the panel no
+             height; shown once, then never again. -->
+        <div id="firstUseHint" class="first-use-hint" role="status" hidden>
+            <span data-i18n="hint.firstUse"
+                >Tocá una parada del mapa o buscá una línea acá arriba.</span
+            >
+            <button
+                type="button"
+                id="firstUseHintDismiss"
+                class="first-use-hint-dismiss"
+                data-i18n="hint.dismiss"
+                data-i18n-aria="hint.dismissAria"
+            >
+                Entendido
+            </button>
+        </div>
+
         <!-- Leaflet JS -->
         <script
             src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

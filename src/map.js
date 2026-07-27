@@ -13,6 +13,7 @@ import { buildSections, buildJoints } from './bundling.js';
 import { OffsetPolyline, OffsetJoint } from './offsetline.js';
 import { getTheme } from './theme.js';
 import { t, tPlural } from './i18n.js';
+import { retireFirstUseHint } from './ui.js';
 import { rideLegGeometry } from './journey-geometry.js';
 import {
     uniqueStopsData,
@@ -437,6 +438,11 @@ export function initMap(onHome) {
 
     // Console/debug hook (pairs with window.__mvdShowStopRoutes in app.js)
     window.__mvdMap = map;
+
+    // Opening a stop popup IS the thing the first-use hint asks for, so it has
+    // done its job and gets out of the way — without recording a dismissal,
+    // which stays the visitor's own deliberate act.
+    map.on('popupopen', retireFirstUseHint);
 
     return map;
 }

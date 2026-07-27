@@ -986,6 +986,74 @@ label {
     pointer-events: none;
 }
 
+/* First-use hint (R7 / F6). Floats over the map, never inside the panel, so it
+   costs the mobile bottom sheet no height. Sits above Leaflet's controls pane
+   but below the popups. */
+.first-use-hint {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 24px;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(92vw, 460px);
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 35%);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.first-use-hint[hidden] {
+    display: none;
+}
+
+.first-use-hint-dismiss {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.first-use-hint-dismiss:hover {
+    background: var(--input-bg-hover);
+}
+
+.first-use-hint-dismiss:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+    .first-use-hint-dismiss {
+        padding: 9px 12px;
+    }
+
+    /* The panel is a bottom sheet here, so a bottom-anchored hint lands on top
+       of it (measured: hint 706-815 px against a panel starting at 716). Move it
+       to the free top strip, keeping clear of the control column on the right —
+       34 px of button plus its 15 px inset. */
+    .first-use-hint {
+        top: 12px;
+        bottom: auto;
+        left: 12px;
+        right: 76px;
+        max-width: none;
+        transform: none;
+    }
+}
+
 /* Destination picker — the headsigns a selected line serves (ux-review-001 R4).
    It occupies the stat row the "Variantes de recorrido" count vacated, so the
    mobile bottom sheet keeps its map-space budget (mobile-panel.spec.js): the

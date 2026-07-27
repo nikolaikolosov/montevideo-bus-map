@@ -56,6 +56,7 @@ import {
     renderContextBar,
     updateStatsPanel,
     renderDestinationPicker,
+    renderFirstUseHint,
     renderDataFreshness,
     initThemeToggle,
     updateThemeToggle,
@@ -277,6 +278,9 @@ function renderForState(state) {
     currentState = state;
 
     if (state.view !== 'journey') renderJourneyPanel({ visible: false });
+    // Only the entry view gets the hint; any other view means the visitor has
+    // already found their way in.
+    renderFirstUseHint(state.view);
     // Hidden by default and shown only by the line view below, so a view added
     // later cannot leave a stale destination picker on screen.
     if (state.view !== 'line')

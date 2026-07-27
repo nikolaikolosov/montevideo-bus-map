@@ -7,6 +7,7 @@ import {
     renderContextBar,
     updateThemeToggle,
     initThemeToggle,
+    shouldShowFirstUseHint,
 } from '../../src/ui.js';
 import { CONFIG } from '../../src/config.js';
 import { setLang, t } from '../../src/i18n.js';
@@ -304,11 +305,29 @@ describe('localized UI helpers (i18n)', () => {
         setLang('ru');
         document.getElementById('searchInput').dispatchEvent(new Event('focus'));
         const opts = [...document.querySelectorAll('#searchList [role="option"]')];
-        expect(opts[0].textContent).toBe('📍 Показать все остановки');
+        expect(opts[0].textContent).toBe('Показать все остановки');
         expect(opts[1].textContent).toContain('Линия 100');
 
         renderContextBar({ name: 'X', code: 1, single: true });
         expect(document.getElementById('contextText').textContent).toBe('От: X (1)');
         expect(document.getElementById('contextReset').textContent).toBe('Вся линия');
+    });
+});
+
+describe('shouldShowFirstUseHint (who gets told how to start)', () => {
+    it('greets a first-time visitor on the entry view', () => {
+        expect(shouldShowFirstUseHint({ seen: false, view: 'all' })).toBe(true);
+    });
+
+    it('never repeats once dismissed', () => {
+        expect(shouldShowFirstUseHint({ seen: true, view: 'all' })).toBe(false);
+    });
+
+    it('stays out of the way of a deep link', () => {
+        // Someone who followed a link to a line, a stop or an itinerary already
+        // knows what they came for; telling them how to start is noise.
+        for (const view of ['line', 'stop', 'downstream', 'journey']) {
+            expect(shouldShowFirstUseHint({ seen: false, view })).toBe(false);
+        }
     });
 });

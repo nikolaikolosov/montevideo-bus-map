@@ -24,7 +24,7 @@ test('switching to Russian localizes panel, popup and <html lang>', async ({ pag
     // The browsable default list of the search box localizes too.
     await page.focus('#searchInput');
     await expect(page.locator('#searchList [role="option"]').first()).toHaveText(
-        '📍 Показать все остановки',
+        'Показать все остановки',
     );
     await page.keyboard.press('Escape');
 
