@@ -93,12 +93,12 @@
       "class": "SELF-CROSS",
       "line": "E14",
       "lonLat": [
-        -56.19527,
-        -34.91204
+        -56.19588,
+        -34.90626
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "SELF-CROSS — the corridor polyline properly crosses itself here. Reviewed card-by-card in the triage gallery at 2x zoom on 2026-07-27: the route doubles back through this junction and the digitised trace makes the same double-back, so the crossing follows the service. Kept as known-bug rather than real because the class has no shape matcher to corroborate that reading numerically — the verdict rests on the card alone."
+      "status": "real",
+      "reason": "SELF-CROSS — the corridor polyline properly crosses itself here. Re-reviewed 2026-07-27 with the class's first shape matcher (rawCrossingNear); until then it had none, so every crossing defaulted to BUG and the verdict rested on the triage card alone. The card was also showing the wrong place: the measure reported the first crossing segment's START vertex, and on this peripheral line those segments run 962 m and 416 m, so the finding sat 644 m from the junction it describes. It now reports the crossing point itself. Measured there: the point lies 0.0 m from the nearest digitised trace, and two strands of the line cross each other within 30 m of it — the route leaves along one street and returns along another, so the merged corridor crosses itself exactly as the service does."
     },
     {
       "class": "WOBBLE",
