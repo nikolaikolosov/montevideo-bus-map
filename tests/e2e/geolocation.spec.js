@@ -11,7 +11,8 @@
 import { test, expect, devices } from '@playwright/test';
 import { openMap, renderLine, setView } from './helpers.js';
 
-// CONFIG.GEOLOCATION_REFRESH_MS — the period under test.
+// The cadence is adaptive (CONFIG.GEOLOCATION_MIN/MAX_REFRESH_MS); 30 s clears
+// the 15 s a first fix schedules and stays under the 45 s stationary cap.
 const CONFIG_REFRESH_MS = 30_000;
 
 // Pixel 7 profile: isMobile + hasTouch → (pointer: coarse) matches, which is
@@ -256,4 +257,50 @@ test('polling pauses while the page is hidden and refreshes on return', async ({
     // instead of waiting out the rest of the interval.
     await setVisibility('visible');
     await expect.poll(() => page.evaluate(() => window.__geoCalls)).toBeGreaterThan(whileHidden);
+});
+
+test('reads the position far less often standing still than riding', async ({ page, context }) => {
+    // The whole point of deriving the cadence from speed: a rider waiting at a
+    // stop must not pay the riding rate, and a rider on a moving bus must not
+    // pay the waiting one. Same wall-clock span, both phases.
+    //
+    // Stepped finely on purpose: a geolocation callback lands AFTER the clock
+    // jump that triggered it, so one big fastForward can only ever produce one
+    // read however short the interval is — which would hide the very difference
+    // under test.
+    await page.clock.install();
+    await countGeoCalls(page);
+    await context.setGeolocation({ latitude: -34.9055, longitude: -56.187 });
+    await openMap(page, { theme: 'dark' });
+    await expect.poll(() => page.evaluate(() => window.__geoCalls)).toBeGreaterThan(0);
+
+    const STEP_MS = 5_000;
+    const STEPS = 36; // 3 minutes per phase
+    const count = () => page.evaluate(() => window.__geoCalls);
+
+    // Waiting at the stop: the position does not change.
+    const beforeStill = await count();
+    for (let i = 0; i < STEPS; i++) {
+        await page.clock.fastForward(STEP_MS);
+        await page.waitForTimeout(5); // let the fix land before the next step
+    }
+    const still = (await count()) - beforeStill;
+
+    // On the bus: ~20 km/h, i.e. 27.5 m per 5 s step.
+    const beforeRide = await count();
+    let lat = -34.9055;
+    for (let i = 0; i < STEPS; i++) {
+        lat += 27.5 / 111000;
+        await context.setGeolocation({ latitude: lat, longitude: -56.187 });
+        await page.clock.fastForward(STEP_MS);
+        await page.waitForTimeout(5);
+    }
+    const riding = (await count()) - beforeRide;
+
+    // 180 s at the 45 s cap is 4 reads; at the riding cadence (~16 s) it is ~11.
+    expect(still, `standing still read ${still} times in 3 min`).toBeLessThanOrEqual(5);
+    expect(
+        riding,
+        `riding read ${riding} times vs ${still} standing, in the same 3 min`,
+    ).toBeGreaterThanOrEqual(still * 2);
 });
