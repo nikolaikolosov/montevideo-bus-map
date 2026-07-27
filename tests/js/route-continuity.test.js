@@ -161,18 +161,38 @@ beforeAll(() => {
 
 describe('joint coverage and endpoint exactness', () => {
     it('stop 2061 render (the reported case)', () => {
-        const { joints } = checkJoints(sectionsForStop(2061));
+        const { joints, endpointsChecked } = checkJoints(sectionsForStop(2061));
         expect(joints).toBeGreaterThan(0);
+        expect(endpointsChecked).toBe(joints * 2);
     });
 
-    it.each(['17', '121', '582', '100', '187'])('whole-line render: line %s', (line) => {
-        checkJoints(sectionsForLine(line));
-    });
+    it.each(['17', '121', '582', '100', '187'])(
+        'whole-line render: line %s needs no joints, and that is asserted',
+        (line) => {
+            // A single line's sections only meet where THREE or more section
+            // ends converge, never exactly two, so a whole-line render
+            // legitimately produces no joints — measured 0 for all five lines,
+            // with 10–37 sections each.
+            //
+            // These cases used to call checkJoints() and throw the result away.
+            // With zero joints that compares two empty Sets and runs the
+            // endpoint loop zero times: they could not fail for ANY input, which
+            // is the opposite of what the file's docstring claims for them.
+            const sections = sectionsForLine(line);
+            expect(sections.length).toBeGreaterThan(0);
+            const { joints, endpointsChecked } = checkJoints(sections);
+            expect(joints).toBe(0);
+            expect(endpointsChecked).toBe(0);
+        },
+    );
 
     it('other reported-adjacent stops render with joints too', () => {
         for (const stop of [4850, 3382, 3383, 4478]) {
-            const { joints } = checkJoints(sectionsForStop(stop));
+            const { joints, endpointsChecked } = checkJoints(sectionsForStop(stop));
             expect(joints, `stop ${stop}`).toBeGreaterThan(0);
+            // The endpoint-exactness machinery must actually have run: two
+            // endpoints per joint, or checkJoints verified nothing.
+            expect(endpointsChecked, `stop ${stop}`).toBe(joints * 2);
         }
     });
 });
