@@ -34,8 +34,14 @@ test('a downstream view shows which way the bus goes', async ({ page }) => {
     // They point AWAY from the stop the ride starts at: the trace's own vertex
     // order is the travel direction, so an arrow's heading must have a positive
     // component along the vector from the origin stop to that arrow.
+    //
+    // The ORIGIN STOP, not the camera centre: the view is fitted to the whole
+    // downstream route, so its centre is the middle of the route and this
+    // measurement would drift with the framing (it did — one full-suite run
+    // failed on it while the file passed alone).
     const origin = await page.evaluate(() => {
-        const p = window.__mvdMap.latLngToContainerPoint(window.__mvdMap.getCenter());
+        // Stop 4772, BUENOS AIRES / ITUZAINGO.
+        const p = window.__mvdMap.latLngToContainerPoint([-34.90814, -56.203691]);
         return { x: p.x, y: p.y };
     });
     const geo = await arrowGeometry(page);
