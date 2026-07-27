@@ -46,7 +46,7 @@ Montevideo is, and is documented as an assumption rather than evidence.
 | pattern-stop entries | 60834 |
 | footpath edges (directed, ≤ 400 m) | 52902 |
 | footpaths per stop mean / p95 / max | 10.8 / 21 / 44 |
-| graph build | 33 ms |
+| graph build | 27 ms |
 
 ## 3. Search behaviour on 200 sampled origin/destination pairs
 
@@ -54,7 +54,7 @@ Montevideo is, and is documented as an assumption rather than evidence.
 |---|---|
 | pairs sampled | 200 |
 | planned / no route | 200 / 0 |
-| plan time mean / max | 3.4 ms / 8 ms |
+| plan time mean / max | 3.3 ms / 8 ms |
 | itineraries offered, mean | 1.51 |
 | transfers in the best itinerary, mean | 1.31 |
 | ride legs across all offered itineraries | 668 |

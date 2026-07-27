@@ -170,11 +170,15 @@ export function simplifyPath(coords, eps) {
  * Mutates `nodes` in place, before on-path insertion, so every later stage sees
  * one position per node.
  *
+ * Exported for the accumulator invariant in bundling.test.js: the graph cleanup
+ * downstream recomputes merged nodes from `sx/sy/n`, so those must keep
+ * describing the re-centred position and not the raw cluster mean.
+ *
  * @param {{x: number, y: number}[]} nodes
  * @param {{coords: number[][], bbox: number[]}[]} paths - all strands
  * @param {number} maxDist - how far a strand may be and still count (degrees)
  */
-function recentreNodes(nodes, paths, maxDist) {
+export function recentreNodes(nodes, paths, maxDist) {
     if (paths.length < 2) return;
     const maxD2 = maxDist * maxDist;
 
@@ -246,6 +250,17 @@ function recentreNodes(nodes, paths, maxDist) {
         if (!moved[i]) continue;
         nodes[i].x = moved[i][0];
         nodes[i].y = moved[i][1];
+        // Re-base the cluster accumulators on the re-centred position. `sx/sy/n`
+        // are the running sum of the RAW vertices that clustered here, and the
+        // diamond merge recomputes the surviving node as `sx/n` — so without
+        // this, any merged node silently reverts to its phase-dependent cluster
+        // mean and loses re-centring (R-REPRESENTATIVE). That is not
+        // hypothetical: line 180's residual WOBBLE was exactly this, node 206
+        // snapping 7.6 m off its re-centred position to 3.8 m from any trace
+        // while every other node in that window sat within 0.1 m of one.
+        // Keeping the weight `n` means a merge still averages by cluster size.
+        nodes[i].sx = nodes[i].x * nodes[i].n;
+        nodes[i].sy = nodes[i].y * nodes[i].n;
     }
 }
 

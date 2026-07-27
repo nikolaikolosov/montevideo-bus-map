@@ -62,7 +62,21 @@
   shared by two bundles keeps one position (per-section re-centring split
   boundary nodes in two and produced fresh SELF-CROSS and SPIKE artifacts).
   Asserted on real geometry in `route-invariants.test.js`: mean offset from the
-  strand mean 4.81 m → 1.15 m, worst 26.0 m → 14.9 m (brainstorm-008 PR-2).
+  strand mean 4.81 m → 1.15 m → 1.07 m, worst 26.0 m → 14.9 m (brainstorm-008
+  PR-2, then the merge fix below).
+  Re-centring must also **re-base the cluster accumulators** (`sx/sy/n`) on the
+  position it writes. Those sums are the running total of the raw vertices that
+  clustered into the node, and the diamond merge recomputes a surviving node as
+  `sx/n` — so leaving them raw made every merge silently revert that node to its
+  phase-dependent cluster mean, undoing re-centring exactly where corners force
+  merges. Measured on line 180: node 206 snapped 7.6 m off its re-centred
+  position, to 3.8 m from any trace, while every other node in that window sat
+  within 0.1 m of one — and that single node was the whole residual WOBBLE
+  there. Fixing it removed the finding (whole-network render 2210 → 2194
+  sections, 6291 → 6210 points, 398 vertices moved; golden manifest 36 of 140
+  lines, 14648 → 14613 points; no pixel scene crossed its diff budget). The
+  invariant is unit-tested directly (`bundling.test.js`) because no synthetic
+  fixture reproduces the merge topology on demand.
 - **R-CONVERGE.** Graph-cleanup loops run to a fixpoint, not a fixed pass count.
   Each pass strictly removes a node or an edge, so termination is structural; the
   guard exists to turn a non-monotonic edit into a loud failure. The old caps
@@ -99,8 +113,20 @@
   those 10 sites have a two-sided weave of 5.6–12.6 m in the traces against a
   corridor `devM` of 6.3–11.7 m (ratio 0.72–1.11, the same
   `WOBBLE_RAW_MATCH_RATIO` bar the independent match uses) — the corridor is
-  following a weave the data already has. The remaining 4 (lines 180, 199, L6,
-  L77) stay BUG: their traces weave two-sided by only 0.2–3.5 m. Both halves are
+  following a weave the data already has. Of the remaining 4, line 180 was a
+  located pipeline defect (the merge revert under R-REPRESENTATIVE, now fixed)
+  and 3 stay BUG: lines 199, L6 and L77, whose traces weave two-sided by
+  2.3–3.5 m measured this way.
+  **The chord this measure uses is a known limitation.** `refWeaveAcrossWindow`
+  scores the reference against the chord joining the *projections* of the window
+  ends, and that chord slides wherever the corridor is laterally offset from the
+  reference. Measured against the corridor's own chord instead, the same traces
+  at those 3 sites weave two-sided by 4.1–9.7 m, i.e. more than the corridors
+  they are supposed to explain (3.1–3.8 m) — at line 199 three times as much.
+  Neither chord is unbiased: the projection chord under-reports on an offset
+  corridor, and the corridor chord adds a constant offset that makes a genuine
+  weave read one-sided. Deciding this needs its own power check, so the ratio bar
+  is left where it is and the 3 entries carry both numbers in their reasons. Both halves are
   unit-tested on a fixture that the sparse measure flags at 7 m and the same
   geometry re-digitised at 4 m flags not at all (`line-smoothness.test.js`).
   Retaining power was checked against the pre-re-centring pipeline, where the
@@ -146,9 +172,9 @@ feature at that location (auto-classified with the same measure run on the
 raw paths); **BUG** — pipeline-introduced, must match a reviewed
 `known-bug` whitelist entry (`qa/route-geometry-whitelist.json`) or the gate
 fails; stale entries fail too, so the known-bug list can only burn down.
-Current state (2026-07-27): 12 whitelist entries — 6 `real` (WOBBLE explained
-over the corridor's window, evidence in each reason) and 6 `known-bug`
-(4 WOBBLE, 1 KINK, 1 SELF-CROSS). Down from 38 known-bug entries (13 KINK,
+Current state (2026-07-27): 11 whitelist entries — 6 `real` (WOBBLE explained
+over the corridor's window, evidence in each reason) and 5 `known-bug`
+(3 WOBBLE, 1 KINK, 1 SELF-CROSS). Down from 38 known-bug entries (13 KINK,
 22 WOBBLE, 2 SPIKE, 1 SELF-CROSS) at 2026-07-05, via node re-centring
 (brainstorm-008 PR-2) and the two reference upgrades.
 

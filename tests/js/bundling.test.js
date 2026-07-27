@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSections, smoothPath } from '../../src/bundling.js';
+import { buildSections, smoothPath, recentreNodes } from '../../src/bundling.js';
 import { CONFIG } from '../../src/config.js';
 
 /** Builds a route Feature along given [lon, lat] coords. */
@@ -188,5 +188,64 @@ describe('smoothPath (anti-sawtooth smoothing)', () => {
         const out = smoothPath(spike, 1, 100, 5);
         const moved = Math.hypot(out[1][0] - 30, out[1][1] - 40);
         expect(moved).toBeLessThanOrEqual(5 + 1e-9);
+    });
+});
+
+describe('recentreNodes accumulators', () => {
+    // The graph cleanup that runs after re-centring recomputes a surviving node
+    // from the raw cluster sums (`mergeNode`: np.x = np.sx / np.n), so if those
+    // sums still describe the pre-re-centring cluster mean, every diamond merge
+    // silently undoes re-centring and restores the phase-dependent position
+    // R-REPRESENTATIVE exists to remove. That was the mechanism behind line
+    // 180's residual WOBBLE: node 206 snapped 7.6 m back off the strand mean.
+    const TOL = CONFIG.BUNDLE_TOLERANCE_DEG;
+
+    /** Two carriageways ~14 m apart — the measured P90 ida/vuelta offset. */
+    const strands = () => {
+        const sep = 0.00013;
+        return [
+            { coords: Array.from({ length: 8 }, (_, i) => [i * 0.0003, sep / 2]) },
+            { coords: Array.from({ length: 8 }, (_, i) => [i * 0.0003 + 0.00015, -sep / 2]) },
+        ];
+    };
+
+    /** Nodes sitting on one carriageway, as vertex-phase clustering leaves them. */
+    const nodesOnOneSide = () =>
+        Array.from({ length: 6 }, (_, i) => {
+            const x = i * 0.0003;
+            const y = 0.00013 / 2;
+            const n = 2; // two vertices clustered here
+            return { x, y, sx: x * n, sy: y * n, n };
+        });
+
+    it('leaves sx/sy/n describing the re-centred position', () => {
+        const nodes = nodesOnOneSide();
+        const before = nodes.map((nd) => [nd.x, nd.y]);
+        recentreNodes(nodes, strands(), TOL * 1.5);
+        // Not vacuous: re-centring must actually have moved the nodes.
+        const movedAny = nodes.some(
+            (nd, i) => Math.hypot(nd.x - before[i][0], nd.y - before[i][1]) > 1e-7,
+        );
+        expect(movedAny).toBe(true);
+        for (const nd of nodes) {
+            expect(nd.sx / nd.n).toBeCloseTo(nd.x, 12);
+            expect(nd.sy / nd.n).toBeCloseTo(nd.y, 12);
+        }
+    });
+
+    it('survives a merge without reverting to the cluster mean', () => {
+        const nodes = nodesOnOneSide();
+        recentreNodes(nodes, strands(), TOL * 1.5);
+        const [p, q] = [nodes[2], nodes[3]];
+        const expected = [
+            (p.x * p.n + q.x * q.n) / (p.n + q.n),
+            (p.y * p.n + q.y * q.n) / (p.n + q.n),
+        ];
+        // Exactly what mergeNode does when it absorbs q into p.
+        p.sx += q.sx;
+        p.sy += q.sy;
+        p.n += q.n;
+        expect(p.sx / p.n).toBeCloseTo(expected[0], 12);
+        expect(p.sy / p.n).toBeCloseTo(expected[1], 12);
     });
 });
