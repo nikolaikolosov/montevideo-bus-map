@@ -293,6 +293,100 @@ function addHomeControl(onHome) {
     new HomeControl({ position: 'topright' }).addTo(map);
 }
 
+/** @type {HTMLButtonElement|null} The "show my location" control. */
+let locateBtn = null;
+
+/**
+ * True while the camera is still following the rider — i.e. tracking is on and
+ * nothing has moved the map since we last centred it. The control uses this to
+ * show whether pressing it again would change anything.
+ * @returns {boolean}
+ */
+export function isFollowingUser() {
+    return Boolean(map && locationTracking && !cameraLeftAnchor(followAnchor, cameraState()));
+}
+
+/**
+ * Reflects tracking state on the control: busy while a fix is pending, disabled
+ * once the permission is refused, highlighted while the camera is following.
+ * @param {{busy?: boolean, denied?: boolean}} [change]
+ */
+function updateLocateControl(change = {}) {
+    if (!locateBtn) return;
+    if (change.busy !== undefined) locateBtn.setAttribute('aria-busy', String(change.busy));
+    if (change.denied) {
+        locateBtn.disabled = true;
+        locateBtn.title = t('map.locateDenied');
+        locateBtn.setAttribute('aria-label', t('map.locateDenied'));
+        locateBtn.setAttribute('data-i18n-title', 'map.locateDenied');
+        locateBtn.setAttribute('data-i18n-aria', 'map.locateDenied');
+    }
+    locateBtn.classList.toggle('is-following', isFollowingUser());
+}
+
+/**
+ * Centres the map on the rider and resumes following (design/user-flows F8b):
+ * once they have panned away or opened a line the camera is deliberately left
+ * alone, and until now there was no way to ask for it back — on desktop, no way
+ * to be located at all, since the automatic request is mobile-only.
+ *
+ * Uses the position already on screen for an instant response, then asks for a
+ * fresh one; on desktop this is also where tracking (and the permission prompt)
+ * starts, so nothing is requested until the rider asks for it.
+ */
+export function centreOnUser() {
+    if (!map) return;
+
+    if (lastUserFix) {
+        const latlng = [lastUserFix.lat, lastUserFix.lng];
+        map.setView(latlng, CONFIG.GEOLOCATION_MAX_ZOOM);
+        followAnchor = {
+            hash: location.hash,
+            lat: lastUserFix.lat,
+            lng: lastUserFix.lng,
+            zoom: CONFIG.GEOLOCATION_MAX_ZOOM,
+        };
+    } else {
+        // Nothing to show yet: anchor on the current camera so the fix that
+        // answers this press is allowed to move it.
+        followAnchor = cameraState();
+    }
+
+    updateLocateControl({ busy: true });
+    if (locationTracking) requestPosition();
+    else locateUser();
+}
+
+/**
+ * Adds the "show my location" control under the "show all stops" button.
+ * @see centreOnUser
+ */
+function addLocateControl() {
+    const LocateControl = L.Control.extend({
+        onAdd() {
+            const btn = L.DomUtil.create('button', 'locate-control');
+            btn.type = 'button';
+            btn.innerHTML =
+                '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" ' +
+                'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+                '<circle cx="12" cy="12" r="6"/>' +
+                '<circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>' +
+                '<path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+            btn.setAttribute('aria-label', t('map.locateAria'));
+            btn.title = t('map.locateAria');
+            // Picked up by applyTranslations on language switches.
+            btn.setAttribute('data-i18n-aria', 'map.locateAria');
+            btn.setAttribute('data-i18n-title', 'map.locateAria');
+            btn.setAttribute('aria-busy', 'false');
+            L.DomEvent.disableClickPropagation(btn);
+            L.DomEvent.on(btn, 'click', centreOnUser);
+            locateBtn = btn;
+            return btn;
+        },
+    });
+    new LocateControl({ position: 'topright' }).addTo(map);
+}
+
 export function initMap(onHome) {
     const touch = isCoarsePointer();
 
@@ -307,6 +401,10 @@ export function initMap(onHome) {
 
     L.control.zoom({ position: 'topright' }).addTo(map);
     if (onHome) addHomeControl(onHome);
+    addLocateControl();
+    // The control shows whether the camera is still following, which any pan or
+    // zoom can end.
+    map.on('moveend zoomend', () => updateLocateControl());
 
     baseTileLayer = L.tileLayer(CONFIG.TILE_URLS[getTheme()], {
         attribution:
@@ -492,7 +590,7 @@ export function locateUser() {
     // camera away from a deep link" rule the request is gated on. Comparing hash
     // AND camera covers both: navigating away changes the hash, panning or
     // zooming in place changes the camera.
-    followAnchor = cameraState();
+    if (!followAnchor) followAnchor = cameraState();
 
     /** Last error reported, so a denied permission is not logged every poll. */
     let lastErrorCode = null;
@@ -537,6 +635,7 @@ export function locateUser() {
         }
 
         drawUserLocation(e.latlng, e.accuracy);
+        updateLocateControl({ busy: false });
     });
 
     map.on('locationerror', (err) => {
@@ -546,7 +645,9 @@ export function locateUser() {
         }
         // Retrying a denied permission every 30 s would never succeed and would
         // keep the GPS awake for nothing.
-        if (isFatalLocationError(err.code)) stopLocatingUser();
+        const denied = isFatalLocationError(err.code);
+        updateLocateControl({ busy: false, denied });
+        if (denied) stopLocatingUser();
     });
 
     // The interval is armed BEFORE the first request on purpose: a denied
@@ -563,6 +664,7 @@ export function stopLocatingUser() {
     if (locationTimer !== null) clearInterval(locationTimer);
     locationTimer = null;
     locationTracking = false;
+    followAnchor = null;
     document.removeEventListener('visibilitychange', onVisibilityChange);
     if (map) map.off('locationfound').off('locationerror');
 }
