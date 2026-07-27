@@ -662,3 +662,81 @@ export function renderDestinationPicker({ groups, active, onPick }) {
     chips.append(chip(t('panel.allDestinations'), null));
     for (const g of groups) chips.append(chip(g.headsign, g.headsign));
 }
+
+// ---------------------------------------------------------------------------
+// First-use hint
+// ---------------------------------------------------------------------------
+
+/** localStorage key recording that the hint has been seen. */
+const HINT_STORAGE_KEY = 'mvd-hint-seen';
+
+/**
+ * Whether the first-use hint should be shown.
+ *
+ * Pure so the policy is testable without a DOM: it is only for a first-time
+ * visitor landing on the entry view. Someone who followed a deep link already
+ * knows what they came for, and telling them how to start would be noise.
+ *
+ * @param {object} options
+ * @param {boolean} options.seen - the visitor has dismissed it before
+ * @param {string} options.view - the view being rendered
+ * @returns {boolean}
+ */
+export function shouldShowFirstUseHint({ seen, view }) {
+    return !seen && view === 'all';
+}
+
+/** Reads the "seen" flag, treating blocked storage as "not seen". */
+function hintSeen() {
+    try {
+        return localStorage.getItem(HINT_STORAGE_KEY) === '1';
+    } catch {
+        // Private mode: show the hint each session rather than never.
+        return false;
+    }
+}
+
+/** Records the hint as seen. Failure to persist must not break dismissal. */
+function rememberHintSeen() {
+    try {
+        localStorage.setItem(HINT_STORAGE_KEY, '1');
+    } catch {
+        /* storage blocked — the hint simply returns next session */
+    }
+}
+
+/**
+ * Hides the hint without recording it as seen: the visitor has just shown they
+ * know stops are tappable, which is what the hint was there to say, but they
+ * have not dismissed it — so it may greet them again next session.
+ */
+export function retireFirstUseHint() {
+    const box = document.getElementById('firstUseHint');
+    if (box) box.hidden = true;
+}
+
+/**
+ * Shows or hides the first-use hint for the given view, wiring its dismiss
+ * button once. Any real interaction (a line rendered, a stop opened) moves the
+ * visitor off the entry view, which hides it — so it never lingers over work.
+ *
+ * @param {string} view - the view being rendered
+ */
+export function renderFirstUseHint(view) {
+    const box = document.getElementById('firstUseHint');
+    if (!box) return;
+
+    if (!shouldShowFirstUseHint({ seen: hintSeen(), view })) {
+        box.hidden = true;
+        return;
+    }
+
+    if (!box.dataset.wired) {
+        box.dataset.wired = '1';
+        document.getElementById('firstUseHintDismiss')?.addEventListener('click', () => {
+            rememberHintSeen();
+            box.hidden = true;
+        });
+    }
+    box.hidden = false;
+}
