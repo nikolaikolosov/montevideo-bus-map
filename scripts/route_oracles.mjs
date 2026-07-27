@@ -116,6 +116,16 @@ export const ORACLE = {
 
     // Classification against the digitised traces.
     RAW_WINDOW_M: 60, // look for raw evidence within this radius
+    // Strand-mean reference (see meanStrandCurves). A corridor represents the
+    // MEAN of the strands under it since brainstorm-008 PR-2, so "does a single
+    // digitised strand have this shape?" is the wrong question on a street with
+    // two carriageways: the corridor sits half a carriageway from either, which
+    // can push the anchor past RAW_KINK_RADIUS_M and attenuate a weave below
+    // WOBBLE_RAW_MATCH_RATIO even where it faithfully follows the data. The mean
+    // curve is built from the raw traces ALONE — never from pipeline output — so
+    // it is an independent reference, not a restatement of what we drew.
+    MEAN_REF_STEP_M: 25, // resample spacing along the spine strand
+    MEAN_REF_REACH_DEG: 0.00033, // strands within this of a sample are averaged (1.5 x cluster tol)
     RAW_KINK_RADIUS_M: 25,
     RAW_KINK_TURN_SLACK_DEG: 25,
 };
@@ -174,6 +184,71 @@ export function rawParallelSeparationNear(paths, at) {
 }
 
 /** True when a digitised trace turns similarly near `at` (a real street kink). */
+/**
+ * Mean-of-strands reference curves, built from the digitised traces only.
+ *
+ * For each strand used as a spine: resample it every MEAN_REF_STEP_M and, at
+ * each sample, average the projections of every strand within
+ * MEAN_REF_REACH_DEG — the same rule the pipeline's node re-centring uses, but
+ * anchored on a raw strand instead of on pipeline output, so the result is a
+ * function of the input data alone.
+ *
+ * A sample where fewer than two strands are in reach keeps the spine position,
+ * matching the pipeline's "nothing to average against" case.
+ *
+ * @param {number[][][]} paths - digitised traces of one line
+ * @returns {number[][][]} one mean curve per spine strand (2+ points each)
+ */
+export function meanStrandCurves(paths) {
+    if (paths.length < 2) return [];
+    const reach2 = ORACLE.MEAN_REF_REACH_DEG * ORACLE.MEAN_REF_REACH_DEG;
+    const out = [];
+    for (const spine of paths) {
+        const samples = [];
+        let carry = 0;
+        for (let i = 1; i < spine.length; i++) {
+            const a = spine[i - 1];
+            const b = spine[i];
+            const len = segmentLengthM(a, b);
+            if (len === 0) continue;
+            for (let at = ORACLE.MEAN_REF_STEP_M - carry; at <= len; at += ORACLE.MEAN_REF_STEP_M) {
+                const t = at / len;
+                samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+            }
+            carry = (carry + len) % ORACLE.MEAN_REF_STEP_M;
+        }
+        if (samples.length < 3) continue;
+
+        const curve = samples.map(([x, y]) => {
+            let sx = 0;
+            let sy = 0;
+            let n = 0;
+            for (const st of paths) {
+                let best = null;
+                for (let i = 1; i < st.length; i++) {
+                    const r = projectPointOnSegment(
+                        x,
+                        y,
+                        st[i - 1][0],
+                        st[i - 1][1],
+                        st[i][0],
+                        st[i][1],
+                    );
+                    if (!best || r.d2 < best.d2) best = r;
+                }
+                if (best && best.d2 <= reach2) {
+                    sx += best.x;
+                    sy += best.y;
+                    n++;
+                }
+            }
+            return n >= 2 ? [sx / n, sy / n] : [x, y];
+        });
+        out.push(curve);
+    }
+    return out;
+}
+
 export function rawKinkNear(paths, at, turn) {
     for (const path of paths) {
         for (let i = 1; i < path.length - 1; i++) {
@@ -485,13 +560,21 @@ export function measureLine(line, prepared) {
     add('DUPLICATE', measureDuplicates(sections), (v) =>
         rawParallelSeparationNear(paths, v.at) >= ORACLE.DUP_MIN_LAT_M ? 'REAL' : 'BUG',
     );
-    add('KINK', measureKinks(sections), (v) => (rawKinkNear(paths, v.at, v.turn) ? 'REAL' : 'BUG'));
-    const rawWobbles = paths.flatMap((p) => wobblesOfPolyline(p));
+    // Shape evidence is accepted from an individual digitised strand OR from the
+    // mean of the strands running together — the corridor represents the latter.
+    // Both are derived from the raw traces; adding the second reference only
+    // widens what counts as explained by the data, it never hides a corridor
+    // feature that neither the strands nor their mean have.
+    const shapeRefs = [...paths, ...meanStrandCurves(paths)];
+    add('KINK', measureKinks(sections), (v) =>
+        rawKinkNear(shapeRefs, v.at, v.turn) ? 'REAL' : 'BUG',
+    );
+    const rawWobbles = shapeRefs.flatMap((p) => wobblesOfPolyline(p));
     add('WOBBLE', measureWobble(sections), (v) =>
         rawWobbleNear(rawWobbles, v.at, v.devM) ? 'REAL' : 'BUG',
     );
     add('SPIKE', measureSpikes(sections), (v) =>
-        rawKinkNear(paths, v.at, v.turn) ? 'REAL' : 'BUG',
+        rawKinkNear(shapeRefs, v.at, v.turn) ? 'REAL' : 'BUG',
     );
     add('SELF-CROSS', measureSelfCrossings(sections));
     add('CHORD', measureChords(sections, paths));

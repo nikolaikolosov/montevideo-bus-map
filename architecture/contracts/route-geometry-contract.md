@@ -80,6 +80,16 @@
   constant drifts out of its gap. Artifact gates carry no count ceilings:
   every finding is either REAL (the data shows it), whitelisted with a
   reviewed reason, or a failure (`verify:oracles`).
+  "The data shows it" is tested against two references, both derived from the
+  digitised traces alone and never from pipeline output: an **individual
+  strand**, and the **mean of the strands running together**
+  (`meanStrandCurves`). The second exists because a corridor represents that
+  mean (R-REPRESENTATIVE), so it sits half a carriageway from either strand and
+  can miss a per-strand match while following the data faithfully. Adding a
+  reference only widens what counts as explained; it cannot excuse a corridor
+  feature that neither the strands nor their mean have — which is exactly how
+  the residual WOBBLE weave stays BUG: at all 10 sites neither reference
+  produces a two-sided weave, while the corridor crosses the chord both ways.
 
 ## Scale ladder
 
