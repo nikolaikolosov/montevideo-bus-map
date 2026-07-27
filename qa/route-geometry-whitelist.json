@@ -31,8 +31,8 @@
         -34.893725
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "KINK {\"turn\":71} — pipeline-introduced corner, accepted pending further mechanism work. Re-reviewed 2026-07-27: no digitised strand and no strand-mean curve within 25 m turns within 25 deg of this angle."
+      "status": "real",
+      "reason": "KINK turn 71 deg, flanks 32 m and 25 m. Re-reviewed 2026-07-27 with a same-stretch matcher (rawCornerSwing). The previous verdict compared the corridor's SINGLE-VERTEX turn against a single raw vertex, which a densely digitised corner can never match: the corridor carries a junction in one vertex while the trace spreads it over several — here the sharpest single raw turn within 25 m is only 36 deg. Measured across the corner's own flanks, the traces swing 68 deg against the corridor's 71 deg (within the 25 deg slack the single-vertex match uses), so the corridor reproduces a corner the street really makes. Power checked against degraded pipelines where corners ARE pipeline-made: 2 findings stay BUG with smoothing off, 6 with re-centring off, 31 with both off."
     },
     {
       "class": "WOBBLE",
