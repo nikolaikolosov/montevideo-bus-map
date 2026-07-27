@@ -39,6 +39,27 @@ async function surface(page, selector) {
 }
 
 for (const theme of ['dark', 'light']) {
+    test(`the locate control stays light in the ${theme} theme, like the zoom buttons`, async ({
+        page,
+    }) => {
+        // Same rule as the home control below it: the column of map controls is
+        // Leaflet-white in both themes, and a theme-following button would sit
+        // dark among white ones.
+        await openMap(page, { theme });
+        const locate = await surface(page, '.locate-control');
+        const zoom = await surface(page, '.leaflet-control-zoom-in');
+
+        expect(locate.rest.bg, 'rest background differs from the zoom button').toBe(zoom.rest.bg);
+        expect(locate.rest.color, 'glyph colour differs from the zoom button').toBe(
+            zoom.rest.color,
+        );
+        expect(locate.hovered.bg, 'hover background differs from the zoom button').toBe(
+            zoom.hovered.bg,
+        );
+    });
+}
+
+for (const theme of ['dark', 'light']) {
     test(`the home control stays light in the ${theme} theme, like the zoom buttons`, async ({
         page,
     }) => {

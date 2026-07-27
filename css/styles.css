@@ -410,7 +410,8 @@ label {
    live in BOTH themes, so it fails if Leaflet's palette ever moves instead of
    silently drifting apart again. The dots are fill="currentColor", so `color`
    drives them together with the +/− glyphs. */
-.home-control {
+.home-control,
+.locate-control {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -429,7 +430,8 @@ label {
 }
 
 @media (hover: hover) {
-    .home-control:hover {
+    .home-control:hover,
+    .locate-control:hover:not(:disabled) {
         background-color: var(--map-control-bg-hover);
     }
 }
@@ -437,13 +439,45 @@ label {
 /* Momentary press feedback (touch AND desktop click). Unlike :hover this does
    not stick on touch — it clears on release, so it can't revive the PR #19
    sticky-tint bug. Same tint Leaflet gives `.leaflet-bar a:hover`. */
-.home-control:active {
+.home-control:active,
+.locate-control:active:not(:disabled) {
     background-color: var(--map-control-bg-hover);
 }
 
-.home-control:focus-visible {
+.home-control:focus-visible,
+.locate-control:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
+}
+
+/* "Show my location" states. The glyph turns accent while the camera is
+   following the rider, so the control says whether pressing it again would
+   change anything; it pulses while a fix is pending, and greys out once the
+   permission is refused — that will not recover while the page is open. */
+.locate-control.is-following {
+    color: var(--accent);
+}
+
+.locate-control[aria-busy='true'] {
+    animation: locate-pulse 1.2s ease-in-out infinite;
+}
+
+.locate-control:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+@keyframes locate-pulse {
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .locate-control[aria-busy='true'] {
+        animation: none;
+        opacity: 0.45;
+    }
 }
 
 /* Downstream context bar — "Desde: PARADA (código)" + reset */
