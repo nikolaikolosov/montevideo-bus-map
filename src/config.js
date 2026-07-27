@@ -6,6 +6,23 @@ export const CONFIG = {
     // 48 px is a touch target's worth of separation: closer than that and two
     // chips are the same place as far as a rider is concerned.
     LABEL_MIN_GAP_PX: 48,
+    // All-stops view: below this zoom only one ring per STOP_THIN_CELL_PX grid
+    // cell is DRAWN (ux-review-001 X4, finding F6). Measured on a Pixel 7
+    // viewport, every one of the 4,901 rings is inside the viewport at zoom 10
+    // and 3,121 at zoom 12 — a solid field that answers no question.
+    //
+    // The stops that are not drawn stay IN the layer with radius 0. Removing
+    // them was tried first and reverted: a stop that is not a layer cannot be
+    // opened, so search-for-a-stop and deep-link-to-a-stop silently did nothing
+    // for most stops reached from the city view. The ring can be hidden; the
+    // stop cannot stop existing.
+    //
+    // This is therefore a decluttering change, not a performance one. Measured
+    // canvas redraw at zoom 10: 1.7 ms with all 4,901 drawn, 1.7 ms with 86 % of
+    // them at radius 0, 0.0 ms with them removed — the cost is per layer, not
+    // per pixel, so keeping them costs the frame nothing to reclaim.
+    STOP_THIN_MAX_ZOOM: 12,
+    STOP_THIN_CELL_PX: 22,
     // Direction chevrons (ux-review-001 R8, finding F4). Spacing is in SCREEN
     // pixels for the same reason label clustering is: a ground spacing would
     // crowd at city zoom and vanish at street zoom. Only the arrows inside the
