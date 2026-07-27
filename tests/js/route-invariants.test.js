@@ -415,4 +415,74 @@ describe('corridor sits on the mean of its strands (brainstorm-008 PR-2)', () =>
         expect(sum / n, 'mean offset from the strand mean').toBeLessThan(2.5);
         expect(worst, 'worst offset from the strand mean').toBeLessThan(20);
     });
+
+    // The price of that mean. Re-centring admits every strand within 1.5 x the
+    // cluster radius OF THE NODE (36.7 m), which is wider than the radius at
+    // which clustering merges vertices (24.4 m) — so where two carriageways fan
+    // apart toward a fork, both are averaged in and the corridor is drawn in the
+    // gap between them, up to 17.9 m from any trace (line 199's window: strands
+    // 0-26 m apart, corridor 12.4 m from each).
+    //
+    // Making inclusion agree with the cluster radius was measured on 2026-07-27
+    // and rejected: grouping the projections by mutual proximity fixes line 199
+    // (12.4 m -> 5.6 m) and halves the tail network-wide (642 -> 263 vertices
+    // beyond 10 m), but the per-node split decision flips along a chain and tears
+    // corridors into near-parallel pieces — DUPLICATE renderings 6 -> 94..111,
+    // the very artifact class brainstorm-008 PR-2 removed. Narrowing the reach
+    // instead costs the same way (findings 368 -> 539 at 1.0 x, with or without
+    // the "needs two strands" bail). Stable splitting would mean grouping strands
+    // into bundles globally and re-centring per bundle, i.e. redesigning the
+    // stage rather than tuning it.
+    //
+    // So the tail is accepted and pinned here instead, to keep it from growing
+    // silently: at 2.0 x the reach these bounds fail (47 beyond 15 m, 4 beyond
+    // 20 m, worst 21.3 m) — measured on the same lines.
+    const GAP_LINES = ['124 Sd', '180', 'L30', '21', 'Bt2', '468', 'Ce1', 'D1', '199', '104'];
+
+    it('never draws a corridor more than 20 m from every trace of its line', () => {
+        let worst = 0;
+        let beyond15 = 0;
+        let n = 0;
+        for (const line of GAP_LINES) {
+            const features = getFilteredRouteFeatures([line], null)
+                .map((f) => prepareRouteFeature(f, null))
+                .filter(Boolean);
+            if (!features.length) continue;
+            const strands = [];
+            for (const f of features) {
+                const g = f.geometry;
+                const parts = g.type === 'LineString' ? [g.coordinates] : g.coordinates;
+                for (const part of parts) if (part && part.length >= 2) strands.push(part);
+            }
+            for (const sec of buildSections(features)) {
+                for (const [x, y] of sec.coords) {
+                    let best = null;
+                    for (const st of strands) {
+                        for (let i = 1; i < st.length; i++) {
+                            const r = projectPointOnSegment(
+                                x,
+                                y,
+                                st[i - 1][0],
+                                st[i - 1][1],
+                                st[i][0],
+                                st[i][1],
+                            );
+                            if (!best || r.d2 < best.d2) best = r;
+                        }
+                    }
+                    if (!best) continue;
+                    const off = Math.hypot(
+                        (x - best.x) * M_PER_DEG_LON,
+                        (y - best.y) * M_PER_DEG_LAT,
+                    );
+                    worst = Math.max(worst, off);
+                    if (off > 15) beyond15 += 1;
+                    n += 1;
+                }
+            }
+        }
+        expect(n).toBeGreaterThan(800); // not vacuous
+        expect(worst, 'worst corridor distance to any trace').toBeLessThan(20);
+        expect(beyond15, 'corridor vertices beyond 15 m').toBeLessThanOrEqual(40);
+    });
 });

@@ -77,6 +77,26 @@
   lines, 14648 → 14613 points; no pixel scene crossed its diff budget). The
   invariant is unit-tested directly (`bundling.test.js`) because no synthetic
   fixture reproduces the merge topology on demand.
+  Inclusion is tested against the NODE, at 1.5 × the cluster radius (36.7 m) —
+  deliberately wider than the radius at which clustering merges vertices
+  (24.4 m). That gap has a price: where two carriageways fan apart toward a fork,
+  both are still averaged in and the corridor is drawn between them, up to
+  17.9 m from any trace network-wide (line 199: strands 0–26 m apart, corridor
+  12.4 m from each; 642 of 14,613 corridor vertices sit beyond 10 m, 46 beyond
+  15 m, none beyond 20 m). Closing the gap was measured on 2026-07-27 and
+  **rejected**: grouping the projections by mutual proximity so only strands
+  clustering would have merged are averaged fixes line 199 (12.4 m → 5.6 m) and
+  more than halves the tail (642 → 263 beyond 10 m, 46 → 0 beyond 15 m), but the
+  per-node split decision flips along a chain and tears corridors into
+  near-parallel pieces — DUPLICATE renderings 6 → 111, or 6 → 94 when a split is
+  only honoured for groups of ≥2 strands, which is the artifact class
+  brainstorm-008 PR-2 was built to remove. Narrowing the reach costs the same way
+  (368 → 539 findings at 1.0 ×, with and without the "needs two strands" bail;
+  taper weights are worse still). Stable splitting needs the strands grouped into
+  bundles GLOBALLY and re-centred per bundle — a redesign of the stage, not a
+  constant. Until then the tail is accepted and pinned by
+  `route-invariants.test.js` (worst < 20 m, ≤ 40 vertices beyond 15 m; both fail
+  at 2.0 × the reach), so it cannot grow silently.
 - **R-CONVERGE.** Graph-cleanup loops run to a fixpoint, not a fixed pass count.
   Each pass strictly removes a node or an edge, so termination is structural; the
   guard exists to turn a non-monotonic edit into a loud failure. The old caps
