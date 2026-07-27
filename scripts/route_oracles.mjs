@@ -61,19 +61,42 @@ export const ORACLE = {
     WOBBLE_SIDE_M: 3,
     WOBBLE_RAW_MATCH_M: 80, // raw weave within this radius explains a corridor weave
     WOBBLE_RAW_MATCH_RATIO: 0.7,
-    // A reference is only asked to weave across the window the CORRIDOR wobbled
-    // on, not to grow a window of its own: window growth stops at the first
-    // segment more than WOBBLE_AXIS_DEG off the chord, and on a raw trace
-    // (vertices every few metres, P90 jitter 1.9 m) single-segment headings
-    // scatter far past 8°, so a dense trace structurally cannot produce a
-    // 120 m straight run even where it plainly weaves. That asymmetry — sparse
-    // corridor vs dense reference — is what kept 6 of the 10 residual WOBBLE
-    // findings classified BUG: measured over the corridor's own window, their
-    // traces weave two-sided by 5.6–12.6 m against a corridor devM of
-    // 6.3–11.7 m. A reference counts only if the corridor stays within the
-    // CHORD budget of it (30 m, CHORD_MAX_M) across the window, and it must
-    // clear the SAME bar as the independent match (WOBBLE_RAW_MATCH_RATIO).
-    WOBBLE_WINDOW_MATCH_M: 30,
+    // Asking whether a REFERENCE weaves needs a chord to measure against, and
+    // every available chord is biased. Its own chord over the stretch between
+    // the projections of the window ends slides wherever the corridor is offset
+    // laterally, under-reporting (at lines 199/L6/L77 it read 2.3–3.5 m where
+    // the traces weave 4.1–9.7 m). The corridor's chord instead adds a constant
+    // lateral offset, which makes a genuine weave read one-sided. Growing a
+    // window on the reference is worse still: growth stops at the first segment
+    // more than WOBBLE_AXIS_DEG off the chord, and a raw trace (vertices every
+    // few metres, P90 jitter 1.9 m) can never hold a 120 m straight run.
+    //
+    // So the chord is dropped. BUG means pipeline-INTRODUCED, and a corridor
+    // cannot have introduced a feature while it stays on the data: the corridor
+    // is explained when it tracks ONE reference across the whole window to
+    // within WOBBLE_TRACK_OFF_M and never darts off it and back by
+    // WOBBLE_TRACK_ALT_M. No chord appears in either quantity, so no lateral
+    // offset can distort them. Measured 2026-07-27 over all 140 lines: every
+    // one of the 12 corridor WOBBLE findings tracks a reference within 3.6 m
+    // with at most 5.1 m of alternation, while the pre-re-centring pipeline —
+    // where the phase sawtooth is real — leaves 15 of 28 unexplained: the ten
+    // ground-truth carriageway alternations (7.3–10.6 m of dart, about half the
+    // 14.2 m P90 separation) plus five corridors pushed 4.5–7.4 m off the data
+    // without darting. The old projection-chord rule called 21 of 28 BUG there,
+    // but six of those track a reference within 4.4 m and never dart — inside
+    // the pipeline's own displacement allowance, so they were false positives of
+    // the biased chord, not power this rule gives up.
+    //
+    // Sized against the scale ladder: OFF is the simplify epsilon, the scale at
+    // which the corridor still IS the data (deliberately stricter than the
+    // cumulative smoothing budget of ~11 m, so the gate errs toward flagging);
+    // ALT is 2 × WOBBLE_SIDE_M, a dart clearing the class's own per-side bar in
+    // both directions. Both sit inside a measured plateau: the sweep is
+    // unchanged for ALT 5–7 m, gains one finding at OFF 3.7 m, and only weakens
+    // at OFF 5.5 m (sawtooth 15 → 12). The gap it exploits is real — the worst
+    // current dart is 5.1 m, the mildest sawtooth dart 7.3 m.
+    WOBBLE_TRACK_OFF_M: 4.4,
+    WOBBLE_TRACK_ALT_M: 6,
 
     // KINK (ported from the PR #14 smoothness invariants): a 60–150° turn
     // with BOTH flanks shorter than 35 m. Real corners turn once between
@@ -337,15 +360,15 @@ export function wobblesOfPolyline(c) {
                 minDev < -ORACLE.WOBBLE_SIDE_M &&
                 maxDev > ORACLE.WOBBLE_SIDE_M
             ) {
-                // from/to carry the window so a reference can be measured over
-                // the same stretch (refWeaveAcrossWindow); they are stripped
-                // from the reported detail, `span` keeps the readable evidence.
+                // `win` carries the window's vertices so the classifier can ask
+                // whether the corridor tracks the data across it
+                // (corridorFollowsData); it is stripped from the reported
+                // detail, `span` keeps the readable evidence.
                 out.push({
                     at: c[worst.i],
                     devM: +Math.abs(worst.dev).toFixed(1),
                     span: +segmentLengthM(c[start], c[end]).toFixed(0),
-                    from: c[start],
-                    to: c[end],
+                    win: c.slice(start, end + 1),
                 });
             }
         }
@@ -360,54 +383,69 @@ export function measureWobble(sections) {
 }
 
 /**
- * Largest two-sided weave any reference makes across the corridor's OWN window,
- * in metres (0 = every reference bows to one side or is too far away).
+ * How closely the corridor follows the digitised data across one window, with no
+ * chord anywhere in the answer (see WOBBLE_TRACK_OFF_M for why).
  *
- * Same quantity `wobblesOfPolyline` measures — signed deviation from the window
- * chord, taken as min(-lo, hi) so a one-sided bow scores 0 — but the window is
- * given rather than grown, which is what makes the answer independent of how
- * densely the reference happens to be digitised (see WOBBLE_WINDOW_MATCH_M).
- * The window is transferred onto the reference by projection (R-PROJECT), and
- * the reference's stretch between those two projections is measured against the
- * chord joining them.
+ * ONE reference is chosen for the whole window — the one the corridor stays
+ * closest to — so a corridor hopping between two carriageways cannot pick a
+ * different strand per vertex and hide the hop. Each offset's magnitude is the
+ * distance to that reference's projection (R-PROJECT); its SIGN is which side of
+ * the reference the vertex falls, taken against the window's own axis. The axis
+ * supplies a direction only — never a chord to measure from — because the
+ * reference's local segment heading is unusable for this: on a raw trace
+ * digitised every few metres with P90 1.9 m of jitter, consecutive headings
+ * swing tens of degrees, and signing against them flips offsets and manufactures
+ * alternation out of pure digitisation noise. Then:
+ *
+ * - `offM`   the largest distance from that reference: has the corridor left the
+ *            data at all?
+ * - `altM`   the largest dart off the reference and back — for each vertex that
+ *            is a local extremum of the signed offset, the smaller of its two
+ *            steps, so a steady offset scores 0 and only a there-and-back move
+ *            registers. This is the phase sawtooth's signature: alternating
+ *            between carriageways scores about half their separation.
  *
  * @param {number[][][]} refs - digitised traces and/or their mean curves
- * @param {number[]} from - first vertex of the corridor's window
- * @param {number[]} to - last vertex of the corridor's window
- * @returns {number}
+ * @param {number[][]} win - the corridor's window vertices
+ * @returns {{offM: number, altM: number}} Infinity when no reference is usable
  */
-export function refWeaveAcrossWindow(refs, from, to) {
-    let best = 0;
+export function corridorFollowsData(refs, win) {
+    if (win.length < 2) return { offM: Infinity, altM: Infinity };
+    // Window axis — used for the SIGN of each offset only.
+    const ax = (win[win.length - 1][0] - win[0][0]) * M_PER_DEG_LON;
+    const ay = (win[win.length - 1][1] - win[0][1]) * M_PER_DEG_LAT;
+    const al = Math.hypot(ax, ay);
+    if (al === 0) return { offM: Infinity, altM: Infinity };
+    let chosen = null;
     for (const ref of refs) {
         if (ref.length < 2) continue;
-        const pa = projectPointOnPolyline(from, ref);
-        const pb = projectPointOnPolyline(to, ref);
-        if (!pa || !pb) continue;
-        // The reference must be the data this corridor represents, not a
-        // parallel street: both window ends within the CHORD budget of it.
-        if (segmentLengthM(from, [pa.x, pa.y]) > ORACLE.WOBBLE_WINDOW_MATCH_M) continue;
-        if (segmentLengthM(to, [pb.x, pb.y]) > ORACLE.WOBBLE_WINDOW_MATCH_M) continue;
-        const [s, e] = pa.i <= pb.i ? [pa, pb] : [pb, pa];
-        // The projected ends are on the reference but are not vertices of it, so
-        // the stretch is [projection, interior vertices…, projection].
-        const stretch = [[s.x, s.y], ...ref.slice(s.i + 1, e.i + 1), [e.x, e.y]];
-        const hx = (e.x - s.x) * M_PER_DEG_LON;
-        const hy = (e.y - s.y) * M_PER_DEG_LAT;
-        const hl = Math.hypot(hx, hy);
-        if (hl === 0) continue;
-        let lo = 0;
-        let hi = 0;
-        for (const [x, y] of stretch) {
-            const vx = (x - s.x) * M_PER_DEG_LON;
-            const vy = (y - s.y) * M_PER_DEG_LAT;
-            const dev = (vx * -hy + vy * hx) / hl;
-            if (dev < lo) lo = dev;
-            if (dev > hi) hi = dev;
+        const offs = [];
+        let off = 0;
+        for (const p of win) {
+            const pr = projectPointOnPolyline(p, ref);
+            if (!pr) {
+                off = Infinity;
+                break;
+            }
+            const vx = (p[0] - pr.x) * M_PER_DEG_LON;
+            const vy = (p[1] - pr.y) * M_PER_DEG_LAT;
+            const signed = (vx * -ay + vy * ax) / al;
+            offs.push(signed);
+            off = Math.max(off, Math.abs(signed));
         }
-        const twoSided = Math.min(-lo, hi);
-        if (twoSided > best) best = twoSided;
+        if (!Number.isFinite(off)) continue;
+        if (!chosen || off < chosen.off) chosen = { offs, off };
     }
-    return best;
+    if (!chosen) return { offM: Infinity, altM: Infinity };
+    let altM = 0;
+    for (let i = 1; i < chosen.offs.length - 1; i++) {
+        const left = chosen.offs[i] - chosen.offs[i - 1];
+        const right = chosen.offs[i] - chosen.offs[i + 1];
+        // Same sign on both steps = a local extremum, i.e. an excursion.
+        if (left > 0 === right > 0)
+            altM = Math.max(altM, Math.min(Math.abs(left), Math.abs(right)));
+    }
+    return { offM: chosen.off, altM };
 }
 
 /**
@@ -651,12 +689,14 @@ export function measureLine(line, prepared) {
     add(
         'WOBBLE',
         measureWobble(sections),
-        (v) =>
-            rawWobbleNear(rawWobbles, v.at, v.devM) ||
-            refWeaveAcrossWindow(shapeRefs, v.from, v.to) >= v.devM * ORACLE.WOBBLE_RAW_MATCH_RATIO
+        (v) => {
+            if (rawWobbleNear(rawWobbles, v.at, v.devM)) return 'REAL';
+            const { offM, altM } = corridorFollowsData(shapeRefs, v.win);
+            return offM <= ORACLE.WOBBLE_TRACK_OFF_M && altM < ORACLE.WOBBLE_TRACK_ALT_M
                 ? 'REAL'
-                : 'BUG',
-        ['from', 'to'],
+                : 'BUG';
+        },
+        ['win'],
     );
     add('SPIKE', measureSpikes(sections), (v) =>
         rawKinkNear(shapeRefs, v.at, v.turn) ? 'REAL' : 'BUG',
