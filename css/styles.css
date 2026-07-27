@@ -411,7 +411,8 @@ label {
    silently drifting apart again. The dots are fill="currentColor", so `color`
    drives them together with the +/− glyphs. */
 .home-control,
-.locate-control {
+.locate-control,
+.about-control {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -431,7 +432,8 @@ label {
 
 @media (hover: hover) {
     .home-control:hover,
-    .locate-control:hover:not(:disabled) {
+    .locate-control:hover:not(:disabled),
+    .about-control:hover {
         background-color: var(--map-control-bg-hover);
     }
 }
@@ -440,12 +442,14 @@ label {
    not stick on touch — it clears on release, so it can't revive the PR #19
    sticky-tint bug. Same tint Leaflet gives `.leaflet-bar a:hover`. */
 .home-control:active,
-.locate-control:active:not(:disabled) {
+.locate-control:active:not(:disabled),
+.about-control:active {
     background-color: var(--map-control-bg-hover);
 }
 
 .home-control:focus-visible,
-.locate-control:focus-visible {
+.locate-control:focus-visible,
+.about-control:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
 }
@@ -984,6 +988,63 @@ label {
     border-left: 8px solid currentColor;
     opacity: 0.85;
     pointer-events: none;
+}
+
+/* About / legend panel (R9 / F11). A dialog over the map, not a panel row: the
+   mobile bottom sheet has a map-space budget, and this is read once. */
+.about-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1200;
+    width: min(92vw, 420px);
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+    box-shadow: 0 8px 28px rgb(0 0 0 / 45%);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.about-panel[hidden] {
+    display: none;
+}
+
+.about-panel h2 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+}
+
+.about-panel p {
+    margin: 0 0 8px;
+}
+
+.about-credits {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+}
+
+.about-close {
+    margin-top: 6px;
+    padding: 7px 12px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.about-close:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 
 /* First-use hint (R7 / F6). Floats over the map, never inside the panel, so it

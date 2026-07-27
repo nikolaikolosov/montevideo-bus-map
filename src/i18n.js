@@ -51,6 +51,17 @@ const STRINGS = {
         'panel.lineOption': 'Línea {id}',
         'panel.destinations': 'Destino',
         'hint.firstUse': 'Tocá una parada del mapa o buscá una línea acá arriba.',
+        'about.aria': 'Sobre este mapa',
+        'about.title': 'Sobre este mapa',
+        'about.strands':
+            'Cada trazo de color es una línea. Donde varias comparten la calle, se dibujan una al lado de la otra.',
+        'about.colors': 'El color identifica la línea; no significa nada más.',
+        'about.arrows':
+            'Las flechas aparecen cuando el sentido es uno solo: desde una parada, o eligiendo un destino.',
+        'about.data':
+            'Datos del transporte de Montevideo, actualizados a mano. La fecha está en el panel.',
+        'about.credits': 'Mapa base © OpenStreetMap, © CARTO.',
+        'about.close': 'Cerrar',
         'hint.dismiss': 'Entendido',
         'hint.dismissAria': 'Cerrar la ayuda',
         'panel.allDestinations': 'Todos',
@@ -139,6 +150,16 @@ const STRINGS = {
         'panel.lineOption': 'Line {id}',
         'panel.destinations': 'Destination',
         'hint.firstUse': 'Tap a stop on the map, or search for a line above.',
+        'about.aria': 'About this map',
+        'about.title': 'About this map',
+        'about.strands':
+            'Each coloured strand is one line. Where several share a street they are drawn side by side.',
+        'about.colors': 'Colour identifies the line; it means nothing else.',
+        'about.arrows':
+            'Arrows appear where travel has a single direction: from a stop, or with a destination chosen.',
+        'about.data': 'Montevideo transit data, updated by hand. The date is in the panel.',
+        'about.credits': 'Base map © OpenStreetMap, © CARTO.',
+        'about.close': 'Close',
         'hint.dismiss': 'Got it',
         'hint.dismissAria': 'Dismiss the hint',
         'panel.allDestinations': 'All',
@@ -223,6 +244,16 @@ const STRINGS = {
         'panel.lineOption': 'Линия {id}',
         'panel.destinations': 'Направление',
         'hint.firstUse': 'Нажмите остановку на карте или найдите линию выше.',
+        'about.aria': 'Об этой карте',
+        'about.title': 'Об этой карте',
+        'about.strands':
+            'Каждая цветная полоса — одна линия. Где несколько идут по одной улице, они рисуются рядом.',
+        'about.colors': 'Цвет определяет линию и не значит ничего другого.',
+        'about.arrows':
+            'Стрелки появляются там, где направление одно: от остановки или при выбранном направлении.',
+        'about.data': 'Данные транспорта Монтевидео, обновляются вручную. Дата — в панели.',
+        'about.credits': 'Подложка © OpenStreetMap, © CARTO.',
+        'about.close': 'Закрыть',
         'hint.dismiss': 'Понятно',
         'hint.dismissAria': 'Закрыть подсказку',
         'panel.allDestinations': 'Все',

@@ -251,6 +251,30 @@
             data-i18n-aria="map.aria"
         ></div>
 
+        <!-- About / legend (ux-review-001 R9, finding F11): nothing explained the
+             visual language — what a strand is, what colour means — and the base
+             map credits had no home but Leaflet's corner. -->
+        <div
+            id="aboutPanel"
+            class="about-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="aboutTitle"
+            hidden
+        >
+            <h2 id="aboutTitle" data-i18n="about.title">Sobre este mapa</h2>
+            <p data-i18n="about.strands">Cada trazo de color es una línea.</p>
+            <p data-i18n="about.colors">El color identifica la línea.</p>
+            <p data-i18n="about.arrows">Las flechas indican el sentido.</p>
+            <p data-i18n="about.data">Datos del transporte de Montevideo.</p>
+            <p class="about-credits" data-i18n="about.credits">
+                Mapa base © OpenStreetMap, © CARTO.
+            </p>
+            <button type="button" id="aboutClose" class="about-close" data-i18n="about.close">
+                Cerrar
+            </button>
+        </div>
+
         <!-- First-use hint (ux-review-001 R7, finding F6): the all-stops entry
              view answers no job by itself and nothing tells a first-time visitor
              that stops are tappable. Overlays the map so it costs the panel no
