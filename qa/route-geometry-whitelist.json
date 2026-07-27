@@ -9,8 +9,8 @@
         -34.89086
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":9.3} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "status": "real",
+      "reason": "WOBBLE devM 9.3 m over a 360 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data weaves two-sided by 6.7 m against a corridor devM of 9.3 m (ratio 0.72 ≥ 0.7): the corridor follows a weave the digitised traces already have."
     },
     {
       "class": "WOBBLE",
@@ -20,8 +20,8 @@
         -34.881669
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":11.4} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "status": "real",
+      "reason": "WOBBLE devM 11.4 m over a 326 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data weaves two-sided by 12.6 m against a corridor devM of 11.4 m (ratio 1.11 ≥ 0.7): the corridor follows a weave the digitised traces already have."
     },
     {
       "class": "WOBBLE",
@@ -32,7 +32,7 @@
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":7.1} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "reason": "WOBBLE devM 7.1 m over a 263 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data's two-sided weave is only 0.2 m against a corridor devM of 7.1 m (ratio 0.02 < 0.7) — the data bows, the corridor waves, so this stays a pipeline artifact. Not reachable by re-centring reach (0.75–2.5 x cluster radius, hard and tapered weights) nor by simplification epsilon (0.1–4.4 m): the residual BUG count held at 11–17 across all 15 configurations measured on 2026-07-27, so the mechanism is not in either operator's tuning."
     },
     {
       "class": "KINK",
@@ -54,7 +54,7 @@
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":9.7} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "reason": "WOBBLE devM 9.7 m over a 347 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data's two-sided weave is only 3.5 m against a corridor devM of 9.7 m (ratio 0.36 < 0.7) — the data bows, the corridor waves, so this stays a pipeline artifact. Not reachable by re-centring reach (0.75–2.5 x cluster radius, hard and tapered weights) nor by simplification epsilon (0.1–4.4 m): the residual BUG count held at 11–17 across all 15 configurations measured on 2026-07-27, so the mechanism is not in either operator's tuning."
     },
     {
       "class": "WOBBLE",
@@ -64,8 +64,8 @@
         -34.891435
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":10} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "status": "real",
+      "reason": "WOBBLE devM 10 m over a 337 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data weaves two-sided by 10.0 m against a corridor devM of 10 m (ratio 1.00 ≥ 0.7): the corridor follows a weave the digitised traces already have."
     },
     {
       "class": "WOBBLE",
@@ -75,8 +75,8 @@
         -34.894264
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":11.7} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "status": "real",
+      "reason": "WOBBLE devM 11.7 m over a 400 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data weaves two-sided by 8.9 m against a corridor devM of 11.7 m (ratio 0.76 ≥ 0.7): the corridor follows a weave the digitised traces already have."
     },
     {
       "class": "WOBBLE",
@@ -86,8 +86,8 @@
         -34.897304
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":7.1} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "status": "real",
+      "reason": "WOBBLE devM 7.1 m over a 272 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data weaves two-sided by 7.5 m against a corridor devM of 7.1 m (ratio 1.05 ≥ 0.7): the corridor follows a weave the digitised traces already have."
     },
     {
       "class": "WOBBLE",
@@ -97,8 +97,8 @@
         -34.896483
       ],
       "radiusM": 30,
-      "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":6.3} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "status": "real",
+      "reason": "WOBBLE devM 6.3 m over a 336 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data weaves two-sided by 5.6 m against a corridor devM of 6.3 m (ratio 0.89 ≥ 0.7): the corridor follows a weave the digitised traces already have."
     },
     {
       "class": "SELF-CROSS",
@@ -120,7 +120,7 @@
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":8.3} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "reason": "WOBBLE devM 8.3 m over a 328 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data's two-sided weave is only 2.5 m against a corridor devM of 8.3 m (ratio 0.31 < 0.7) — the data bows, the corridor waves, so this stays a pipeline artifact. Not reachable by re-centring reach (0.75–2.5 x cluster radius, hard and tapered weights) nor by simplification epsilon (0.1–4.4 m): the residual BUG count held at 11–17 across all 15 configurations measured on 2026-07-27, so the mechanism is not in either operator's tuning."
     },
     {
       "class": "WOBBLE",
@@ -131,7 +131,7 @@
       ],
       "radiusM": 30,
       "status": "known-bug",
-      "reason": "WOBBLE {\"devM\":7.7} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+      "reason": "WOBBLE devM 7.7 m over a 318 m window. Re-reviewed 2026-07-27: the shape matcher now measures a reference across the CORRIDOR'S window instead of requiring it to grow a window of its own (refWeaveAcrossWindow). Window growth stops at the first segment more than 8° off the chord, which a raw trace (vertices every few metres) structurally cannot survive for 120 m — so the 2026-07-27 verdict recorded in PR #37 (\"neither the strands nor their mean weave at all\") measured the detector's density dependence, not the street. Measured over this window the data's two-sided weave is only 2.3 m against a corridor devM of 7.7 m (ratio 0.30 < 0.7) — the data bows, the corridor waves, so this stays a pipeline artifact. Not reachable by re-centring reach (0.75–2.5 x cluster radius, hard and tapered weights) nor by simplification epsilon (0.1–4.4 m): the residual BUG count held at 11–17 across all 15 configurations measured on 2026-07-27, so the mechanism is not in either operator's tuning."
     }
   ]
 }

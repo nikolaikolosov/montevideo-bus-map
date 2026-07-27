@@ -27,6 +27,9 @@ import {
     measureDuplicates,
     measureKinks,
     meanStrandCurves,
+    refWeaveAcrossWindow,
+    wobblesOfPolyline,
+    ORACLE,
 } from '../../scripts/route_oracles.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -69,6 +72,83 @@ describe('shape evidence: strand-mean reference (2026-07-27)', () => {
         const b = Array.from({ length: 20 }, (_, i) => [i * 0.0002, 0.002]); // ~220 m away
         const [curveA] = meanStrandCurves([a, b]);
         for (const [, y] of curveA) expect(Math.abs(y)).toBeLessThan(1e-9);
+    });
+});
+
+describe('shape evidence: window-matched reference (2026-07-27)', () => {
+    // Second half of the same classifier problem. Asking the reference to grow
+    // a WOBBLE window of its OWN is density-dependent: growth stops at the first
+    // segment more than WOBBLE_AXIS_DEG off the chord, and a raw trace digitised
+    // every few metres cannot hold 8° over 120 m however plainly it weaves. So
+    // the reference is measured across the window the CORRIDOR wobbled on.
+    const M_LON = 92000; // src/geometry.js constants, in metres per degree
+    const M_LAT = 111000;
+    const LEG_M = 130; // 3 legs = 390 m, inside WOBBLE_MAX_CHORD_M
+
+    /** Polyline with one vertex per lateral offset (metres), legs of LEG_M. */
+    const shape = (offsets) => offsets.map((o, i) => [(i * LEG_M) / M_LON, o / M_LAT]);
+
+    /**
+     * Same polyline re-digitised every `stepM` with seeded lateral jitter — a
+     * raw trace of the identical geometry (qa rule 2: seeded randomness only).
+     */
+    const densify = (p, stepM, jitM, seed) => {
+        let s = seed;
+        const jit = () =>
+            (((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff) * 2 - 1) * jitM;
+        const out = [];
+        for (let i = 1; i < p.length; i++) {
+            const [a, b] = [p[i - 1], p[i]];
+            const len = Math.hypot((b[0] - a[0]) * M_LON, (b[1] - a[1]) * M_LAT);
+            for (let at = 0; at < len; at += stepM) {
+                const t = at / len;
+                out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t + jit() / M_LAT]);
+            }
+        }
+        out.push(p[p.length - 1]);
+        return out;
+    };
+
+    const weave = shape([0, 7, -7, 0]); // crosses the chord both ways by 7 m
+    const from = weave[0];
+    const to = weave[weave.length - 1];
+
+    it('scores 0 for a one-sided bow — a bowing street never explains a weave', () => {
+        const bow = shape([0, 8, 11, 8, 0]);
+        expect(refWeaveAcrossWindow([bow], bow[0], bow[bow.length - 1])).toBe(0);
+    });
+
+    it('scores the two-sided amplitude of a weave', () => {
+        expect(refWeaveAcrossWindow([weave], from, to)).toBeCloseTo(7, 1);
+    });
+
+    it('measures a weave the reference cannot flag on its own (the density gap)', () => {
+        // Sparse, the measure that finds corridor artifacts sees this weave...
+        expect(wobblesOfPolyline(weave).map((w) => w.devM)).toEqual([7]);
+        // ...but re-digitised every 4 m with 2 m of jitter — a raw trace of the
+        // SAME geometry — window growth breaks on the first segment more than
+        // WOBBLE_AXIS_DEG off the chord, so it flags nothing at all.
+        const raw = densify(weave, 4, 2, 20260727);
+        expect(wobblesOfPolyline(raw)).toEqual([]);
+        // Across the corridor's window both samplings report the same weave,
+        // which is what makes the classifier independent of digitisation density.
+        expect(refWeaveAcrossWindow([raw], from, to)).toBeGreaterThan(6);
+        expect(
+            Math.abs(
+                refWeaveAcrossWindow([raw], from, to) - refWeaveAcrossWindow([weave], from, to),
+            ),
+        ).toBeLessThan(1);
+    });
+
+    it('ignores a reference farther than WOBBLE_WINDOW_MATCH_M from the window', () => {
+        const far = ORACLE.WOBBLE_WINDOW_MATCH_M + 20;
+        expect(refWeaveAcrossWindow([shape([far, far + 7, far - 7, far])], from, to)).toBe(0);
+        // Inside the budget the same shape counts — a parallel carriageway is
+        // still the data this corridor represents.
+        const near = ORACLE.WOBBLE_WINDOW_MATCH_M - 10;
+        expect(
+            refWeaveAcrossWindow([shape([near, near + 7, near - 7, near])], from, to),
+        ).toBeCloseTo(7, 0);
     });
 });
 
