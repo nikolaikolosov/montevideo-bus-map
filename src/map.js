@@ -138,7 +138,20 @@ function updateMapStyles() {
     // LayerGroup holding just the highlight marker, which has no setStyle).
     const stopStyle = getStopStyleForZoom(zoom, touch);
     if (appState.globalStopsLayer?.setStyle) {
-        appState.globalStopsLayer.setStyle(stopStyle);
+        // Per stop, and by RESTYLING rather than rebuilding the layer. A blanket
+        // setStyle would hand every hidden ring its radius back, and a rebuild
+        // would replace the marker objects — invalidating any reference a caller
+        // is holding across the zoom, which is exactly how `focusStop` and the
+        // popup helpers lost their target and opened nothing.
+        const drawn = drawnStopCodes();
+        appState.globalStopsLayer.eachLayer((l) => {
+            const code = l.feature?.properties?.COD_UBIC_P;
+            if (drawn && code !== undefined && !drawn.has(code)) {
+                l.setStyle({ ...stopStyle, radius: 0, weight: 0 });
+            } else {
+                l.setStyle(stopStyle);
+            }
+        });
     }
     if (appState.currentStopsLayer?.setStyle) {
         appState.currentStopsLayer.setStyle(stopStyle);
@@ -934,18 +947,61 @@ function setupStopListeners(layer) {
  * Renders all unique stops on the map (default/home view).
  * @param {Function} onShowRoutes - popup callback
  */
+/**
+ * Stop codes whose ring is worth DRAWING in the all-stops view at this zoom.
+ *
+ * Returns null above the thinning zoom, meaning "draw them all". Below it, one
+ * stop per grid cell is chosen — by stop code, never by iteration order or by
+ * distance to the centre, so the survivor of a cell does not change as the rider
+ * pans and the field does not shimmer under them.
+ *
+ * Every stop stays in the layer either way; the ones left out are drawn at
+ * radius 0. See STOP_THIN_MAX_ZOOM for why removing them is not an option.
+ *
+ * @returns {Set<number>|null}
+ */
+function drawnStopCodes() {
+    if (!map || map.getZoom() > CONFIG.STOP_THIN_MAX_ZOOM) return null;
+
+    const zoom = map.getZoom();
+    const centre = map.getCenter();
+    const origin = map.project(centre, zoom);
+    const shifted = map.unproject(
+        origin.add(L.point(CONFIG.STOP_THIN_CELL_PX, CONFIG.STOP_THIN_CELL_PX)),
+        zoom,
+    );
+    const cellLon = Math.abs(shifted.lng - centre.lng);
+    const cellLat = Math.abs(shifted.lat - centre.lat);
+    if (!(cellLon > 0) || !(cellLat > 0)) return null;
+
+    const best = new Map();
+    for (const f of uniqueStopsData) {
+        const [lon, lat] = f.geometry.coordinates;
+        const key = `${Math.round(lon / cellLon)}_${Math.round(lat / cellLat)}`;
+        const code = f.properties.COD_UBIC_P;
+        const kept = best.get(key);
+        if (kept === undefined || code < kept) best.set(key, code);
+    }
+    return new Set(best.values());
+}
+
 export function renderGlobalStops(onShowRoutes) {
     clearLayers();
     appState.lastRender = { type: 'global', args: { onShowRoutes } };
     const touch = isCoarsePointer();
     const style = getStopStyleForZoom(map.getZoom(), touch);
+    const drawn = drawnStopCodes();
 
     appState.globalStopsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: uniqueStopsData },
         {
-            pointToLayer: (_feature, latlng) =>
+            pointToLayer: (feature, latlng) =>
                 L.circleMarker(latlng, {
                     ...style,
+                    // Not drawn at this zoom: present and openable, just invisible.
+                    ...(drawn && !drawn.has(feature.properties.COD_UBIC_P)
+                        ? { radius: 0, weight: 0 }
+                        : null),
                     fillColor: stopColors().fill,
                     color: stopColors().stroke,
                     pane: 'stopsPane',
