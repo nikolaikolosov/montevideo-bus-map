@@ -177,8 +177,15 @@ export function buildJourneyGraph() {
 
     // --- Walk edges: uniform grid, 3×3 neighbourhood ---
     const radius = CONFIG.JOURNEY_WALK_MAX_M;
-    // Cell ≥ radius in BOTH axes so a 3×3 sweep can never miss a neighbour.
-    const cell = (radius * 1.5) / M_PER_DEG_LAT;
+    // A 3×3 sweep finds every neighbour within `radius` iff one cell spans at
+    // least `radius` METERS on both axes, so the cell is sized off the SMALLER
+    // of the two meters-per-degree constants. It used to be radius × 1.5 /
+    // M_PER_DEG_LAT, which satisfied the longitude axis only by the margin the
+    // 1.5 happened to leave (1.24 × radius): drop the factor to 1.0 and 354 real
+    // footpath edges vanish, silently, because a missing edge is still symmetric
+    // and still inside the radius. Derived, not tuned — see the completeness
+    // assertion in tests/js/journey.test.js.
+    const cell = radius / Math.min(M_PER_DEG_LON, M_PER_DEG_LAT);
     const buckets = new Map();
     const cellKey = (gx, gy) => gx * 100000 + gy;
     for (let i = 0; i < codes.length; i++) {

@@ -377,6 +377,39 @@ describe('planJourney (real data)', () => {
         expect(edges).toBeGreaterThan(0);
     });
 
+    it('contains EVERY footpath within the radius, not just valid ones', () => {
+        // The test above checks that every edge present is short and symmetric —
+        // properties a MISSING edge also satisfies, so it cannot see the grid
+        // dropping neighbours. The walk grid finds neighbours with a 3×3 cell
+        // sweep, which is only complete while one cell spans >= radius METERS on
+        // both axes; sizing it off M_PER_DEG_LAT alone left that true for the
+        // longitude axis by margin only, and 354 real edges disappear if the
+        // factor is dropped. Brute force is the assertion that notices.
+        const R = CONFIG.JOURNEY_WALK_MAX_M;
+        const n = graph.codes.length;
+        const distance = (i, j) =>
+            Math.hypot(
+                (graph.lon[j] - graph.lon[i]) * M_PER_DEG_LON,
+                (graph.lat[j] - graph.lat[i]) * M_PER_DEG_LAT,
+            );
+
+        let expected = 0;
+        const missing = [];
+        // Every 3rd stop as an anchor, against ALL stops: a mis-sized cell
+        // cannot hide from a full scan of the other endpoint.
+        for (let i = 0; i < n; i += 3) {
+            const have = new Set(graph.walkTo[i]);
+            for (let j = 0; j < n; j++) {
+                if (i === j || distance(i, j) > R) continue;
+                expected++;
+                if (!have.has(j)) missing.push(`${graph.codes[i]}→${graph.codes[j]}`);
+            }
+        }
+        // Not vacuous: the sweep really does have thousands of edges to find.
+        expect(expected).toBeGreaterThan(5000);
+        expect(missing.slice(0, 5), `${missing.length} footpaths missing`).toEqual([]);
+    }, 30_000);
+
     it('plans a known city-centre trip', () => {
         // BUENOS AIRES y ITUZAINGO → AV 18 DE JULIO y CONVENCION, ~1 km apart.
         const { status, options } = planJourney(4772, 4018);
