@@ -402,6 +402,55 @@ function addLocateControl() {
     new LocateControl({ position: 'topright' }).addTo(map);
 }
 
+/**
+ * Adds the "about this map" control under the locate button, and wires the panel
+ * it opens: nothing in the app explained what a strand is, what colour means, or
+ * where the data comes from, and the base-map credits had no home but Leaflet's
+ * corner (finding F11).
+ */
+function addAboutControl() {
+    const panel = document.getElementById('aboutPanel');
+    const closeBtn = document.getElementById('aboutClose');
+    if (!panel) return;
+
+    let opener = null;
+    const close = () => {
+        panel.hidden = true;
+        opener?.focus();
+    };
+    const open = () => {
+        panel.hidden = false;
+        opener = document.activeElement;
+        closeBtn?.focus();
+    };
+
+    closeBtn?.addEventListener('click', close);
+    // Escape closes it, as a dialog must.
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !panel.hidden) close();
+    });
+
+    const AboutControl = L.Control.extend({
+        onAdd() {
+            const btn = L.DomUtil.create('button', 'about-control');
+            btn.type = 'button';
+            btn.innerHTML =
+                '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" ' +
+                'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+                '<circle cx="12" cy="12" r="9"/>' +
+                '<path d="M12 11v5"/><path d="M12 7.5v.01"/></svg>';
+            btn.setAttribute('aria-label', t('about.aria'));
+            btn.title = t('about.aria');
+            btn.setAttribute('data-i18n-aria', 'about.aria');
+            btn.setAttribute('data-i18n-title', 'about.aria');
+            L.DomEvent.disableClickPropagation(btn);
+            L.DomEvent.on(btn, 'click', () => (panel.hidden ? open() : close()));
+            return btn;
+        },
+    });
+    new AboutControl({ position: 'topright' }).addTo(map);
+}
+
 export function initMap(onHome) {
     const touch = isCoarsePointer();
 
@@ -417,6 +466,7 @@ export function initMap(onHome) {
     L.control.zoom({ position: 'topright' }).addTo(map);
     if (onHome) addHomeControl(onHome);
     addLocateControl();
+    addAboutControl();
     // The control shows whether the camera is still following, which any pan or
     // zoom can end.
     map.on('moveend zoomend', () => updateLocateControl());
@@ -443,6 +493,7 @@ export function initMap(onHome) {
     // done its job and gets out of the way — without recording a dismissal,
     // which stays the visitor's own deliberate act.
     map.on('popupopen', retireFirstUseHint);
+    map.on('popupopen', keepPopupClearOfPanel);
 
     return map;
 }
@@ -839,6 +890,46 @@ function buildJourneyActions(cod) {
  * @param {Function} onShowRoutes - callback(linesArr, variantsArr, feature)
  * @returns {HTMLElement}
  */
+/**
+ * Nudges the map so a freshly opened popup is not hidden by the panel.
+ *
+ * Leaflet auto-pans a popup into the MAP's viewport, but the panel is an overlay
+ * the map knows nothing about, so a stop near it opens underneath (finding F10).
+ * Measuring both rectangles after the open and panning by the overlap fixes it
+ * for whichever edge the panel occupies — top-left on desktop, the bottom sheet
+ * on a phone — without hard-coding either layout.
+ */
+function keepPopupClearOfPanel() {
+    const popupEl = map.getPane('popupPane')?.querySelector('.leaflet-popup');
+    const panelEl = document.getElementById('ui-panel');
+    if (!popupEl || !panelEl) return;
+
+    const pop = popupEl.getBoundingClientRect();
+    const panel = panelEl.getBoundingClientRect();
+    const gap = 12;
+    const overlaps =
+        pop.right > panel.left &&
+        pop.left < panel.right &&
+        pop.bottom > panel.top &&
+        pop.top < panel.bottom;
+    if (!overlaps) return;
+
+    // Push along the shallower axis: the smaller correction keeps the stop the
+    // rider tapped as close to where they tapped as possible.
+    const pushDown = panel.bottom - pop.top + gap;
+    const pushUp = pop.bottom - panel.top + gap;
+    const pushRight = panel.right - pop.left + gap;
+    const pushLeft = pop.right - panel.left + gap;
+    const options = [
+        { dx: 0, dy: -pushDown, cost: Math.abs(pushDown) },
+        { dx: 0, dy: pushUp, cost: Math.abs(pushUp) },
+        { dx: -pushRight, dy: 0, cost: Math.abs(pushRight) },
+        { dx: pushLeft, dy: 0, cost: Math.abs(pushLeft) },
+    ].sort((a, b) => a.cost - b.cost);
+    const { dx, dy } = options[0];
+    map.panBy([dx, dy], { animate: false });
+}
+
 export function createStopPopup(feature, onShowRoutes) {
     const { COD_UBIC_P: cod } = feature.properties;
     const { calle, esquina } = stopStreets(feature.properties);
