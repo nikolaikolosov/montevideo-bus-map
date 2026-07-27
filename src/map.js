@@ -336,86 +336,235 @@ export function initMap(onHome) {
 /** @type {L.LayerGroup|null} "You are here" marker + accuracy circle. */
 let userLocationLayer = null;
 
+/** @type {number|null} Handle of the periodic position refresh. */
+let locationTimer = null;
+
+/** True between locateUser() and stopLocatingUser(), across visibility pauses. */
+let locationTracking = false;
+
 /**
- * Asks the browser for the user's position, centres the map on it and drops a
- * "you are here" marker with an accuracy circle. Called on mobile at startup.
+ * The camera we last set ourselves, and the view it belonged to. While the map
+ * still matches this, each new fix re-centres on the rider; the moment anything
+ * else moves the camera — panning, or opening a line — following stops and only
+ * the marker keeps moving.
+ *
+ * That is what the ride scenario needs: the rider boards, picks the line they
+ * are on (which frames the whole route), and then watches their dot travel
+ * along it. Re-centring at GEOLOCATION_MAX_ZOOM every 30 s would fight that.
+ *
+ * @type {{hash: string, lat: number, lng: number, zoom: number}|null}
+ */
+let followAnchor = null;
+
+/** Degrees of slack when comparing camera positions (Leaflet's own epsilon). */
+const CAMERA_EPS = 1e-9;
+
+/**
+ * True when the camera is no longer where we left it, i.e. someone else is
+ * driving and we must not move it again. Pure so the follow policy is testable
+ * without a map.
+ *
+ * @param {{hash: string, lat: number, lng: number, zoom: number}|null} anchor
+ * @param {{hash: string, lat: number, lng: number, zoom: number}} state
+ * @returns {boolean}
+ */
+export function cameraLeftAnchor(anchor, state) {
+    if (!anchor) return true;
+    return (
+        anchor.hash !== state.hash ||
+        anchor.zoom !== state.zoom ||
+        Math.abs(anchor.lat - state.lat) > CAMERA_EPS ||
+        Math.abs(anchor.lng - state.lng) > CAMERA_EPS
+    );
+}
+
+/**
+ * Whether a geolocation error is worth giving up on. PERMISSION_DENIED will not
+ * fix itself while the page is open, so polling stops; POSITION_UNAVAILABLE and
+ * TIMEOUT are transient — a bus under a bridge, a cold GPS — and the next poll
+ * may well succeed, which is the whole point of polling.
+ *
+ * @param {number} code - GeolocationPositionError code
+ * @returns {boolean}
+ */
+export function isFatalLocationError(code) {
+    return code === 1; // PERMISSION_DENIED
+}
+
+/** @type {{lat: number, lng: number, accuracy: number}|null} Last shown fix. */
+let lastUserFix = null;
+
+/**
+ * The position currently marked on the map, or null when none is shown.
+ * Read-only; exposed as `__mvdGetUserLocation` for the e2e suite, which needs
+ * to see the marker MOVE rather than merely exist.
+ *
+ * @returns {{lat: number, lng: number, accuracy: number}|null}
+ */
+export function getUserLocation() {
+    return lastUserFix ? { ...lastUserFix } : null;
+}
+
+/** Draws (or moves) the "you are here" marker and its accuracy circle. */
+function drawUserLocation(latlng, accuracy) {
+    if (userLocationLayer) map.removeLayer(userLocationLayer);
+    lastUserFix = { lat: latlng.lat, lng: latlng.lng, accuracy };
+
+    const accent = '#3b82f6'; // --accent
+    userLocationLayer = L.layerGroup([
+        L.circle(latlng, {
+            radius: accuracy,
+            color: accent,
+            weight: 1,
+            opacity: 0.4,
+            fillColor: accent,
+            fillOpacity: 0.1,
+            interactive: false,
+        }),
+        L.marker(latlng, {
+            icon: L.divIcon({
+                className: '',
+                html: '<div class="user-location-marker"></div>',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8],
+            }),
+            interactive: false,
+            keyboard: false,
+            zIndexOffset: 2000,
+        }),
+    ]).addTo(map);
+}
+
+/** Camera state the follow policy compares against. */
+function cameraState() {
+    const c = map.getCenter();
+    return { hash: location.hash, lat: c.lat, lng: c.lng, zoom: map.getZoom() };
+}
+
+/** One position request. The camera move is decided in the handler. */
+function requestPosition() {
+    map.locate({
+        enableHighAccuracy: true,
+        timeout: CONFIG.GEOLOCATION_TIMEOUT_MS,
+        maximumAge: CONFIG.GEOLOCATION_MAX_AGE_MS,
+    });
+}
+
+/** Polling runs only while the page is visible — a backgrounded tab is not read. */
+function onVisibilityChange() {
+    if (!locationTracking) return;
+    if (document.visibilityState === 'hidden') {
+        if (locationTimer !== null) clearInterval(locationTimer);
+        locationTimer = null;
+        return;
+    }
+    if (locationTimer === null) {
+        // Coming back to the app after it was hidden: the shown position is as
+        // old as the pause, so refresh at once rather than at the next tick.
+        requestPosition();
+        locationTimer = setInterval(requestPosition, CONFIG.GEOLOCATION_REFRESH_MS);
+    }
+}
+
+/**
+ * Tracks the user's position for the session: centres the map on the first fix,
+ * drops a "you are here" marker, and re-reads the position every
+ * GEOLOCATION_REFRESH_MS so the marker keeps up during a ride. Called on mobile
+ * at startup.
+ *
+ * A single startup fix was the original behaviour and it is useless mid-journey:
+ * the rider boards, and from then on the dot marks where they got on rather than
+ * where they are, so the only way to find out was to reload the page.
  *
  * Fails silently: if the user denies permission or the device has no
  * geolocation, the default city view is kept and nothing is shown — we never
  * surface the app's error overlay for this optional convenience.
  */
 export function locateUser() {
-    if (!map) return;
+    if (!map || locationTracking) return;
+    locationTracking = true;
 
-    // Snapshot what the camera is allowed to be moved away from. The fix can
-    // land up to the full 10 s timeout later — a slowly answered permission
-    // prompt, a cold GPS — and app.js gates only the REQUEST on the initial
-    // view being home, never the answer. By the time it arrives the rider may
-    // have opened a line or panned the home view, and moving the camera then
-    // breaks the very "never yank the camera away from a deep link" rule the
-    // request is gated on. Comparing hash AND camera covers both: navigating
-    // away changes the hash, panning or zooming in place changes the camera.
-    const askedHash = location.hash;
-    const askedCenter = map.getCenter();
-    const askedZoom = map.getZoom();
-    const cameraUntouched = () =>
-        location.hash === askedHash &&
-        map.getZoom() === askedZoom &&
-        map.getCenter().equals(askedCenter, 1e-9);
+    // What the camera is allowed to be moved away from. The first fix can land
+    // up to the full timeout later — a slowly answered permission prompt, a cold
+    // GPS — and app.js gates only the REQUEST on the initial view being home,
+    // never the answer. By the time it arrives the rider may have opened a line
+    // or panned, and moving the camera then breaks the very "never yank the
+    // camera away from a deep link" rule the request is gated on. Comparing hash
+    // AND camera covers both: navigating away changes the hash, panning or
+    // zooming in place changes the camera.
+    followAnchor = cameraState();
 
-    map.once('locationfound', (e) => {
+    /** Last error reported, so a denied permission is not logged every poll. */
+    let lastErrorCode = null;
+    /** Whether the previous fix was outside the service area (same reason). */
+    let wasOutside = false;
+
+    map.on('locationfound', (e) => {
+        lastErrorCode = null;
+
         // Service-area gate (brainstorm-007): a visitor located outside
         // Montevideo keeps the default city overview — centring on them
         // would show an empty map with no stops or routes. No marker either:
         // it would sit off-screen.
         if (!isWithinBounds(e.latlng.lat, e.latlng.lng, CONFIG.CITY_BOUNDS)) {
-            console.info(
-                '[geolocation] ubicación fuera de Montevideo — se mantiene la vista general',
-            );
+            if (!wasOutside) {
+                console.info(
+                    '[geolocation] ubicación fuera de Montevideo — se mantiene la vista general',
+                );
+                wasOutside = true;
+            }
+            if (userLocationLayer) {
+                map.removeLayer(userLocationLayer);
+                userLocationLayer = null;
+                lastUserFix = null;
+            }
             return;
         }
+        wasOutside = false;
 
         // The marker goes up either way — knowing where you are is useful on
         // any view. Only the camera move is conditional.
-        if (cameraUntouched()) map.setView(e.latlng, CONFIG.GEOLOCATION_MAX_ZOOM);
+        if (!cameraLeftAnchor(followAnchor, cameraState())) {
+            map.setView(e.latlng, CONFIG.GEOLOCATION_MAX_ZOOM);
+            // Anchor on where we asked the camera to go, not on where it is
+            // right now: a zoom animation may still be in flight.
+            followAnchor = {
+                hash: location.hash,
+                lat: e.latlng.lat,
+                lng: e.latlng.lng,
+                zoom: CONFIG.GEOLOCATION_MAX_ZOOM,
+            };
+        }
 
-        if (userLocationLayer) map.removeLayer(userLocationLayer);
-
-        const accent = '#3b82f6'; // --accent
-        userLocationLayer = L.layerGroup([
-            L.circle(e.latlng, {
-                radius: e.accuracy,
-                color: accent,
-                weight: 1,
-                opacity: 0.4,
-                fillColor: accent,
-                fillOpacity: 0.1,
-                interactive: false,
-            }),
-            L.marker(e.latlng, {
-                icon: L.divIcon({
-                    className: '',
-                    html: '<div class="user-location-marker"></div>',
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8],
-                }),
-                interactive: false,
-                keyboard: false,
-                zIndexOffset: 2000,
-            }),
-        ]).addTo(map);
+        drawUserLocation(e.latlng, e.accuracy);
     });
 
-    map.once('locationerror', (err) => {
-        console.warn('[geolocation] no se pudo obtener la ubicación:', err.message);
+    map.on('locationerror', (err) => {
+        if (err.code !== lastErrorCode) {
+            console.warn('[geolocation] no se pudo obtener la ubicación:', err.message);
+            lastErrorCode = err.code;
+        }
+        // Retrying a denied permission every 30 s would never succeed and would
+        // keep the GPS awake for nothing.
+        if (isFatalLocationError(err.code)) stopLocatingUser();
     });
 
-    // The camera move is decided in the handler above (setView: true would
-    // fly to the fix no matter where it lands).
-    map.locate({
-        enableHighAccuracy: true,
-        timeout: 10000,
-    });
+    // The interval is armed BEFORE the first request on purpose: a denied
+    // permission comes back synchronously from map.locate(), and stopping the
+    // polling from inside that handler must find a timer to clear — otherwise
+    // the interval is created afterwards and keeps asking forever.
+    locationTimer = setInterval(requestPosition, CONFIG.GEOLOCATION_REFRESH_MS);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    requestPosition();
+}
+
+/** Stops the position polling. Leaves the last marker in place. */
+export function stopLocatingUser() {
+    if (locationTimer !== null) clearInterval(locationTimer);
+    locationTimer = null;
+    locationTracking = false;
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    if (map) map.off('locationfound').off('locationerror');
 }
 
 // ---------------------------------------------------------------------------

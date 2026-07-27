@@ -45,6 +45,18 @@ export const CONFIG = {
     FIT_BOUNDS_MAX_ZOOM: 15,
     // Auto-geolocation (mobile only): how far to zoom in when centring on the user.
     GEOLOCATION_MAX_ZOOM: 16,
+    // The position is re-read on this interval for the whole session, not once
+    // at startup: the map is used DURING a ride to tell which stop to get off
+    // at, and a fix taken while boarding is worthless ten blocks later.
+    GEOLOCATION_REFRESH_MS: 30_000,
+    // How long to wait for a fix before giving up on one poll. Well under the
+    // refresh interval so a slow answer cannot overlap the next request.
+    GEOLOCATION_TIMEOUT_MS: 10_000,
+    // Every poll must produce a NEW reading: allowing a cached fix means the
+    // browser can answer a 30 s poll with the position it already returned,
+    // which is exactly the staleness this refresh exists to remove. The
+    // interval is the throttle; the cache must not be a second one.
+    GEOLOCATION_MAX_AGE_MS: 0,
     // Deep links / stop search: zoom used when landing on a single stop.
     STOP_FOCUS_ZOOM: 17,
     // Service area gate for auto-geolocation: bounding box of all stops in

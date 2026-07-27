@@ -36,6 +36,7 @@ import {
     setJourneyPopupHandlers,
     focusStop,
     locateUser,
+    getUserLocation,
     applyMapTheme,
     getRenderState,
     getRouteDrawOrder,
@@ -349,6 +350,7 @@ window.__mvdSelectLine = (lineId) => {
 window.__mvdGetRenderState = getRenderState;
 /** Paint order of the route layers ('joint'|'strand'): joints must stay under. */
 window.__mvdGetDrawOrder = getRouteDrawOrder;
+window.__mvdGetUserLocation = getUserLocation;
 
 window.__mvdShowStopRoutes = (stopCode) => {
     if (!uniqueStopByCode.has(stopCode)) return false;
