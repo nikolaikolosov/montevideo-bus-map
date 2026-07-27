@@ -126,6 +126,13 @@ function updateMapStyles() {
         renderRouteLabels(clusterLabelsByScreen(appState.labelCandidates));
     }
 
+    // Arrows are spaced in screen pixels and built for the visible area only,
+    // so they follow the camera exactly as the labels do.
+    if (appState.arrowFeatures?.length && appState.routeArrowsLayer) {
+        map.removeLayer(appState.routeArrowsLayer);
+        renderDirectionArrows(buildDirectionArrows(appState.arrowFeatures));
+    }
+
     // 1. Update stops (guard setStyle: a terminal-only layer may be a plain
     // LayerGroup holding just the highlight marker, which has no setStyle).
     const stopStyle = getStopStyleForZoom(zoom, touch);
@@ -751,6 +758,7 @@ export function clearLayers() {
     if (appState.currentStopsLayer) map.removeLayer(appState.currentStopsLayer);
     if (appState.globalStopsLayer) map.removeLayer(appState.globalStopsLayer);
     if (appState.routeLabelsLayer) map.removeLayer(appState.routeLabelsLayer);
+    if (appState.routeArrowsLayer) map.removeLayer(appState.routeArrowsLayer);
     resetLayers();
 }
 
@@ -1148,6 +1156,83 @@ function clusterLabelsByScreen(candidates) {
 }
 
 /**
+ * Chevrons along the drawn traces, pointing the way the bus travels.
+ *
+ * Direction is only well defined where ONE line is drawn from an explicit set of
+ * variants — a downstream view, or a picked destination. A whole-line view draws
+ * ida and vuelta merged into one corridor, so there is no single answer, and a
+ * multi-line view offsets each line off the centreline the traces follow, so
+ * arrows placed on the trace would sit between the strands rather than on one.
+ *
+ * The trace's own vertex order IS the travel direction, so no extra data is
+ * needed; the arrows are placed by walking it and dropping one every
+ * ARROW_GAP_PX of SCREEN distance, inside the padded viewport only.
+ *
+ * @param {object[]} features - cleaned GeoJSON Feature[] (one line, one direction)
+ * @returns {Array<{latlng: number[], angle: number, color: string}>}
+ */
+function buildDirectionArrows(features) {
+    if (!map) return [];
+    const gap = CONFIG.ARROW_GAP_PX;
+    const pad = CONFIG.ARROW_VIEWPORT_PAD_PX;
+    const bounds = map.getPixelBounds();
+    const inView = (p) =>
+        p.x >= bounds.min.x - pad &&
+        p.x <= bounds.max.x + pad &&
+        p.y >= bounds.min.y - pad &&
+        p.y <= bounds.max.y + pad;
+
+    const out = [];
+    for (const feature of features) {
+        const color = getLineColor(feature.properties.DESC_LINEA);
+        const parts =
+            feature.geometry.type === 'LineString'
+                ? [feature.geometry.coordinates]
+                : feature.geometry.coordinates;
+
+        for (const part of parts) {
+            if (!part || part.length < 2) continue;
+            // Carry the remainder across segments so spacing is even along the
+            // whole trace instead of restarting at every vertex.
+            let carry = 0;
+            for (let i = 1; i < part.length; i++) {
+                const a = map.project([part[i - 1][1], part[i - 1][0]]);
+                const b = map.project([part[i][1], part[i][0]]);
+                const len = a.distanceTo(b);
+                if (len === 0) continue;
+                const angle = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+                for (let at = gap - carry; at <= len; at += gap) {
+                    const t = at / len;
+                    const p = L.point(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+                    if (!inView(p)) continue;
+                    const ll = map.unproject(p);
+                    out.push({ latlng: [ll.lat, ll.lng], angle, color });
+                }
+                carry = (carry + len) % gap;
+            }
+        }
+    }
+    return out;
+}
+
+/** Draws the chevrons. Decorative: not interactive, hidden from readers. */
+function renderDirectionArrows(arrows) {
+    appState.routeArrowsLayer = L.layerGroup().addTo(map);
+    for (const { latlng, angle, color } of arrows) {
+        const icon = L.divIcon({
+            className: '',
+            html:
+                `<div class="route-arrow" aria-hidden="true" style="transform:rotate(${angle.toFixed(1)}deg);` +
+                `border-left-color:${escapeHTML(color)}"></div>`,
+            iconSize: [0, 0],
+        });
+        L.marker(latlng, { icon, interactive: false, keyboard: false }).addTo(
+            appState.routeArrowsLayer,
+        );
+    }
+}
+
+/**
  * Renders clustered route labels onto the map.
  * @param {Array} labelGroups - output of clusterLabelsByScreen()
  */
@@ -1413,6 +1498,14 @@ export function renderRoutes({
     const stopFeatures = getFilteredStopFeatures(lineIds, variantsArr, variantOrdinalMap);
 
     // --- Render ---
+    // Direction is unambiguous only for a single line drawn from an explicit
+    // variant set: a whole-line view merges both directions into one corridor,
+    // and a multi-line view offsets its strands off the traces these follow.
+    appState.arrowFeatures = lineIds.length === 1 && variantsArr ? cleanedRouteFeatures : [];
+    if (appState.arrowFeatures.length) {
+        renderDirectionArrows(buildDirectionArrows(appState.arrowFeatures));
+    }
+
     appState.labelCandidates = buildLabelCandidates(cleanedRouteFeatures);
     renderRouteLabels(clusterLabelsByScreen(appState.labelCandidates));
     renderRouteLines(cleanedRouteFeatures);
