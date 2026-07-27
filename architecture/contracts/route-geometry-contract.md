@@ -102,36 +102,47 @@
   can miss a per-strand match while following the data faithfully. Adding a
   reference only widens what counts as explained; it cannot excuse a corridor
   feature that no reference has.
-  A reference is measured **over the window the corridor's finding covers**, not
-  asked to produce a window of its own (`refWeaveAcrossWindow`). Window growth
-  stops at the first segment more than `WOBBLE_AXIS_DEG` off the chord, so a raw
-  trace — vertices every few metres, P90 jitter 1.9 m — structurally cannot hold
-  a 120 m straight run however plainly it weaves, while the corridor it is
-  compared against has been decimated to 4 m and easily does. That asymmetry,
-  not the street, produced the "neither the strands nor their mean weave at all"
-  verdict of 2026-07-27 (PR #37). Measured over the corridor's own window, 6 of
-  those 10 sites have a two-sided weave of 5.6–12.6 m in the traces against a
-  corridor `devM` of 6.3–11.7 m (ratio 0.72–1.11, the same
-  `WOBBLE_RAW_MATCH_RATIO` bar the independent match uses) — the corridor is
-  following a weave the data already has. Of the remaining 4, line 180 was a
-  located pipeline defect (the merge revert under R-REPRESENTATIVE, now fixed)
-  and 3 stay BUG: lines 199, L6 and L77, whose traces weave two-sided by
-  2.3–3.5 m measured this way.
-  **The chord this measure uses is a known limitation.** `refWeaveAcrossWindow`
-  scores the reference against the chord joining the *projections* of the window
-  ends, and that chord slides wherever the corridor is laterally offset from the
-  reference. Measured against the corridor's own chord instead, the same traces
-  at those 3 sites weave two-sided by 4.1–9.7 m, i.e. more than the corridors
-  they are supposed to explain (3.1–3.8 m) — at line 199 three times as much.
-  Neither chord is unbiased: the projection chord under-reports on an offset
-  corridor, and the corridor chord adds a constant offset that makes a genuine
-  weave read one-sided. Deciding this needs its own power check, so the ratio bar
-  is left where it is and the 3 entries carry both numbers in their reasons. Both halves are
-  unit-tested on a fixture that the sparse measure flags at 7 m and the same
-  geometry re-digitised at 4 m flags not at all (`line-smoothness.test.js`).
-  Retaining power was checked against the pre-re-centring pipeline, where the
-  sawtooth this class was named for is present: the window-matched rule still
-  classifies 21 of 28 WOBBLE findings BUG there (the old rule, 25 of 28).
+  **The reference is not asked to weave at all — the corridor is asked whether it
+  left the data** (`corridorFollowsData`). Every way of asking the first question
+  needs a chord, and all three available chords are biased. Requiring the
+  reference to grow its own window is impossible: growth stops at the first
+  segment more than `WOBBLE_AXIS_DEG` off the chord, and a raw trace — vertices
+  every few metres, P90 jitter 1.9 m — cannot hold a 120 m straight run however
+  plainly it weaves, while the corridor it is compared against has been decimated
+  to 4 m and easily does (that asymmetry, not the street, produced PR #37's
+  "neither the strands nor their mean weave at all"). Measuring the reference over
+  the corridor's window against the chord joining the *projections* of the window
+  ends slides that chord wherever the corridor is laterally offset, under-reporting
+  by 1.8–6.2 m at lines 199/L6/L77 (PR #38). Measuring against the corridor's own
+  chord instead adds a constant lateral offset, which makes a genuine weave read
+  one-sided.
+  Since BUG means pipeline-**introduced**, and a corridor cannot have introduced a
+  feature while it stays on the data, the classifier drops the chord entirely and
+  measures two chord-free quantities over the window: the largest distance from a
+  single chosen reference (`WOBBLE_TRACK_OFF_M`, 4.4 m — the simplify epsilon,
+  deliberately stricter than the cumulative smoothing budget so the gate errs
+  toward flagging) and the largest dart off that reference and back
+  (`WOBBLE_TRACK_ALT_M`, 6 m = 2 × `WOBBLE_SIDE_M`). One reference is fixed for
+  the whole window, so a corridor hopping between carriageways cannot pick a
+  different strand per vertex and hide the hop; the sign of each offset comes from
+  the window's axis, never from the reference's local heading, which on a jittery
+  raw trace swings tens of degrees and would manufacture alternation out of
+  digitisation noise.
+  Measured over all 140 lines (2026-07-27): all 12 corridor WOBBLE findings track
+  a reference within 3.6 m with at most 5.1 m of dart, so the WOBBLE known-bug
+  list is empty. Power checked against the pre-re-centring pipeline, where the
+  phase sawtooth this class was named for is present: 15 of 28 findings stay BUG
+  there — the ten ground-truth carriageway alternations (7.3–10.6 m of dart, about
+  half the 14.2 m P90 separation) plus five corridors pushed 4.5–7.4 m off the
+  data without darting. The projection-chord rule called 21 of 28 BUG there, but
+  six of those track a reference within 4.4 m and never dart, i.e. sit inside the
+  pipeline's own displacement allowance — false positives of the biased chord, not
+  power given up. Both thresholds sit inside a measured plateau (unchanged for ALT
+  5–7 m; OFF weakens only at 5.5 m) and the gap they exploit is real: worst current
+  dart 5.1 m, mildest sawtooth dart 7.3 m. Unit-tested in
+  `line-smoothness.test.js`, including that a steady 7 m offset scores zero dart,
+  that a carriageway hop scores its full amplitude, and that the verdict does not
+  change when the reference is re-digitised every 4 m with 2 m of jitter.
 
 ## Scale ladder
 
@@ -172,9 +183,10 @@ feature at that location (auto-classified with the same measure run on the
 raw paths); **BUG** — pipeline-introduced, must match a reviewed
 `known-bug` whitelist entry (`qa/route-geometry-whitelist.json`) or the gate
 fails; stale entries fail too, so the known-bug list can only burn down.
-Current state (2026-07-27): 11 whitelist entries — 6 `real` (WOBBLE explained
-over the corridor's window, evidence in each reason) and 5 `known-bug`
-(3 WOBBLE, 1 KINK, 1 SELF-CROSS). Down from 38 known-bug entries (13 KINK,
+Current state (2026-07-27): 11 whitelist entries — 9 `real` (every WOBBLE
+finding that was ever contested, each carrying its measured tracking distance
+and dart) and 2 `known-bug` (1 KINK, 1 SELF-CROSS). **The WOBBLE known-bug list
+is empty.** Down from 38 known-bug entries (13 KINK,
 22 WOBBLE, 2 SPIKE, 1 SELF-CROSS) at 2026-07-05, via node re-centring
 (brainstorm-008 PR-2) and the two reference upgrades.
 

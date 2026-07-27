@@ -27,9 +27,7 @@ import {
     measureDuplicates,
     measureKinks,
     meanStrandCurves,
-    refWeaveAcrossWindow,
-    wobblesOfPolyline,
-    ORACLE,
+    corridorFollowsData,
 } from '../../scripts/route_oracles.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -75,23 +73,24 @@ describe('shape evidence: strand-mean reference (2026-07-27)', () => {
     });
 });
 
-describe('shape evidence: window-matched reference (2026-07-27)', () => {
-    // Second half of the same classifier problem. Asking the reference to grow
-    // a WOBBLE window of its OWN is density-dependent: growth stops at the first
-    // segment more than WOBBLE_AXIS_DEG off the chord, and a raw trace digitised
-    // every few metres cannot hold 8° over 120 m however plainly it weaves. So
-    // the reference is measured across the window the CORRIDOR wobbled on.
+describe('shape evidence: chord-free tracking (2026-07-27)', () => {
+    // Third and final iteration of the same classifier problem. Asking whether a
+    // REFERENCE weaves needs a chord, and every chord is biased: the reference's
+    // own chord over the projected stretch slides wherever the corridor is
+    // offset (it under-reported lines 199/L6/L77 by 1.8-6.2 m), the corridor's
+    // chord adds a constant offset that makes a real weave read one-sided, and a
+    // raw trace cannot grow a window at all. BUG means pipeline-INTRODUCED, so
+    // the chord is dropped and the question becomes whether the corridor left
+    // the data — a quantity no lateral offset can distort.
     const M_LON = 92000; // src/geometry.js constants, in metres per degree
     const M_LAT = 111000;
-    const LEG_M = 130; // 3 legs = 390 m, inside WOBBLE_MAX_CHORD_M
+    const LEG_M = 60;
 
     /** Polyline with one vertex per lateral offset (metres), legs of LEG_M. */
-    const shape = (offsets) => offsets.map((o, i) => [(i * LEG_M) / M_LON, o / M_LAT]);
+    const shape = (offsets, { lon0 = 0 } = {}) =>
+        offsets.map((o, i) => [lon0 + (i * LEG_M) / M_LON, o / M_LAT]);
 
-    /**
-     * Same polyline re-digitised every `stepM` with seeded lateral jitter — a
-     * raw trace of the identical geometry (qa rule 2: seeded randomness only).
-     */
+    /** Same geometry re-digitised every `stepM` with seeded lateral jitter. */
     const densify = (p, stepM, jitM, seed) => {
         let s = seed;
         const jit = () =>
@@ -109,46 +108,51 @@ describe('shape evidence: window-matched reference (2026-07-27)', () => {
         return out;
     };
 
-    const weave = shape([0, 7, -7, 0]); // crosses the chord both ways by 7 m
-    const from = weave[0];
-    const to = weave[weave.length - 1];
+    const straight = shape([0, 0, 0, 0, 0, 0, 0]);
 
-    it('scores 0 for a one-sided bow — a bowing street never explains a weave', () => {
-        const bow = shape([0, 8, 11, 8, 0]);
-        expect(refWeaveAcrossWindow([bow], bow[0], bow[bow.length - 1])).toBe(0);
+    it('scores a steady lateral offset as no excursion at all', () => {
+        // The bias the chord introduced: a corridor half a carriageway off the
+        // trace it follows must not read as a weave.
+        const offset = shape([7, 7, 7, 7, 7]);
+        const { offM, altM } = corridorFollowsData([straight], offset);
+        expect(offM).toBeCloseTo(7, 0);
+        expect(altM).toBeCloseTo(0, 1);
     });
 
-    it('scores the two-sided amplitude of a weave', () => {
-        expect(refWeaveAcrossWindow([weave], from, to)).toBeCloseTo(7, 1);
+    it('scores a dart off the data and back', () => {
+        const dart = shape([0, 0, 8, 0, 0]);
+        const { altM } = corridorFollowsData([straight], dart);
+        expect(altM).toBeCloseTo(8, 0);
     });
 
-    it('measures a weave the reference cannot flag on its own (the density gap)', () => {
-        // Sparse, the measure that finds corridor artifacts sees this weave...
-        expect(wobblesOfPolyline(weave).map((w) => w.devM)).toEqual([7]);
-        // ...but re-digitised every 4 m with 2 m of jitter — a raw trace of the
-        // SAME geometry — window growth breaks on the first segment more than
-        // WOBBLE_AXIS_DEG off the chord, so it flags nothing at all.
-        const raw = densify(weave, 4, 2, 20260727);
-        expect(wobblesOfPolyline(raw)).toEqual([]);
-        // Across the corridor's window both samplings report the same weave,
-        // which is what makes the classifier independent of digitisation density.
-        expect(refWeaveAcrossWindow([raw], from, to)).toBeGreaterThan(6);
-        expect(
-            Math.abs(
-                refWeaveAcrossWindow([raw], from, to) - refWeaveAcrossWindow([weave], from, to),
-            ),
-        ).toBeLessThan(1);
+    it('keeps one reference for the window, so carriageway hops cannot hide', () => {
+        // The phase sawtooth: the corridor alternates between two carriageways
+        // 14 m apart. Picking the nearest strand per vertex would score ~0 —
+        // every vertex sits on SOME strand — so the reference is fixed for the
+        // whole window and the hop shows up at its full amplitude.
+        const ida = shape([7, 7, 7, 7, 7]);
+        const vuelta = shape([-7, -7, -7, -7, -7]);
+        const mean = shape([0, 0, 0, 0, 0]);
+        const hopping = shape([7, -7, 7, -7, 7]);
+        const { offM, altM } = corridorFollowsData([ida, vuelta, mean], hopping);
+        expect(offM).toBeCloseTo(7, 0); // the mean is the closest single reference
+        expect(altM).toBeGreaterThan(12); // ~14 m: the full hop
     });
 
-    it('ignores a reference farther than WOBBLE_WINDOW_MATCH_M from the window', () => {
-        const far = ORACLE.WOBBLE_WINDOW_MATCH_M + 20;
-        expect(refWeaveAcrossWindow([shape([far, far + 7, far - 7, far])], from, to)).toBe(0);
-        // Inside the budget the same shape counts — a parallel carriageway is
-        // still the data this corridor represents.
-        const near = ORACLE.WOBBLE_WINDOW_MATCH_M - 10;
-        expect(
-            refWeaveAcrossWindow([shape([near, near + 7, near - 7, near])], from, to),
-        ).toBeCloseTo(7, 0);
+    it('gives the same answer however densely the reference is digitised', () => {
+        // What the previous two measures could not do: the verdict must not
+        // depend on the reference's vertex spacing.
+        const dart = shape([0, 0, 8, 0, 0]);
+        const sparse = corridorFollowsData([straight], dart);
+        const raw = densify(straight, 4, 2, 20260727);
+        const dense = corridorFollowsData([raw], dart);
+        expect(Math.abs(dense.altM - sparse.altM)).toBeLessThan(2.5);
+        expect(Math.abs(dense.offM - sparse.offM)).toBeLessThan(2.5);
+    });
+
+    it('reports Infinity when no reference is usable', () => {
+        expect(corridorFollowsData([], straight)).toEqual({ offM: Infinity, altM: Infinity });
+        expect(corridorFollowsData([[[0, 0]]], straight).offM).toBe(Infinity);
     });
 });
 
