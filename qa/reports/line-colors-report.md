@@ -1,6 +1,6 @@
 # Line color palette — metrics report
 
-Generated: 2026-07-05 · mode: regenerate-all · lines: 140 (new: 140) · candidates: 480
+Generated: 2026-07-27 · mode: incremental · lines: 140 (new: 0) · candidates: 480
 
 Method: OKLab candidate palette (hue×ring grid, sRGB-gamut and ≥3:1
 contrast vs theme basemap proxy #0f172a / #f1f5f9), greedy max-min-ΔE
