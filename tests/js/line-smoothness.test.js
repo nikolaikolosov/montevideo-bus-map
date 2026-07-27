@@ -28,9 +28,20 @@ import {
     measureKinks,
     meanStrandCurves,
     corridorFollowsData,
+    rawCornerSwing,
+    ORACLE,
 } from '../../scripts/route_oracles.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+/** Turn angle at vertex i of a polyline, in degrees (test-local arithmetic). */
+function turnAt(pts, i) {
+    const ang = (a, b) => Math.atan2((b[1] - a[1]) * 111000, (b[0] - a[0]) * 92000);
+    let d = ((ang(pts[i], pts[i + 1]) - ang(pts[i - 1], pts[i])) * 180) / Math.PI;
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    return Math.abs(d);
+}
 
 beforeAll(() => {
     const routes = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8'));
@@ -153,6 +164,84 @@ describe('shape evidence: chord-free tracking (2026-07-27)', () => {
     it('reports Infinity when no reference is usable', () => {
         expect(corridorFollowsData([], straight)).toEqual({ offM: Infinity, altM: Infinity });
         expect(corridorFollowsData([[[0, 0]]], straight).offM).toBe(Infinity);
+    });
+});
+
+describe('shape evidence: corner swing (2026-07-27)', () => {
+    // Third instance of the same classifier problem, this time for KINK. Asking
+    // whether one raw VERTEX turns like the corridor's is density-dependent: the
+    // corridor carries a junction in a single vertex, a trace spreads it over
+    // several. Line 192's corner is exactly that — 71 deg at one corridor vertex
+    // against a sharpest raw vertex of 36 deg, yet the traces swing 68 deg across
+    // the corner as a whole.
+    const M_LON = 92000;
+    const M_LAT = 111000;
+    const at = (xM, yM) => [xM / M_LON, yM / M_LAT];
+
+    /** A corner turning `totalDeg` over `steps` vertices — a digitised trace. */
+    const trace = (totalDeg, steps, legM = 40, stepM = 6) => {
+        const pts = [[0, 0]];
+        let heading = 0;
+        const push = (dist) => {
+            const last = pts[pts.length - 1];
+            const rad = (heading * Math.PI) / 180;
+            pts.push([
+                last[0] + (Math.cos(rad) * dist) / M_LON,
+                last[1] + (Math.sin(rad) * dist) / M_LAT,
+            ]);
+        };
+        push(legM);
+        for (let i = 0; i < steps; i++) {
+            heading += totalDeg / steps;
+            push(stepM);
+        }
+        push(legM);
+        return pts;
+    };
+
+    it('matches a corner the reference makes gradually', () => {
+        const raw = trace(90, 9); // the corner digitised every 6 m
+        // The corridor is a DECIMATION of that trace, which is what the pipeline
+        // produces: the same corner carried in a single vertex.
+        // Flanks sit out on the straight legs, as a corridor's neighbouring
+        // vertices do — the corner itself is carried by the single vertex
+        // between them.
+        const corner = raw[Math.floor(raw.length / 2)];
+        const flanks = [raw[0], raw[raw.length - 1]];
+
+        // No single raw vertex turns anything like the corridor's corner...
+        const sharpestRaw = Math.max(...raw.slice(1, -1).map((_, i) => turnAt(raw, i + 1)));
+        expect(sharpestRaw).toBeLessThan(20);
+        const corridorTurn = turnAt([flanks[0], corner, flanks[1]], 1);
+        expect(corridorTurn).toBeGreaterThan(60);
+
+        // ...but across the corner the trace swings the same amount.
+        // Asserted against the rule's own slack, so the test tracks the
+        // constant the classifier actually applies.
+        const swing = rawCornerSwing([raw], flanks[0], flanks[1], corridorTurn);
+        expect(Math.abs(swing - corridorTurn)).toBeLessThanOrEqual(ORACLE.RAW_KINK_TURN_SLACK_DEG);
+    });
+
+    it('finds no swing where the reference runs straight', () => {
+        const straight = [at(0, 0), at(50, 0), at(100, 0)];
+        expect(rawCornerSwing([straight], at(0, 0), at(100, 0), 90)).toBeLessThan(5);
+    });
+
+    it('takes the swing closest to the corridor, not the largest', () => {
+        // Both references start and end at the corridor's flanks, so both are
+        // candidates; a sharp one must not excuse a mild corridor corner.
+        const bulge = (h) => [at(0, 0), at(50, h), at(100, 0)];
+        const mild = bulge(30); // swings ~62 deg
+        const sharp = bulge(90); // swings ~122 deg
+        const swing = rawCornerSwing([sharp, mild], at(0, 0), at(100, 0), 65);
+        expect(swing).toBeGreaterThan(55);
+        expect(swing).toBeLessThan(70);
+    });
+
+    it('ignores a reference farther than KINK_SWING_MATCH_M from the flanks', () => {
+        const away = trace(90, 9).map(([x, y]) => [x, y + 60 / M_LAT]); // 60 m aside
+        const raw = trace(90, 9);
+        expect(rawCornerSwing([away], raw[1], raw[raw.length - 2], 90)).toBeNull();
     });
 });
 

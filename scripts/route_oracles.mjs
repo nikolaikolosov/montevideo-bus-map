@@ -167,6 +167,11 @@ export const ORACLE = {
     MEAN_REF_REACH_DEG: 0.00033, // strands within this of a sample are averaged (1.5 x cluster tol)
     RAW_KINK_RADIUS_M: 25,
     RAW_KINK_TURN_SLACK_DEG: 25,
+    // How far a reference may sit from the corner's flank ends and still be the
+    // data this corridor represents — the CHORD budget, same reasoning as the
+    // WOBBLE tracking bar. Corners are where carriageways separate most, so the
+    // corridor can legitimately sit a full carriageway from either strand.
+    KINK_SWING_MATCH_M: 30,
 };
 
 /** Flattens a prepared feature to [lon,lat][] paths. */
@@ -286,6 +291,51 @@ export function meanStrandCurves(paths) {
         out.push(curve);
     }
     return out;
+}
+
+/**
+ * The heading swing a reference makes across the SAME stretch the corridor turns
+ * over, in degrees — or null when no reference covers that stretch.
+ *
+ * `rawKinkNear` asks whether one raw VERTEX turns like the corridor's, which a
+ * densely digitised corner can never satisfy: the corridor carries a junction in
+ * a single vertex, while the trace spreads it over several. Line 192's corner is
+ * exactly that — the corridor turns 71 deg at one vertex, the five strands that
+ * traverse it turn at most 36 deg at any single vertex but swing 68 deg across
+ * the corner as a whole. Comparing swings removes the dependence on how densely
+ * either side happens to be digitised.
+ *
+ * Returns the swing CLOSEST to the corridor's own turn, not the largest: taking
+ * the largest would let a sharp corner somewhere in the reference set excuse a
+ * mild corridor corner that nothing at that spot actually makes.
+ *
+ * @param {number[][][]} refs - digitised traces and/or their mean curves
+ * @param {number[]} from - the vertex before the corner
+ * @param {number[]} to - the vertex after it
+ * @param {number} turn - the corridor's turn at the corner, in degrees
+ * @returns {number|null} closest swing found, in degrees
+ */
+export function rawCornerSwing(refs, from, to, turn) {
+    let best = null;
+    for (const ref of refs) {
+        if (ref.length < 3) continue;
+        const pa = projectPointOnPolyline(from, ref);
+        const pb = projectPointOnPolyline(to, ref);
+        if (!pa || !pb) continue;
+        if (segmentLengthM(from, [pa.x, pa.y]) > ORACLE.KINK_SWING_MATCH_M) continue;
+        if (segmentLengthM(to, [pb.x, pb.y]) > ORACLE.KINK_SWING_MATCH_M) continue;
+        const [s, e] = pa.i <= pb.i ? [pa, pb] : [pb, pa];
+        const pts = [[s.x, s.y], ...ref.slice(s.i + 1, e.i + 1), [e.x, e.y]];
+        if (pts.length < 3) continue;
+        const swing = Math.abs(
+            axisAngleDeg(
+                headingDeg(pts[0], pts[1]),
+                headingDeg(pts[pts.length - 2], pts[pts.length - 1]),
+            ),
+        );
+        if (best === null || Math.abs(swing - turn) < Math.abs(best - turn)) best = swing;
+    }
+    return best;
 }
 
 export function rawKinkNear(paths, at, turn) {
@@ -476,7 +526,9 @@ export function measureKinks(sections) {
             if (l1 > ORACLE.KINK_MAX_FLANK_M || l2 > ORACLE.KINK_MAX_FLANK_M) continue;
             const turn = turnAngleDeg(c[i - 1], c[i], c[i + 1]);
             if (turn > ORACLE.KINK_MIN_TURN_DEG && turn < ORACLE.KINK_MAX_TURN_DEG) {
-                out.push({ at: c[i], turn: +turn.toFixed(0) });
+                // The flanks let a reference be measured over the SAME stretch
+                // (rawCornerSwing); stripped from the reported detail.
+                out.push({ at: c[i], turn: +turn.toFixed(0), flanks: [c[i - 1], c[i + 1]] });
             }
         }
     }
@@ -682,9 +734,14 @@ export function measureLine(line, prepared) {
     // widens what counts as explained by the data, it never hides a corridor
     // feature that neither the strands nor their mean have.
     const shapeRefs = [...paths, ...meanStrandCurves(paths)];
-    add('KINK', measureKinks(sections), (v) =>
-        rawKinkNear(shapeRefs, v.at, v.turn) ? 'REAL' : 'BUG',
-    );
+    const kinkVerdict = (v) => {
+        if (rawKinkNear(shapeRefs, v.at, v.turn)) return 'REAL';
+        const swing = rawCornerSwing(shapeRefs, v.flanks[0], v.flanks[1], v.turn);
+        return swing !== null && Math.abs(swing - v.turn) <= ORACLE.RAW_KINK_TURN_SLACK_DEG
+            ? 'REAL'
+            : 'BUG';
+    };
+    add('KINK', measureKinks(sections), kinkVerdict, ['flanks']);
     const rawWobbles = shapeRefs.flatMap((p) => wobblesOfPolyline(p));
     add(
         'WOBBLE',

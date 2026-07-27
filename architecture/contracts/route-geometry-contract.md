@@ -148,6 +148,19 @@
   the window's axis, never from the reference's local heading, which on a jittery
   raw trace swings tens of degrees and would manufacture alternation out of
   digitisation noise.
+  The same density trap applies to **KINK**, and is closed the same way
+  (`rawCornerSwing`). `rawKinkNear` asks whether one raw VERTEX turns like the
+  corridor's, which a densely digitised corner cannot satisfy: the corridor
+  carries a junction in a single vertex while the trace spreads it over several.
+  Line 192's corner is exactly that — 71° at one corridor vertex, while the
+  sharpest single raw vertex within 25 m turns only 36°; measured across the
+  corner's own flanks the five strands that traverse it swing 68°, a 3° match.
+  The swing CLOSEST to the corridor's turn is taken, never the largest: the
+  largest would let a sharp corner elsewhere in the reference set excuse a mild
+  corridor corner that nothing at that spot makes. Power checked on degraded
+  pipelines where corners really are pipeline-made — 2 findings stay BUG with
+  smoothing off, 6 with re-centring off, 31 with both off.
+
   Measured over all 140 lines (2026-07-27): all 12 corridor WOBBLE findings track
   a reference within 3.6 m with at most 5.1 m of dart, so the WOBBLE known-bug
   list is empty. Power checked against the pre-re-centring pipeline, where the
@@ -203,10 +216,10 @@ feature at that location (auto-classified with the same measure run on the
 raw paths); **BUG** — pipeline-introduced, must match a reviewed
 `known-bug` whitelist entry (`qa/route-geometry-whitelist.json`) or the gate
 fails; stale entries fail too, so the known-bug list can only burn down.
-Current state (2026-07-27): 11 whitelist entries — 9 `real` (every WOBBLE
-finding that was ever contested, each carrying its measured tracking distance
-and dart) and 2 `known-bug` (1 KINK, 1 SELF-CROSS). **The WOBBLE known-bug list
-is empty.** Down from 38 known-bug entries (13 KINK,
+Current state (2026-07-27): 11 whitelist entries — 10 `real` (every WOBBLE and
+KINK finding that was ever contested, each carrying its measurement) and
+**1 `known-bug`**: a single SELF-CROSS, the only class with no shape matcher, so
+its verdict still rests on the triage card alone. Down from 38 known-bug entries (13 KINK,
 22 WOBBLE, 2 SPIKE, 1 SELF-CROSS) at 2026-07-05, via node re-centring
 (brainstorm-008 PR-2) and the two reference upgrades.
 
