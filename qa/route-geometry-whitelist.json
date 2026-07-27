@@ -1,5 +1,5 @@
 {
-  "_comment": "Reviewed exceptions for scripts/verify_route_oracles.mjs. real = genuine street/data geometry (evidence in reason); known-bug = accepted pipeline artifact. Regenerate candidates with --write-whitelist, review in the triage gallery, prune stale entries as fixes land. All entries reviewed card-by-card on 2026-07-27 and classified real: the known-bug burn-down list from brainstorm-008 is empty.",
+  "_comment": "Reviewed exceptions for scripts/verify_route_oracles.mjs. real = genuine street/data geometry (evidence in reason); known-bug = accepted pipeline artifact. Regenerate candidates with --write-whitelist, review in the triage gallery, prune stale entries as fixes land. Rebuilt 2026-07-27 against the BUG set after the shape matcher gained the strand-mean reference, and after that reference showed the WOBBLE residue is genuinely pipeline weave — correcting the blanket real verdicts of PR #36.",
   "entries": [
     {
       "class": "WOBBLE",
@@ -9,85 +9,8 @@
         -34.89086
       ],
       "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":8.9} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 9.3 m, mean-of-strands 9.3 m, nearest digitised strand 9.3 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
-    },
-    {
-      "class": "KINK",
-      "line": "192",
-      "lonLat": [
-        -56.15792,
-        -34.898948
-      ],
-      "radiusM": 30,
-      "status": "real",
-      "reason": "KINK {\"turn\":99} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 29.1 m, mean-of-strands 29.9 m, nearest digitised strand 25.2 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "468",
-      "lonLat": [
-        -56.110145,
-        -34.891435
-      ],
-      "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":10.1} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 10.0 m, mean-of-strands 10.0 m, nearest digitised strand 9.8 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
-    },
-    {
-      "class": "SELF-CROSS",
-      "line": "E14",
-      "lonLat": [
-        -56.19527,
-        -34.91204
-      ],
-      "radiusM": 30,
-      "status": "real",
-      "reason": "SELF-CROSS — REAL: the route doubles back through this junction and the digitised trace does the same. Reviewed card-by-card in the triage gallery on 2026-07-27 at 2x zoom (npm run triage:oracles): the corridor comes down from the north, turns sharply at the anchor, and runs back down to the south-east where it meets its own other leg — the grey reference trace makes that same double-back, so the crossing is the shape of the service, not of the pipeline. Chord deviation is not a meaningful measure for this class (0.0 m for corridor, strand mean and nearest strand alike), which is why the verdict rests on the card rather than on a number."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "L6",
-      "lonLat": [
-        -56.276813,
-        -34.846851
-      ],
-      "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":8.5} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 8.3 m, mean-of-strands 10.9 m, nearest digitised strand 10.8 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
-    },
-    {
-      "class": "WOBBLE",
-      "line": "L77",
-      "lonLat": [
-        -56.276811,
-        -34.846848
-      ],
-      "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":8} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 7.7 m, mean-of-strands 10.6 m, nearest digitised strand 10.6 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
-    },
-    {
-      "class": "KINK",
-      "line": "163",
-      "lonLat": [
-        -56.163523,
-        -34.893557
-      ],
-      "radiusM": 30,
-      "status": "real",
-      "reason": "KINK {\"turn\":68} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 141.4 m, mean-of-strands 146.0 m, nearest digitised strand 139.8 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
-    },
-    {
-      "class": "KINK",
-      "line": "192",
-      "lonLat": [
-        -56.150964,
-        -34.89376
-      ],
-      "radiusM": 30,
-      "status": "real",
-      "reason": "KINK {\"turn\":74} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 16.1 m, mean-of-strands 10.6 m, nearest digitised strand 16.4 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":9.3} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
     },
     {
       "class": "WOBBLE",
@@ -97,8 +20,8 @@
         -34.881669
       ],
       "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":11.4} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 11.4 m, mean-of-strands 16.4 m, nearest digitised strand 17.3 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":11.4} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
     },
     {
       "class": "WOBBLE",
@@ -108,8 +31,19 @@
         -34.896757
       ],
       "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":7.1} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 18.0 m, mean-of-strands 19.7 m, nearest digitised strand 18.5 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":7.1} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+    },
+    {
+      "class": "KINK",
+      "line": "192",
+      "lonLat": [
+        -56.150961,
+        -34.893725
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "KINK {\"turn\":71} — pipeline-introduced corner, accepted pending further mechanism work. Re-reviewed 2026-07-27: no digitised strand and no strand-mean curve within 25 m turns within 25 deg of this angle."
     },
     {
       "class": "WOBBLE",
@@ -119,8 +53,19 @@
         -34.87027
       ],
       "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":9.7} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 10.8 m, mean-of-strands 10.8 m, nearest digitised strand 18.8 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":9.7} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+    },
+    {
+      "class": "WOBBLE",
+      "line": "468",
+      "lonLat": [
+        -56.110145,
+        -34.891435
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":10} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
     },
     {
       "class": "WOBBLE",
@@ -130,8 +75,8 @@
         -34.894264
       ],
       "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":11.7} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 12.8 m, mean-of-strands 11.2 m, nearest digitised strand 10.2 m — the corridor bends 1.6 m more than the strand mean, inside the smoothing budget (11.1 m). The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":11.7} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
     },
     {
       "class": "WOBBLE",
@@ -141,8 +86,8 @@
         -34.897304
       ],
       "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":7.1} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 32.6 m, mean-of-strands 34.4 m, nearest digitised strand 33.8 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":7.1} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
     },
     {
       "class": "WOBBLE",
@@ -152,8 +97,41 @@
         -34.896483
       ],
       "radiusM": 30,
-      "status": "real",
-      "reason": "WOBBLE {\"devM\":6.3} — REAL: the street bends like this. Reviewed card-by-card in the triage gallery on 2026-07-27 (npm run triage:oracles): the corridor lies between its strands and follows them. Max chord deviation over a 520 m window at this anchor: corridor 6.3 m, mean-of-strands 6.9 m, nearest digitised strand 11.0 m — the corridor is no more bent than the data it averages. The oracle scores it BUG because its REAL test matches shape against an INDIVIDUAL raw strand (rawKinkNear within 25 m / 25 deg, rawWobbleNear within 80 m at >= 0.7x), which a corridor placed at the mean of two carriageways can miss even when it represents them faithfully."
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":6.3} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+    },
+    {
+      "class": "SELF-CROSS",
+      "line": "E14",
+      "lonLat": [
+        -56.19527,
+        -34.91204
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "SELF-CROSS — the corridor polyline properly crosses itself here. Reviewed card-by-card in the triage gallery at 2x zoom on 2026-07-27: the route doubles back through this junction and the digitised trace makes the same double-back, so the crossing follows the service. Kept as known-bug rather than real because the class has no shape matcher to corroborate that reading numerically — the verdict rests on the card alone."
+    },
+    {
+      "class": "WOBBLE",
+      "line": "L6",
+      "lonLat": [
+        -56.276814,
+        -34.846849
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":8.3} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
+    },
+    {
+      "class": "WOBBLE",
+      "line": "L77",
+      "lonLat": [
+        -56.276812,
+        -34.846847
+      ],
+      "radiusM": 30,
+      "status": "known-bug",
+      "reason": "WOBBLE {\"devM\":7.7} — residual pipeline weave, accepted pending further mechanism work. Re-reviewed 2026-07-27 after the shape matcher gained the strand-mean reference: within 80 m of this anchor, NEITHER the digitised strands NOR their mean produce a two-sided weave at all, while the corridor crosses the chord to both sides by more than 3 m. The street bows one way; the corridor waves. This corrects the 'real' verdict recorded on 2026-07-26 in PR #36, which compared max chord deviation only and so missed the two-sidedness that defines the class. Node re-centring (PR #35) cut this class from 25 sites at up to 15.2 m to 10 at up to 11.7 m; what is left is the sawtooth that survives smoothing and simplification."
     }
   ]
 }

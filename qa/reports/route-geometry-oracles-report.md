@@ -11,14 +11,14 @@
 | class | REAL | BUG | BUG unwhitelisted | INFO |
 |---|---|---|---|---|
 | DUPLICATE | 6 | 0 | 0 | 0 |
-| KINK | 26 | 2 | 0 | 0 |
+| KINK | 27 | 1 | 0 | 0 |
 | PHANTOM-FORK | 0 | 0 | 0 | 320 |
 | SELF-CROSS | 0 | 1 | 0 | 0 |
 | WOBBLE | 3 | 10 | 0 | 0 |
 
-- Whitelist: 14 entries, 0 stale.
-- BUG findings by line: 2:1 151:1 163:1 180:1 192:1 199:1 468:1 494:1 Bt2:1 D1:1 E14:1 L6:1 L77:1
-- REAL findings by line: 140:3 174:3 494:3 21:2 115:2 169:2 D10:2 105:1 121:1 143:1 145:1 147:1 186:1 192:1 195:1 316:1 328:1 329:1 505:1 526:1 D8:1 D11:1 G11:1 L12:1 L39:1
+- Whitelist: 12 entries, 0 stale.
+- BUG findings by line: 2:1 151:1 180:1 192:1 199:1 468:1 494:1 Bt2:1 D1:1 E14:1 L6:1 L77:1
+- REAL findings by line: 140:3 174:3 494:3 21:2 115:2 169:2 D10:2 105:1 121:1 143:1 145:1 147:1 163:1 186:1 192:1 195:1 316:1 328:1 329:1 505:1 526:1 D8:1 D11:1 G11:1 L12:1 L39:1
 
 ## Open (unwhitelisted) BUG findings
 
