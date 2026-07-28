@@ -2,6 +2,12 @@
 
 > Owner: performance-engineer · Question raised by the user, 2026-07-27
 > Subject: `CONFIG.GEOLOCATION_*` and `nextRefreshMs` (src/map.js)
+>
+> **Status: superseded on mobile (2026-07-28).** The user asked for 1 s updates
+> on the phone, which is the option this report priced and rejected. The policy
+> below now applies only to the desktop locate control; what mobile does instead,
+> and what it costs by these same numbers, is in "Mobile: 1 Hz by decision" at
+> the end. Nothing measured here changed — only the decision it fed.
 
 ## Assumptions
 
@@ -148,7 +154,58 @@ where both stops are within sight anyway.
 - `tests/js/geolocation.test.js` — the policy as a pure function: stationary and
   walking hit the cap, riding lands between the clamps, high speed hits the
   floor, jitter under the reported accuracy is not motion.
-- `tests/e2e/geolocation.spec.js` — `reads the position far less often standing
-still than riding`: same 3-minute span in both phases under Playwright's clock;
-  ≤5 reads standing versus ≥2× that riding. Verified to fail against a fixed
-  cadence (12 reads standing).
+- `tests/e2e/geolocation.spec.js` — `on a fine pointer (desktop) › reads the
+position far less often standing still than riding`: same 3-minute span in both
+  phases under Playwright's clock; ≤5 reads standing versus ≥2× that riding.
+  Verified to fail against a fixed cadence (12 reads standing).
+
+## Mobile: 1 Hz by decision (2026-07-28)
+
+The user asked for the position to update once a second on the phone. That is
+the "1 s" row this report priced and rejected, and the user reaffirmed it after
+the trade-off was stated, so it ships on mobile. The measurements are unchanged;
+what changed is which side of them is chosen:
+
+| | mobile (now) | desktop locate control |
+| --- | --- | --- |
+| mechanism | `watchPosition` + 1 Hz floor | `getCurrentPosition` on a self-rescheduling timer |
+| cadence | 1 s | 88 m / speed, clamped to [10 s, 45 s] |
+| riding coverage (by the table above) | 100 % | 90.2 % |
+| position reads per 30-min session | ~1,800 | ~89 |
+| receiver | continuously engaged | duty-cycled |
+
+What buys the last 10 pp is stated plainly: those are stop pairs closer than
+177 m, where both stops are within sight anyway. The gain the rider actually
+sees is smoothness — the dot moves with the bus instead of jumping every 10–45 s.
+
+Implementation notes that follow from the cadence, not from taste:
+
+- **A watch, not a 1 Hz poll.** `watchPosition` is what keeps a phone's receiver
+  engaged and pushes each fix it makes; asking `getCurrentPosition` every second
+  with `maximumAge: 0` would restart an acquisition per read and deliver *less
+  often* than the watch, not more. The report's rejection of `watchPosition` was
+  a rejection of continuous engagement — which is precisely what 1 Hz asks for.
+- **The 1 Hz ticker is a floor, not the source.** It reads only when the watch
+  has said nothing for a full interval (a provider that reports on change only,
+  or a watch gone quiet), and accepts a fix up to one interval old, so on a phone
+  where the watch is chatty it never fires.
+- **Faster-than-1 Hz pushes are dropped** (`isFixDue`, gated at
+  `GEOLOCATION_LIVE_MIN_GAP_MS` = 750 ms so a nominal-1 Hz platform's jitter does
+  not halve the delivered rate). Some platforms deliver on every sensor update;
+  redrawing and re-centring the map several times a second for metres of GNSS
+  noise is not what "once a second" asked for.
+- **Camera moves stop animating while following at 1 Hz.** An in-flight pan
+  leaves the camera between two fixes, which the follow policy reads as "someone
+  else moved the map" — following would switch itself off within seconds.
+- **The pauses that bound the cost stay.** A hidden tab ends the watch (not just
+  the reads), and a denied permission ends the session.
+
+Unchanged from the rest of this report: energy is **not** measured, here or
+before. The honest statement is that a continuously engaged receiver costs more
+than a duty-cycled one, by an amount this project cannot quantify.
+
+Verification: `tests/js/geolocation.test.js` (`isFixDue`) and, in
+`tests/e2e/geolocation.spec.js`, `the mobile track refreshes the position once a
+second` — 30 reads in 30 mocked seconds, every gap one interval, against a stub
+platform whose watch never pushes; plus `mobile keeps a continuous high-accuracy
+watch running` and `a move shows on the map within a second`.

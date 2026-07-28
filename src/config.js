@@ -109,6 +109,28 @@ export const CONFIG = {
     // which is exactly the staleness this refresh exists to remove. The
     // interval is the throttle; the cache must not be a second one.
     GEOLOCATION_MAX_AGE_MS: 0,
+    // --- Live tracking (mobile only) ---------------------------------------
+    // On a coarse-pointer device the position is tracked CONTINUOUSLY at 1 Hz
+    // instead of the duty-cycled poll above: a `watchPosition` session, which
+    // is what keeps a phone's receiver engaged and pushes every fix it makes,
+    // with the reads below as the cadence floor when the platform only pushes
+    // on change. Asked for by the user on 2026-07-28, overriding the measured
+    // policy in qa/reports/geolocation-cadence-report.md, which had rejected
+    // 1 s as ~20x the reads for the last 10 pp of stop correctness. The
+    // desktop locate control keeps the adaptive cadence — the ride scenario
+    // this serves is the phone's.
+    GEOLOCATION_LIVE_INTERVAL_MS: 1000,
+    // Fixes arriving faster than the cadence are dropped, but the gate sits
+    // BELOW one interval on purpose: a platform pushing at a nominal 1 Hz
+    // jitters either side of 1000 ms, and gating exactly at 1000 ms would drop
+    // every second fix and halve the delivered cadence.
+    GEOLOCATION_LIVE_MIN_GAP_MS: 750,
+    // Cache age accepted by the cadence floor's top-up reads. Within one
+    // interval the watch's own last fix IS the answer being asked for, so
+    // waking the receiver a second time for it buys nothing. (The polling
+    // path keeps maximumAge 0 — there the interval is long enough that a
+    // cached fix would be exactly the staleness it exists to remove.)
+    GEOLOCATION_LIVE_MAX_AGE_MS: 1000,
     // Deep links / stop search: zoom used when landing on a single stop.
     STOP_FOCUS_ZOOM: 17,
     // Service area gate for auto-geolocation: bounding box of all stops in

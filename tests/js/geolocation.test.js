@@ -4,12 +4,13 @@
  * The tracking loop itself — timers, permissions, visibility — is browser
  * integration and is covered in tests/e2e/geolocation.spec.js. The two
  * decisions it takes are pure and pinned here: when the camera may still be
- * moved, and which geolocation errors are worth another try.
+ * moved, which geolocation errors are worth another try, how long the desktop
+ * poll waits, and which of a mobile watch's fixes are shown.
  */
 
 import { describe, it, expect } from 'vitest';
 
-import { cameraLeftAnchor, isFatalLocationError, nextRefreshMs } from '../../src/map.js';
+import { cameraLeftAnchor, isFatalLocationError, isFixDue, nextRefreshMs } from '../../src/map.js';
 import { CONFIG } from '../../src/config.js';
 
 describe('cameraLeftAnchor (whether following may continue)', () => {
@@ -115,5 +116,35 @@ describe('nextRefreshMs (how often to read the position)', () => {
 
     it('ignores a non-advancing clock instead of dividing by zero', () => {
         expect(nextRefreshMs(origin, { ...origin })).toBe(CONFIG.GEOLOCATION_FIRST_REFRESH_MS);
+    });
+});
+
+describe('isFixDue (which fixes the mobile 1 Hz track shows)', () => {
+    const t0 = 5_000_000;
+    const INTERVAL = CONFIG.GEOLOCATION_LIVE_INTERVAL_MS;
+
+    it('shows the first fix there is', () => {
+        expect(isFixDue(0, t0)).toBe(true);
+    });
+
+    it('shows one fix per interval', () => {
+        expect(isFixDue(t0, t0 + INTERVAL)).toBe(true);
+        expect(isFixDue(t0, t0 + 5 * INTERVAL)).toBe(true);
+    });
+
+    it('drops what a platform pushes faster than the cadence', () => {
+        // Some platforms deliver on every sensor update. Redrawing and
+        // re-centring the map several times a second for metres of GNSS noise
+        // is not what "once a second" asked for.
+        expect(isFixDue(t0, t0 + 100)).toBe(false);
+        expect(isFixDue(t0, t0 + INTERVAL / 2)).toBe(false);
+    });
+
+    it('tolerates the jitter of a nominal 1 Hz platform', () => {
+        // A fix 40 ms early must still be shown: gating exactly at the interval
+        // would drop it and push the next accepted one out to ~2 s, halving the
+        // very cadence the gate exists to hold.
+        expect(isFixDue(t0, t0 + INTERVAL - 40)).toBe(true);
+        expect(CONFIG.GEOLOCATION_LIVE_MIN_GAP_MS).toBeLessThan(INTERVAL);
     });
 });
