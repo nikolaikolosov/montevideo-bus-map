@@ -30,6 +30,122 @@ test('the bottom sheet leaves at least 82% of the screen to the map', async ({ p
     expect(withStats).toBeLessThanOrEqual(0.24);
 });
 
+/**
+ * Destination picker on the bottom sheet (user report, 2026-07-28: "the layout
+ * breaks when a line is selected").
+ *
+ * The mobile `.stat-row` is a COLUMN with `align-items: flex-start`, which sizes
+ * each child to its own content — so the chip strip stopped being a scroll area
+ * and simply grew: line 522 made it 314 px wide inside a 260 px column, painting
+ * over the stops stat beside it, and line 103 made it 1,945 px, widening the
+ * document to 1,961 px so the phone scaled the whole page down to fit. Both
+ * lines are pinned here, plus the reported one.
+ */
+const LINES_WITH_MANY_DESTINATIONS = ['522', '104', '103'];
+
+const panelGeometry = (page) =>
+    page.evaluate(() => {
+        const strip = document.getElementById('destinationChips');
+        const box = document.getElementById('destinations').getBoundingClientRect();
+        const stats = document
+            .querySelector('#routeInfo .stat-row:not(.destinations)')
+            .getBoundingClientRect();
+        const panel = document.getElementById('ui-panel').getBoundingClientRect();
+        return {
+            stripWidth: strip.getBoundingClientRect().width,
+            stripRight: strip.getBoundingClientRect().right,
+            stripScrollWidth: strip.scrollWidth,
+            stripClientWidth: strip.clientWidth,
+            boxWidth: box.width,
+            statsLeft: stats.left,
+            panelRatio: panel.height / window.innerHeight,
+            docScrollWidth: document.documentElement.scrollWidth,
+            viewportWidth: window.innerWidth,
+            chips: document.querySelectorAll('.destination-chip').length,
+        };
+    });
+
+for (const line of LINES_WITH_MANY_DESTINATIONS) {
+    test(`line ${line}: the destination strip scrolls instead of widening the page`, async ({
+        page,
+    }) => {
+        await openMap(page, { theme: 'dark' });
+        await page.evaluate((l) => window.__mvdSelectLine(l), line);
+        await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
+        await expect(page.locator('.destination-chip').first()).toBeVisible();
+
+        const g = await panelGeometry(page);
+        expect(
+            g.chips,
+            'line chosen for this test no longer has several destinations',
+        ).toBeGreaterThan(1);
+
+        // The document must not grow sideways: on a phone that does not add a
+        // scrollbar, it scales the entire layout down — the reported symptom.
+        expect(g.docScrollWidth, 'the page can be scrolled sideways').toBeLessThanOrEqual(
+            g.viewportWidth + 1,
+        );
+
+        // The strip stays inside its own column instead of painting over the
+        // stat next to it.
+        expect(g.stripWidth).toBeLessThanOrEqual(g.boxWidth + 1);
+        expect(g.stripRight, 'the chips overlap the stops stat').toBeLessThanOrEqual(
+            g.statsLeft + 1,
+        );
+
+        // Being clipped is not enough — the chips that do not fit must be
+        // reachable, which is what makes one row an acceptable design.
+        if (g.stripScrollWidth > g.stripClientWidth) {
+            const moved = await page.evaluate(() => {
+                const strip = document.getElementById('destinationChips');
+                strip.scrollLeft = strip.scrollWidth;
+                return strip.scrollLeft;
+            });
+            expect(moved, 'the overflowing chips cannot be scrolled to').toBeGreaterThan(0);
+        }
+
+        // And the sheet keeps its map-space budget while doing it.
+        expect(g.panelRatio).toBeLessThanOrEqual(0.24);
+    });
+}
+
+test('nothing in the bottom sheet paints outside it, whatever the line', async ({ page }) => {
+    // Read EVERY element in the panel rather than naming the ones known to
+    // overflow today: the reported bug was a child that outgrew its parent, and
+    // the next one will be some other child.
+    await openMap(page, { theme: 'dark' });
+    await page.evaluate(() => window.__mvdSelectLine('103')); // the widest picker: 15 destinations
+    await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
+    await expect(page.locator('.destination-chip').first()).toBeVisible();
+
+    const escapees = await page.evaluate(() => {
+        const panelEl = document.getElementById('ui-panel');
+        const panel = panelEl.getBoundingClientRect();
+        // Content inside a scroll area is allowed past the edge — that is what
+        // the scroll area is FOR, and it is clipped. The area itself is not:
+        // it is checked like everything else, which is exactly what failed.
+        const clipped = (el) => {
+            for (let p = el.parentElement; p && p !== panelEl; p = p.parentElement) {
+                if (getComputedStyle(p).overflowX !== 'visible') return true;
+            }
+            return false;
+        };
+        return [...panelEl.querySelectorAll('*')]
+            .filter((el) => {
+                const b = el.getBoundingClientRect();
+                if (!b.width && !b.height) return false; // hidden
+                if (el.closest('#searchList')) return false; // deliberately overlays upward
+                if (clipped(el)) return false;
+                return b.right > panel.right + 1 || b.left < panel.left - 1;
+            })
+            .map((el) => {
+                const b = el.getBoundingClientRect();
+                return `${el.id || el.className || el.tagName} ${b.left.toFixed(1)}..${b.right.toFixed(1)} vs panel ${panel.left.toFixed(1)}..${panel.right.toFixed(1)}`;
+            });
+    });
+    expect(escapees).toEqual([]);
+});
+
 test('search field carries the platform hints that suppress autofill bars', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
     const input = page.locator('#searchInput');
