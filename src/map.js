@@ -467,11 +467,33 @@ export function initMap(onHome) {
 /** @type {L.LayerGroup|null} "You are here" marker + accuracy circle. */
 let userLocationLayer = null;
 
+/** @type {L.Circle|null} Accuracy circle, kept so 1 Hz updates move it in place. */
+let userLocationCircle = null;
+
+/** @type {L.Marker|null} The dot itself, moved in place for the same reason. */
+let userLocationMarker = null;
+
 /** @type {number|null} Handle of the periodic position refresh. */
 let locationTimer = null;
 
 /** True between locateUser() and stopLocatingUser(), across visibility pauses. */
 let locationTracking = false;
+
+/**
+ * True when tracking runs as a continuous 1 Hz watch (mobile) rather than the
+ * speed-derived polling loop (desktop locate control).
+ */
+let locationContinuous = false;
+
+/** @type {number|null} Handle of the 1 Hz cadence floor while watching. */
+let liveTimer = null;
+
+/** When the last fix arrived, and when one was last drawn (ms, Date.now()). */
+let lastFixAt = 0;
+let lastRenderAt = 0;
+
+/** True while a one-shot read is outstanding, so top-ups do not stack. */
+let readPending = false;
 
 /** Previous fix, so the next interval can be derived from the rider's speed. */
 let prevFix = null;
@@ -514,7 +536,8 @@ export function cameraLeftAnchor(anchor, state) {
 
 /**
  * How long to wait before reading the position again, from how fast the rider is
- * actually moving.
+ * actually moving. The DESKTOP cadence: mobile tracks continuously at 1 Hz and
+ * never consults this (see locateUser and isFixDue).
  *
  * A fixed cadence is wrong in both directions: 30 s leaves the map implying the
  * wrong stop on 73 % of stop pairs while riding, and the same 30 s spent
@@ -582,32 +605,52 @@ export function getUserLocation() {
 
 /** Draws (or moves) the "you are here" marker and its accuracy circle. */
 function drawUserLocation(latlng, accuracy) {
-    if (userLocationLayer) map.removeLayer(userLocationLayer);
     lastUserFix = { lat: latlng.lat, lng: latlng.lng, accuracy };
 
+    // Once the layer exists the fix only MOVES it. Rebuilding a layer group,
+    // a circle, a marker and a div icon every second — which is the mobile
+    // cadence now — is churn the map does not need; setLatLng is what these
+    // classes are for.
+    if (userLocationLayer && userLocationCircle && userLocationMarker) {
+        userLocationCircle.setLatLng(latlng);
+        userLocationCircle.setRadius(accuracy);
+        userLocationMarker.setLatLng(latlng);
+        return;
+    }
+
+    if (userLocationLayer) map.removeLayer(userLocationLayer);
+
     const accent = '#3b82f6'; // --accent
-    userLocationLayer = L.layerGroup([
-        L.circle(latlng, {
-            radius: accuracy,
-            color: accent,
-            weight: 1,
-            opacity: 0.4,
-            fillColor: accent,
-            fillOpacity: 0.1,
-            interactive: false,
+    userLocationCircle = L.circle(latlng, {
+        radius: accuracy,
+        color: accent,
+        weight: 1,
+        opacity: 0.4,
+        fillColor: accent,
+        fillOpacity: 0.1,
+        interactive: false,
+    });
+    userLocationMarker = L.marker(latlng, {
+        icon: L.divIcon({
+            className: '',
+            html: '<div class="user-location-marker"></div>',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
         }),
-        L.marker(latlng, {
-            icon: L.divIcon({
-                className: '',
-                html: '<div class="user-location-marker"></div>',
-                iconSize: [16, 16],
-                iconAnchor: [8, 8],
-            }),
-            interactive: false,
-            keyboard: false,
-            zIndexOffset: 2000,
-        }),
-    ]).addTo(map);
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: 2000,
+    });
+    userLocationLayer = L.layerGroup([userLocationCircle, userLocationMarker]).addTo(map);
+}
+
+/** Drops the "you are here" layer, marker and circle references together. */
+function clearUserLocation() {
+    if (userLocationLayer) map.removeLayer(userLocationLayer);
+    userLocationLayer = null;
+    userLocationCircle = null;
+    userLocationMarker = null;
+    lastUserFix = null;
 }
 
 /** Camera state the follow policy compares against. */
@@ -618,10 +661,16 @@ function cameraState() {
 
 /** One position request. The camera move is decided in the handler. */
 function requestPosition() {
+    readPending = true;
     map.locate({
         enableHighAccuracy: true,
         timeout: CONFIG.GEOLOCATION_TIMEOUT_MS,
-        maximumAge: CONFIG.GEOLOCATION_MAX_AGE_MS,
+        // Live tracking tops up a watch that is already running, so a fix from
+        // within the last interval is the very answer being asked for; the
+        // polling path must never be answered from cache (see config).
+        maximumAge: locationContinuous
+            ? CONFIG.GEOLOCATION_LIVE_MAX_AGE_MS
+            : CONFIG.GEOLOCATION_MAX_AGE_MS,
     });
 }
 
@@ -634,30 +683,95 @@ function scheduleNextRead(ms) {
     }, ms);
 }
 
+/**
+ * Whether an incoming fix is due to be shown, i.e. at least one cadence has
+ * passed since the last one was drawn. Pure so the 1 Hz contract is testable
+ * without a map or a receiver.
+ *
+ * The gate is GEOLOCATION_LIVE_MIN_GAP_MS rather than the interval itself: a
+ * platform pushing at a nominal 1 Hz jitters either side of 1000 ms, and
+ * refusing a fix that came 995 ms after the last one would push the next
+ * accepted one out to ~2 s — halving the cadence this exists to hold.
+ *
+ * @param {number} lastAt - when a fix was last drawn (ms, 0 if never)
+ * @param {number} now
+ * @returns {boolean}
+ */
+export function isFixDue(lastAt, now) {
+    if (!lastAt) return true;
+    return now - lastAt >= CONFIG.GEOLOCATION_LIVE_MIN_GAP_MS;
+}
+
+/**
+ * Starts the continuous 1 Hz track used on mobile: a `watchPosition` session
+ * (the platform pushes every fix its receiver makes, which on a phone with
+ * enableHighAccuracy is about one per second) plus a 1 Hz ticker as the cadence
+ * FLOOR — a provider that only pushes when the position changes, or a watch
+ * that has gone quiet, would otherwise deliver less than the promised rate.
+ */
+function startLiveTracking() {
+    if (liveTimer !== null) return; // already watching
+    map.locate({
+        watch: true,
+        enableHighAccuracy: true,
+        timeout: CONFIG.GEOLOCATION_TIMEOUT_MS,
+        maximumAge: CONFIG.GEOLOCATION_MAX_AGE_MS,
+    });
+    liveTimer = setInterval(topUpRead, CONFIG.GEOLOCATION_LIVE_INTERVAL_MS);
+}
+
+/** Ends the watch and releases the receiver. */
+function stopLiveTracking() {
+    if (liveTimer !== null) clearInterval(liveTimer);
+    liveTimer = null;
+    readPending = false;
+    if (map) map.stopLocate();
+}
+
+/** The cadence floor: read the position ourselves if the watch has gone quiet. */
+function topUpRead() {
+    if (!locationTracking || document.visibilityState === 'hidden') return;
+    // One read at a time: a slow answer must not stack up a queue of requests.
+    if (readPending) return;
+    if (Date.now() - lastFixAt < CONFIG.GEOLOCATION_LIVE_INTERVAL_MS) return;
+    requestPosition();
+}
+
 /** Polling runs only while the page is visible — a backgrounded tab is not read. */
 function onVisibilityChange() {
     if (!locationTracking) return;
     if (document.visibilityState === 'hidden') {
         if (locationTimer !== null) clearTimeout(locationTimer);
         locationTimer = null;
+        // A watch left running in the background is exactly the receiver-awake
+        // cost this pause exists to avoid, so it ends with the ticker.
+        if (locationContinuous) stopLiveTracking();
         return;
     }
-    if (locationTimer === null) {
+    if (locationContinuous) {
+        startLiveTracking();
         // Coming back to the app after it was hidden: the shown position is as
         // old as the pause, so refresh at once rather than at the next tick.
         requestPosition();
+        return;
     }
+    if (locationTimer === null) requestPosition();
 }
 
 /**
  * Tracks the user's position for the session: centres the map on the first fix,
- * drops a "you are here" marker, and re-reads the position every
- * GEOLOCATION_REFRESH_MS so the marker keeps up during a ride. Called on mobile
- * at startup.
+ * drops a "you are here" marker, and keeps that marker up to date so it stays
+ * useful during a ride. Called on mobile at startup.
  *
  * A single startup fix was the original behaviour and it is useless mid-journey:
  * the rider boards, and from then on the dot marks where they got on rather than
  * where they are, so the only way to find out was to reload the page.
+ *
+ * Two cadences, picked by device:
+ *  - mobile (coarse pointer): a continuous 1 Hz watch — the phone in the rider's
+ *    hand is the ride scenario, and there the dot is expected to move with them;
+ *  - desktop (the locate control): the speed-derived poll of nextRefreshMs,
+ *    which duty-cycles the receiver between 10 s and 45 s.
  *
  * Fails silently: if the user denies permission or the device has no
  * geolocation, the default city view is kept and nothing is shown — we never
@@ -666,6 +780,7 @@ function onVisibilityChange() {
 export function locateUser() {
     if (!map || locationTracking) return;
     locationTracking = true;
+    locationContinuous = isCoarsePointer();
 
     // What the camera is allowed to be moved away from. The first fix can land
     // up to the full timeout later — a slowly answered permission prompt, a cold
@@ -684,6 +799,9 @@ export function locateUser() {
 
     map.on('locationfound', (e) => {
         lastErrorCode = null;
+        readPending = false;
+        const now = Date.now();
+        lastFixAt = now;
 
         // Service-area gate (brainstorm-007): a visitor located outside
         // Montevideo keeps the default city overview — centring on them
@@ -696,19 +814,27 @@ export function locateUser() {
                 );
                 wasOutside = true;
             }
-            if (userLocationLayer) {
-                map.removeLayer(userLocationLayer);
-                userLocationLayer = null;
-                lastUserFix = null;
-            }
+            clearUserLocation();
             return;
         }
         wasOutside = false;
 
+        // A watch can push faster than the promised cadence (some platforms
+        // deliver on every sensor update). Showing every one of those would
+        // redraw and re-centre the map several times a second for metres of
+        // GNSS noise, so the extra fixes are dropped rather than drawn.
+        if (locationContinuous && !isFixDue(lastRenderAt, now)) return;
+        lastRenderAt = now;
+
         // The marker goes up either way — knowing where you are is useful on
         // any view. Only the camera move is conditional.
         if (!cameraLeftAnchor(followAnchor, cameraState())) {
-            map.setView(e.latlng, CONFIG.GEOLOCATION_MAX_ZOOM);
+            // Following at 1 Hz must not animate: an in-flight pan leaves the
+            // camera somewhere between two fixes, which the next fix reads as
+            // "someone else moved the map" and following would stop itself
+            // within a second or two. The first fix still animates its zoom in.
+            const animated = !locationContinuous || !lastUserFix;
+            map.setView(e.latlng, CONFIG.GEOLOCATION_MAX_ZOOM, animated ? {} : { animate: false });
             // Anchor on where we asked the camera to go, not on where it is
             // right now: a zoom animation may still be in flight.
             followAnchor = {
@@ -719,8 +845,10 @@ export function locateUser() {
             };
         }
 
-        const fix = { lat: e.latlng.lat, lng: e.latlng.lng, accuracy: e.accuracy, at: Date.now() };
-        scheduleNextRead(nextRefreshMs(prevFix, fix));
+        const fix = { lat: e.latlng.lat, lng: e.latlng.lng, accuracy: e.accuracy, at: now };
+        // The watch decides the cadence in continuous mode; the ticker is its
+        // floor. Arming the poll timer here as well would double-read.
+        if (!locationContinuous) scheduleNextRead(nextRefreshMs(prevFix, fix));
         prevFix = fix;
 
         drawUserLocation(e.latlng, e.accuracy);
@@ -728,6 +856,7 @@ export function locateUser() {
     });
 
     map.on('locationerror', (err) => {
+        readPending = false;
         if (err.code !== lastErrorCode) {
             console.warn('[geolocation] no se pudo obtener la ubicación:', err.message);
             lastErrorCode = err.code;
@@ -737,30 +866,43 @@ export function locateUser() {
         const denied = isFatalLocationError(err.code);
         updateLocateControl({ busy: false, denied });
         if (denied) stopLocatingUser();
-        // A transient failure must not end the session: try again on the same
-        // cadence the last known speed implies.
-        else
+        // A transient failure must not end the session — a bus under a bridge,
+        // a cold GPS. Continuous mode needs nothing here: the watch keeps
+        // trying and the 1 Hz ticker asks again anyway. The polling path arms
+        // the next read on the cadence the last known speed implies.
+        else if (!locationContinuous)
             scheduleNextRead(
                 nextRefreshMs(prevFix, prevFix ? { ...prevFix, at: Date.now() } : null),
             );
     });
 
-    // The timer is armed BEFORE the first request on purpose: a denied
-    // permission comes back synchronously from map.locate(), and stopping the
-    // polling from inside that handler must find a timer to clear — otherwise
-    // one is armed afterwards and keeps asking forever.
-    scheduleNextRead(CONFIG.GEOLOCATION_FIRST_REFRESH_MS);
     document.addEventListener('visibilitychange', onVisibilityChange);
+    if (locationContinuous) {
+        // The watch and its ticker are started BEFORE the first request for the
+        // same reason the poll timer is: a denied permission comes back
+        // synchronously from map.locate(), and stopping the tracking from
+        // inside that handler must find them to clear — otherwise they are
+        // started afterwards and keep asking forever.
+        startLiveTracking();
+    } else {
+        scheduleNextRead(CONFIG.GEOLOCATION_FIRST_REFRESH_MS);
+    }
+    // One immediate read either way: a watch reports when the platform has a
+    // fix, and the rider should not wait on that to see the first dot.
     requestPosition();
 }
 
-/** Stops the position polling. Leaves the last marker in place. */
+/** Stops the position tracking. Leaves the last marker in place. */
 export function stopLocatingUser() {
     if (locationTimer !== null) clearTimeout(locationTimer);
     locationTimer = null;
+    stopLiveTracking();
     locationTracking = false;
+    locationContinuous = false;
     followAnchor = null;
     prevFix = null;
+    lastFixAt = 0;
+    lastRenderAt = 0;
     document.removeEventListener('visibilitychange', onVisibilityChange);
     if (map) map.off('locationfound').off('locationerror');
 }
