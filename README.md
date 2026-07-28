@@ -6,7 +6,7 @@ A map of Montevideo bus lines and stops, available at [https://nikolaikolosov.gi
 
 Search a line or a stop, see every line through a stop and where it goes from
 there, and plan a **trip between two stops** — tap "Desde acá" on one stop and
-"Hasta acá" on another to get itineraries with transfers, ranked fewest-changes
+"Hacia acá" on another to get itineraries with transfers, ranked fewest-changes
 against fastest. The source data has no schedules (see below), so trip times are
 modelled estimates and the app says so; the design of that model is
 [ADR-001](architecture/ADR-001-journey-planner.md), its evidence

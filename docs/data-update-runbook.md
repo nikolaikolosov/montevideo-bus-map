@@ -96,7 +96,7 @@ data's generation date ("Datos: …"), turning amber after 45 days
    network lost reachability (investigate the feed before shipping).
 
 6. Optional visual check: `./serve.sh`, pick a line, click a stop → "Ver rutas",
-   then plan a trip with "Desde acá" / "Hasta acá". The panel's "Datos: …" date
+   then plan a trip with "Desde acá" / "Hacia acá". The panel's "Datos: …" date
    must show today.
 
 7. Commit and push (push to `main` **is** the production deploy — GitHub Pages

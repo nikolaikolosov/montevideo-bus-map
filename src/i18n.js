@@ -75,7 +75,7 @@ const STRINGS = {
         'journey.fromAria': 'Empezar el viaje en esta parada',
         'journey.fromClear': 'Quitar origen',
         'journey.fromClearAria': 'Quitar esta parada como origen del viaje',
-        'journey.to': 'Hasta acá',
+        'journey.to': 'Hacia acá',
         'journey.toAria': 'Terminar el viaje en esta parada',
         'journey.toClear': 'Quitar destino',
         'journey.toClearAria': 'Quitar esta parada como destino del viaje',

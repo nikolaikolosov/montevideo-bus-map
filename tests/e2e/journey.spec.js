@@ -20,7 +20,7 @@ test('every stop popup offers both ends of a trip', async ({ page }) => {
     const buttons = page.locator('.popup-journey button');
     await expect(buttons).toHaveCount(2);
     await expect(buttons.nth(0)).toHaveText('Desde acá');
-    await expect(buttons.nth(1)).toHaveText('Hasta acá');
+    await expect(buttons.nth(1)).toHaveText('Hacia acá');
     await expect(buttons.nth(0)).toHaveAccessibleName('Empezar el viaje en esta parada');
 });
 
