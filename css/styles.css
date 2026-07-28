@@ -1360,6 +1360,19 @@ label {
         font-size: 0.72rem;
     }
 
+    /* `align-items: flex-start` above sizes every row child to its own CONTENT,
+       so the chip strip stopped being a scroll area and simply grew: measured at
+       375 px, line 522 (4 destinations) made it 314 px inside a 260 px column —
+       painting over the stops stat next to it — and line 103 (15) made it
+       1,945 px, widening the DOCUMENT to 1,961 px so the phone zoomed the whole
+       layout out to fit. Stretching it back to the column's width is what makes
+       `overflow-x: auto` engage, which is the scrolling row this picker was
+       designed as. */
+    .destinations .destination-chips {
+        align-self: stretch;
+        min-width: 0;
+    }
+
     .data-freshness {
         margin-top: 8px;
         font-size: 0.68rem;
