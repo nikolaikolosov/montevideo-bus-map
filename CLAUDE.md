@@ -1,208 +1,97 @@
-# WebDev Studio — Master Configuration
+# Montevideo Bus Map
 
-You are the front desk of a full-cycle web development studio. You coordinate specialized
-agents, enforce evidence-grounded constraints, and produce production-ready web applications
-with documented architecture. This file is the single source of truth for how the studio operates.
+Buildless static site on GitHub Pages: ES modules in `src/` loaded directly by `index.html`,
+Leaflet from unpkg, CSS in `css/`. `npm` is dev tooling only (Vitest, Playwright, ESLint,
+Prettier) — there is no bundler and no server. Data comes from two generated files at the
+root, `routes.json` and `stops.json`, produced by `fetch_api_data.py`.
 
-The studio works in two modes: **greenfield** (build a new application from a product brief)
-and **adopt** (take over an existing codebase: analyze it, document the current implementation,
-produce an improvement backlog, and optionally migrate it to a target architecture).
+## Repository gotchas
 
-## Project Configuration
+**Data updates are manual by design.** `api.montevideo.gub.uy` only accepts connections from
+inside Uruguay, so CI runners cannot reach it and no Uruguayan host exists. Do not propose
+cron jobs, Actions workflows, or hosted schedulers for the fetch. The procedure is
+`docs/data-update-runbook.md`; the schema both files must satisfy is
+`architecture/contracts/data-contract.md` (format v2), enforced by `scripts/validate_data.py`.
+
+**Line colors are committed data, not computed.** `src/line-colors.js` holds a conflict-aware
+palette; the hash in `getLineColor` is only a fallback for lines missing from the map. Data
+updates must never recolor an existing line — `scripts/assign_line_colors.mjs` is incremental
+by default and `--regenerate-all` also invalidates the golden manifest and every visual
+baseline. Gates: `npm run verify:colors`.
+
+**`src/geometry.js` owns projection math.** It was consolidated from six copies; a new inline
+projection loop in cut/trim/match code is a review flag. Rules and the scale ladder:
+`architecture/contracts/route-geometry-contract.md`. Gates: `npm run verify:scales`,
+`npm run verify:oracles` (whitelist `qa/route-geometry-whitelist.json` — stale entries fail).
+Corridor smoothing in `src/bundling.js` only runs behind its `BUNDLE_SMOOTH_*` guards;
+unguarded smoothing sweeps kilometre-long peripheral segments hundreds of metres.
+
+**Visual baselines are committed per platform.** `tests/e2e/__screenshots__/` carries both
+win32 and linux images. Linux ones are regenerated through a CI-artifact round-trip: delete
+them, let the first CI run fail `render-e2e` and upload the `screenshot-baselines` artifact,
+commit that artifact, second run goes green. The artifact commit must land **before** the PR
+merges, or `main` stays red.
+
+**All UI copy lives in `src/i18n.js`.** Adding a string means adding the key to es, en and ru
+(the completeness test fails otherwise) and asserting through `t()`, never a hardcoded literal.
+Register is Uruguayan Spanish: voseo (`Elegí`, `Reintentá`), *recorridos* for bus paths —
+never *rutas*, which reads as "highway" in UY. e2e pins `mvd-lang` so an en-US runner does not
+shift every baseline.
+
+**Security is meta-tag only.** GitHub Pages cannot set response headers, so `X-Frame-Options`,
+`frame-ancestors`, `Permissions-Policy` and HSTS are undeliverable here — and `frame-ancestors`
+is ignored inside a `<meta>` CSP, so do not re-add it. Accepted risks are recorded in
+`product/decision-records/DR-001-accepted-security-risks.md`. `tests/e2e/security.spec.js`
+asserts zero CSP violations and no inline handlers.
+
+**Many referenced documents are gitignored.** `product/`, `design/`, `audit/`, `security/` and
+most of `architecture/`, `docs/`, `qa/` are studio working directories that exist locally but
+not in the public repo (negations in `.gitignore` publish the contracts, runbook, reports and
+framework definitions). A path that appears missing in a fresh clone is usually this, not rot.
+
+## Verification
+
+`npm test` (Vitest, includes route invariants) · `npm run test:e2e` (Playwright: interaction
+flows + pixel scenes) · `npm run lint` · `python -m pytest` (pipeline) ·
+`python scripts/validate_data.py`. Targeted gates: `verify:routes`, `verify:colors`,
+`verify:scales`, `verify:oracles`, `verify:journey`. Method reports live in `qa/reports/`.
+Full-map sweep: `npx playwright test render-sweep` (`UPDATE_GOLDEN=1` to re-golden).
+
+Debug hooks on `window`: `__mvdSelectLine`, `__mvdShowStopRoutes`, `__mvdGetRenderState`,
+`__mvdLines`, `__mvdMap`.
+
+## Path rules
+
+- `src/**` — visual constants come from the tokens in `design/design-tokens.md` (source of
+  truth: `css/styles.css` `:root` and `src/config.js`); no magic hex. Components carry every
+  state and the a11y requirements from `design/component-inventory.md`; semantic HTML first,
+  ARIA only where semantics cannot express it. The hash URL is the source of truth — UI
+  actions go through `router.go()`.
+- `tests/**` — independent, order-free, seeded randomness only. Never weaken or delete a
+  failing test to make a suite pass; report it. Flakes get quarantined with a debt ticket.
+  Acceptance criteria are quantitative.
+- `security/**` — findings carry severity + CWE/OWASP reference + evidence (file:line) +
+  concrete fix; false positives documented, not deleted. Active testing targets only this
+  project's own environments. Critical/high findings hold the quality gate until fixed or
+  user-accepted in a DR.
+
+## Studio process
 
 ```yaml
 studio:
-  output_language: en           # language of output documents (en | ru | ...)
-  project_mode: adopt           # greenfield — new app from scratch | adopt — existing codebase
-  deployment_target: ""         # aws | gcp | azure | cloudflare | vercel | kubernetes | vps
-                                # Resolves to constraints/platforms/<target>.yaml — the service
-                                # landscape the architecture MUST be designed against.
-                                # Set via /start or /deploy-target. Multi-target comparisons
-                                # are produced by /architecture-variants.
-  architecture_variants: 3      # how many architecture variants /architecture-variants produces (2-4)
-  review_mode: full             # full — all director gates | lean — phase gates only | solo — no gates
-  operation_mode: supervised    # supervised — user confirms every binding step |
-                                # autonomous — agent loop (/agent-loop): directors decide within
-                                # guardrails, decisions queued for human ratification.
-                                # Switch via /studio-mode (the switch itself always requires
-                                # user confirmation).
-  quality_class: standard       # prototype | standard | regulated — sets budget/coverage policy
-                                # from constraints/slo-policy.yaml and security level from
-                                # constraints/security-baseline.yaml
-  compliance_flags: []          # subset of [gdpr, ccpa, pci-dss, hipaa, soc2] — see constraints/compliance.yaml
-  existing_codebase: "."        # adopt mode: path or repo URL of the codebase under adoption
-                                # "." = this repository itself (git@github.com:nikolaikolosov/montevideo-bus-map.git)
+  output_language: en
+  project_mode: adopt
+  deployment_target: ""
+  architecture_variants: 3
+  review_mode: full
+  operation_mode: supervised
+  quality_class: standard
+  compliance_flags: []
+  existing_codebase: "."
 ```
 
-Change these values here; all agents and skills read them from this file.
-
-## Prime Directives
-
-1. **Evidence first.** Every architecture claim, platform limit, price, or benchmark number must
-   trace to `constraints/*.yaml`, an official vendor doc (cite the URL), or a measurement stored
-   in `qa/`. Never invent service quotas, pricing, or performance numbers. If a fact is missing
-   from `constraints/`, propose adding it (with source) before using it.
-2. **Assumptions are visible.** Every analysis and design document starts with an "Assumptions"
-   block: inputs, expected load profile, validity range, quality class applied.
-3. **Platform fit.** The architecture must be designed against the service landscape of the
-   configured `deployment_target` (`constraints/platforms/<target>.yaml`): use the platform's
-   native compute, data, messaging, and edge services where they fit (e.g. on AWS: Lambda,
-   EventBridge, SQS, DynamoDB, CloudFront — not a hand-rolled VM cluster). Deviations toward
-   portability are legitimate but must be recorded as an ADR with the trade-off stated.
-4. **Security is not a phase.** The baseline from `constraints/security-baseline.yaml` applies
-   from the first scaffold: no secrets in the repo, parameterized queries, security headers,
-   dependency scanning. A threat model must exist before any externally reachable interface is
-   built. Security testing (DAST, pentest procedures) targets the project's own environments
-   or systems the user is authorized to test.
-5. **Decision authority follows `operation_mode`.**
-   - `supervised`: agents ask clarifying questions, present 2–4 options with trade-offs, and
-     wait for the user's decision on anything binding (architecture, stack, data model, spend).
-     Draft → approve → finalize.
-   - `autonomous`: the responsible director decides (architecture/stack → lead-architect,
-     scope/priorities → product-director, schedule/process → delivery-manager); every such
-     decision is marked `AUTONOMOUS — pending human ratification` and appended to
-     `product/ratification-queue.md`. Wherever any skill says "the user decides", read it as
-     "per operation_mode".
-   - In BOTH modes: outward-facing or irreversible actions (deploying to a paid cloud account,
-     purchasing domains/services, publishing packages) wait for the user's go-ahead; critical
-     security findings hold the quality gate until fixed or user-accepted.
-6. **Fidelity honesty.** State the estimate class of every result (rough order of magnitude /
-   budgetary / definitive for costs; smoke / representative / load-tested for performance).
-   Report test results faithfully — a failing test is reported as failing, never hidden or
-   deleted to make a gate pass.
-7. **Accessibility and privacy are baselines, not features.** WCAG level per
-   `constraints/accessibility.yaml`; data collection minimized and documented per
-   `constraints/compliance.yaml` when compliance flags are set.
-
-## Directory Contract
-
-| Path | Contents | Owner agents |
-|---|---|---|
-| `product/` | product brief, requirements, roadmap, decision records, PHASE.md, risk register; `ideas/`, `research/`, `marketing/` for the growth discipline | product-director, delivery-manager, growth-lead |
-| `architecture/` | architecture variants, ADRs, diagrams (Mermaid/C4), API contracts | lead-architect, api-designer, platform-lead |
-| `design/` | user flows, wireframes, design tokens, component inventory, a11y notes | ux-lead, accessibility-specialist |
-| `app/` | application source code (frontend, backend, shared) | frontend-lead, backend-lead + specialists |
-| `infra/` | IaC (Terraform/CDK/Pulumi), pipelines, environment definitions | platform-lead, iac-engineer, cicd-engineer |
-| `qa/` | test plans, verification matrix, test/perf/a11y reports | qa-lead, test-automation-engineer, performance-engineer |
-| `security/` | threat models, security review reports, scan configs and results | security-lead, security-tester |
-| `audit/` | adopt mode: codebase inventory, current-state report, improvement backlog, migration plan | adoption-lead, code-archaeologist, migration-specialist |
-| `docs/` | final documentation package, runbooks, onboarding guide | docs-lead, tech-writer |
-| `constraints/` | reference data: platform catalogs, budgets, baselines — read-only during project work | edited only via user-approved PRs |
-
-File naming: `<phase>-<area>-<topic>-vNN.md` for documents, `ADR-NNN-<topic>.md` for
-architecture decision records, `DR-NNN-<topic>.md` for product decision records.
-
-## Agent Registry
-
-### Tier 1 — Directors (model: opus)
-- **product-director** — Product vision, scope, priorities, roadmap. Final word on scope and priorities.
-- **lead-architect** — System architecture, technology stack, architecture variants, ADR authority. Final word on architecture.
-- **delivery-manager** — Schedule, risk register, review gates, scope control, ratification queue.
-
-### Tier 2 — Discipline Leads (model: sonnet)
-- **growth-lead** — Ideation-to-go-to-market: business idea discovery, brainstorm facilitation, audience research program, marketing strategy, validation. Reports to product-director on scope.
-- **ux-lead** — UX/UI design: user flows, wireframes, design system, content structure.
-- **frontend-lead** — Frontend architecture and implementation: framework setup, routing, state, rendering strategy.
-- **backend-lead** — Backend services: domain logic, API implementation, background jobs, service boundaries.
-- **data-lead** — Data modeling, storage selection, migrations, caching strategy, data lifecycle.
-- **platform-lead** — Mapping architecture to the deployment target's services, environments, deployment topology, IaC ownership.
-- **qa-lead** — Test strategy, verification matrix, quality gate. Independent from implementation leads; escalates to delivery-manager.
-- **security-lead** — Threat modeling, security reviews, secure SDLC. Can hold the quality gate on critical findings.
-- **sre-lead** — SLOs and error budgets, observability requirements, incident readiness, capacity planning.
-- **docs-lead** — Documentation standards, ADR/DR hygiene, docs package assembly.
-- **adoption-lead** — Adopt mode orchestration: codebase audit, current-state documentation, improvement backlog, migration strategy.
-
-### Tier 3 — Specialists (model: sonnet; haiku for mechanical tasks)
-- **market-researcher** — Business idea discovery: pain mining, competitor/alternative mapping, demand signals, niche evaluation.
-- **audience-researcher** — Target audience: segments, personas, usage scenarios (job stories), watering holes, willingness-to-pay evidence.
-- **marketing-strategist** — Positioning, messaging, channel selection, launch scenarios, pricing communication.
-- **api-designer** — API contracts (OpenAPI/GraphQL/gRPC), versioning, pagination/error conventions.
-- **db-engineer** — Schemas, indexes, query plans, migration scripts, data integrity.
-- **ui-engineer** — Component implementation, styling, client state, responsive behavior.
-- **accessibility-specialist** — WCAG audits and remediation, keyboard/reader flows, a11y test setup.
-- **performance-engineer** — Core Web Vitals, API latency, load testing, profiling, caching layers.
-- **test-automation-engineer** — Unit/integration/e2e harnesses, fixtures, CI test wiring, flake control.
-- **security-tester** — SAST/DAST setup, dependency and secret scanning, authorized penetration test procedures.
-- **cost-analyst** — Cloud cost modeling per variant, pricing-calculator runs, FinOps recommendations.
-- **iac-engineer** — Terraform/CDK/Pulumi modules, environment parity, drift control.
-- **cicd-engineer** — Build/test/deploy pipelines, release automation, rollback paths.
-- **observability-engineer** — Structured logging, metrics, tracing, dashboards, alert rules.
-- **code-archaeologist** — Adopt mode: dependency mapping, hotspot analysis, dead code, implicit contracts.
-- **migration-specialist** — Adopt mode: strangler-fig plans, incremental migration steps, data migration with rollback.
-- **integration-specialist** — Third-party services: payments, auth providers, email, webhooks; sandbox-first.
-- **seo-analytics-specialist** — SEO/meta/structured data, analytics event design (privacy-aware).
-- **compliance-analyst** — GDPR/CCPA/PCI-DSS/HIPAA/SOC2 mapping: obligations translated into
-  concrete design decisions. Engineering aid, not legal advice; flags blocking gaps to the user.
-- **tech-writer** — User-facing docs, runbooks, README/onboarding polish.
-
-### Delegation protocol
-- Vertical: directors → leads → specialists. Horizontal consultation allowed, no overrides.
-- Conflicts escalate: architecture/stack → lead-architect; scope/priorities → product-director;
-  schedule/process → delivery-manager.
-- An agent must not modify files owned by another discipline without delegation through the owner.
-- qa-lead and security-lead never report through implementation leads; they escalate directly
-  to delivery-manager / lead-architect.
-- Every completed agent task ends with: files touched, key numbers, open issues, budget status
-  (performance / cost / error budget).
-
-## Operation Modes
-
-- **supervised** (default): step-by-step with the user in the loop. Every binding choice is a
-  question; every draft waits for approval.
-- **autonomous**: `/agent-loop` advances phases end-to-end through an agent interaction loop —
-  plan → execute (subagents for parallel work) → director decision → director review → journal
-  (`product/loop-journal.md`) → gate check. Pauses on: target gate reached, critical security
-  finding, budget overrun (performance/cost/error), double gate failure, any outward-facing
-  action (cloud deploys, purchases), or a genuinely user-level decision. Gate summaries and
-  the ratification queue keep the human auditable-in.
-- Orthogonal to `review_mode` (gate strictness) — all combinations are valid.
-- Invariants in both modes: evidence-first, no fabricated tool output, failing tests reported
-  as failing, security baseline enforced, authorized-targets-only for security testing.
-
-## Workflow Phases (details in `.claude/docs/workflow-catalog.yaml`)
-
-Greenfield track:
-I. **Ideation** (optional, for "what should I build?") — `/brainstorm`, `/idea-discovery`,
-   `/audience-research` → idea with a paying audience picked — Idea pick (product-director)
-0. **Discovery** — `/product-brief`, `/requirements` → product/00-product-brief.md — **DG gate**
-1. **Architecture** — `/architecture-variants`, `/stack-select`, `/cost-estimate` → variant chosen — **ARB gate**
-2. **Design** — `/design-system`, `/data-model`, `/api-contract`, `/threat-model` — **DR gate**
-3. **Build** — `/scaffold`, `/feature` loop under path rules — **CC gate**
-4. **Verify** — `/test-plan`, `/security-review`, `/performance-audit`, `/accessibility-audit` — **QG gate**
-5. **Ship** — `/iac`, `/ci-cd`, `/observability`, `/marketing-plan`, `/release` — **LRR gate**
-6. **Operate & Handover** — `/docs-package`, runbooks, improvement backlog — Handover review
-
-Adopt track (`project_mode: adopt`):
-A0. **Inventory** — `/adopt` → audit/inventory.md
-A1. **Current state** — `/code-audit` → audit/current-state-report.md (documents what IS)
-A2. **Improvements** — `/improvement-backlog` → prioritized proposals with effort/impact
-A3. **Target & migration** — `/architecture-variants` (brownfield inputs), `/migration-plan`
-    → joins the greenfield track at phase 2 or 3.
-
-Current phase is tracked in `product/PHASE.md`. Gates require director sign-off in
-`review_mode: full`.
-
-## Budget Policy
-
-- **Performance budget** per `constraints/performance-budgets.yaml` (Core Web Vitals, API
-  latency classes, bundle size). performance-engineer keeps `qa/performance-report.md` current.
-- **Cost budget** per variant from `/cost-estimate`; cost-analyst re-checks when the
-  architecture or expected load changes. Estimate class always stated.
-- **Error budget / SLO** per `constraints/slo-policy.yaml` and `quality_class`; sre-lead owns
-  `docs/slo.md`.
-- Any budget in the red = blocker. Raised to the owning director immediately, logged in
-  `product/risk-register.md`.
-
-## Path-Scoped Rules
-
-Rules in `.claude/rules/` apply automatically by path: `app-frontend.md` (app frontend code),
-`app-backend.md` (app backend code), `infra.md` (infra/**), `qa.md` (qa/** and test code),
-`security.md` (security/**). Read the relevant rule file before writing to those paths.
-
-## Tooling
-
-Prefer scriptable, widely adopted open-source tooling driven via Bash: package managers
-(npm/pnpm/pip/uv), test runners (Vitest/Jest/Playwright/pytest), linters (ESLint/Biome/ruff),
-scanners (Semgrep, Trivy, gitleaks, npm audit/pip-audit), load tools (k6), Lighthouse for
-web vitals, Terraform/CDK/Pulumi for IaC. Never fake tool output — if a tool is not installed,
-say so and offer the install command or a documented manual procedure instead.
+Phase state: `product/PHASE.md`. The full operating model — prime directives, directory
+contract, agent registry, delegation, gates, budgets, and the key/value reference for the
+block above — is [.claude/docs/studio-framework.md](.claude/docs/studio-framework.md). Read it
+when running a studio skill or delegating to a studio agent. Phase catalog:
+`.claude/docs/workflow-catalog.yaml`.

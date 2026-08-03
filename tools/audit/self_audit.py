@@ -17,6 +17,7 @@ _REQUIRED = [
     ROOT / ".claude" / "agents",
     ROOT / ".claude" / "skills",
     ROOT / ".claude" / "docs" / "workflow-catalog.yaml",
+    ROOT / ".claude" / "docs" / "studio-framework.md",
     ROOT / "constraints" / "platforms",
 ]
 _missing = [p for p in _REQUIRED if not p.exists()]
@@ -103,22 +104,30 @@ for d in sorted(skills_dir.iterdir()):
         errors.append(f"skill {d.name}: missing description")
     skills.add(d.name)
 
-# --- CLAUDE.md registry vs agent files ---
+# --- framework doc registry vs agent files ---
+# The registry lives in .claude/docs/studio-framework.md (loaded on demand), not in
+# CLAUDE.md — CLAUDE.md stays lightweight and must keep pointing at it.
 claude_md = read(ROOT / "CLAUDE.md")
-reg_m = re.search(r"## Agent Registry\n(.*?)\n## ", claude_md, re.DOTALL)
+framework_path = ROOT / ".claude" / "docs" / "studio-framework.md"
+framework_md = read(framework_path)
+framework_rel = "/".join(framework_path.relative_to(ROOT).parts)
+if framework_rel not in claude_md:
+    errors.append(f"CLAUDE.md: no reference to {framework_rel} (progressive disclosure broken)")
+reg_m = re.search(r"## Agent Registry\n(.*?)\n## ", framework_md, re.DOTALL)
 reg_text = reg_m.group(1) if reg_m else ""
 if not reg_m:
-    errors.append("CLAUDE.md: '## Agent Registry' section not found")
+    errors.append(f"{framework_rel}: '## Agent Registry' section not found")
 registry = set(re.findall(r"^- \*\*([a-z0-9-]+)\*\*", reg_text, re.MULTILINE))
 for a in sorted(registry - agents):
-    errors.append(f"CLAUDE.md registry lists '{a}' but .claude/agents/{a}.md missing")
+    errors.append(f"registry lists '{a}' but .claude/agents/{a}.md missing")
 for a in sorted(agents - registry):
-    errors.append(f"agent file '{a}' not listed in CLAUDE.md registry")
+    errors.append(f"agent file '{a}' not listed in the {framework_rel} registry")
 
-# --- skills referenced in CLAUDE.md exist ---
-for s in set(re.findall(r"`/([a-z0-9-]+)`", claude_md)):
-    if s not in skills:
-        errors.append(f"CLAUDE.md references skill /{s} that does not exist")
+# --- skills referenced in CLAUDE.md / framework doc exist ---
+for src_name, text in (("CLAUDE.md", claude_md), (framework_rel, framework_md)):
+    for s in set(re.findall(r"`/([a-z0-9-]+)`", text)):
+        if s not in skills:
+            errors.append(f"{src_name} references skill /{s} that does not exist")
 
 # --- workflow catalog references ---
 catalog = read(ROOT / ".claude" / "docs" / "workflow-catalog.yaml")
@@ -131,8 +140,7 @@ for a in yaml_list(catalog, "agents"):
     if a not in agents:
         errors.append(f"workflow-catalog references unknown agent '{a}'")
 
-# --- platform catalogs for targets named in CLAUDE.md config ---
-m = re.search(r"deployment_target:.*?#\s*(.+)", claude_md)
+# --- platform catalogs for every selectable deployment target ---
 targets = ["aws", "gcp", "azure", "cloudflare", "vercel", "kubernetes", "vps"]
 for t in targets:
     if not (ROOT / "constraints" / "platforms" / f"{t}.yaml").exists():
