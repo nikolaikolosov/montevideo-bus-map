@@ -99,17 +99,61 @@ data's generation date ("Datos: …"), turning amber after 45 days
    then plan a trip with "Desde acá" / "Hacia acá". The panel's "Datos: …" date
    must show today.
 
+6b. Re-check what PINS the dataset's shape. A feed change legitimately moves
+   three expectations, and each of them fails CI if it ships stale — this is what
+   left `main` red on 2026-08-22:
+
+   ```bash
+   npm test                                 # frozen cardinalities (lines / variants / stops)
+   UPDATE_GOLDEN=1 npx playwright test render-sweep
+   npx playwright test tests/e2e/visual.spec.js --update-snapshots=all
+   ```
+
+   The frozen counts in `tests/js/route-invariants.test.js` are the canary for
+   "the dataset changed", so they are updated deliberately, with the numbers the
+   fetch just printed. Pixel baselines are per platform: regenerating them here
+   only covers the platform you are on, and the other one needs the CI-artifact
+   round-trip below.
+
 7. Commit and push (push to `main` **is** the production deploy — GitHub Pages
    rebuilds automatically; CI validates the data again on the push):
 
    ```bash
-   git add routes.json stops.json src/line-colors.js qa/reports/line-colors-report.md qa/reports/geometry-scales-report.md qa/reports/journey-planner-report.md
+   git add routes.json stops.json src/line-colors.js qa/reports/line-colors-report.md qa/reports/geometry-scales-report.md qa/reports/journey-planner-report.md qa/reports/route-geometry-oracles-report.md tests/js/route-invariants.test.js tests/e2e/golden/render-manifest.json tests/e2e/__screenshots__
    git commit -m "Update bus routes and stops data from API"
    git push
    ```
 
-   `./update_and_push.sh` does steps 1 + 6 in one go (it only commits when the
-   data actually changed) — run steps 3–5 first when the line set changed.
+   If the pixel baselines moved and you are not on Linux, delete the
+   `*-linux.png` baselines before pushing: the first CI run then writes them and
+   uploads them as the `screenshot-baselines` artifact, you commit its images,
+   and the run after that is green.
+
+### The wrapper
+
+`./update_and_push.sh` does all of the above in one go, and refuses to publish
+when a gate fails — the point being that a surprise stops the update instead of
+turning up in CI:
+
+```bash
+./update_and_push.sh                          # fetch → gate → publish
+./update_and_push.sh --refresh-expectations   # …and refresh what the data legitimately moved
+```
+
+- It publishes nothing when the feed's FEATURES are unchanged; a fresh
+  `generated_at` alone is not a reason to redeploy.
+- It regenerates and ships what is a pure function of the data: the palette
+  (step 3, Prettier-formatted so `format:check` stays green) and the four
+  measurement reports (steps 3-5).
+- It runs `npm test` and the full Playwright suite (`SKIP_E2E=1` opts out and
+  says so). Without `--refresh-expectations` a failure prints the exact commands
+  from step 6b and exits before the commit; with it, the frozen counts, the
+  golden manifest and this platform's baselines are refreshed from the new data,
+  the suites are re-run, and only what the script itself refreshed joins the
+  commit. On a non-Linux machine it also drops the linux baselines and reminds
+  you about the artifact round-trip.
+- `DRY_RUN=1` stops after staging and prints what would ship; `SKIP_FETCH=1`
+  gates the files already on disk.
 
 8. Verify: <https://nikolaikolosov.github.io/montevideo-bus-map/> shows the new
    date in "Datos: …" (allow a couple of minutes for the Pages build; hard-refresh
@@ -126,4 +170,6 @@ data's generation date ("Datos: …"), turning amber after 45 days
 | `… route variants have no stop pattern (… > 5%)` | `stop_times.txt` truncated upstream — shapes fine, patterns mostly absent | retry later; the feed is mid-regeneration. Never bypass this one |
 | `… is …% of the … already on disk … refusing to overwrite good data` | the new dataset is a fraction of the committed one | investigate; if the contraction is genuine, re-run with `--allow-shrink` |
 | `unrelated staged changes present; refusing to commit` (wrapper) | something else was `git add`ed before running `update_and_push.sh` | `git restore --staged <path>` and re-run — the wrapper publishes data files only |
+| `unit suite failed on the new data` / `e2e failed on the new data` (wrapper) | the frozen counts, the golden manifest or a pixel baseline still describe the old dataset | check the printed diff is just the feed moving, then re-run with `--refresh-expectations` |
+| `still failing after refreshing the expectations` (wrapper) | the failure is not the dataset moving | read the suite output; do not publish |
 | `on branch 'x', expected 'main'` (wrapper) | publishing from a feature branch | check out `main`, or set `TARGET_BRANCH` deliberately |
