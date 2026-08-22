@@ -19,32 +19,32 @@
 
 |  | same direction | opposite direction |
 |---|---|---|
-| samples | 693801 | 635470 |
-| P50 | 0.0 m | 1.3 m |
+| samples | 697394 | 637193 |
+| P50 | 0.0 m | 1.4 m |
 | P75 | — | 7.5 m |
-| P90 | 1.9 m | 14.2 m |
+| P90 | 2.0 m | 14.3 m |
 | P99 | 9.8 m | — |
 
 Opposite-direction histogram (the 6–20 m band is the visible-duplicate
-residue band of the smoothness oracle; share: 27.6 %):
+residue band of the smoothness oracle; share: 27.7 %):
 
 | band | samples |
 |---|---|
-| 0–4 m | 379534 |
-| 4–8 m | 110727 |
-| 8–12 m | 60572 |
-| 12–16 m | 33383 |
-| 16–20 m | 24135 |
-| 20–24 m | 14059 |
-| 24–28 m | 6982 |
-| 28–32 m | 3884 |
-| 32–36 m | 1465 |
-| 36–40 m | 729 |
+| 0–4 m | 379356 |
+| 4–8 m | 111815 |
+| 8–12 m | 61039 |
+| 12–16 m | 33287 |
+| 16–20 m | 24033 |
+| 20–24 m | 14186 |
+| 24–28 m | 7275 |
+| 28–32 m | 4010 |
+| 32–36 m | 1461 |
+| 36–40 m | 731 |
 
 ## Corner / segment stats (prepared traces)
 
-- corner vertices (60–150° turn): 14004, of which guard-protected
-  (both flanks > 55 m): 7696
+- corner vertices (60–150° turn): 14046, of which guard-protected
+  (both flanks > 55 m): 7723
 - segment length P50/P90/P99: 101 / 325 / 681 m
 
 ## Assertion results

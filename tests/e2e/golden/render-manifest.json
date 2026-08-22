@@ -38,9 +38,9 @@
   "labels": 3
  },
  "21": {
-  "sections": 38,
+  "sections": 39,
   "joints": 0,
-  "totalPoints": 159,
+  "totalPoints": 162,
   "colors": [
    "#ad7ff4"
   ],
@@ -186,7 +186,7 @@
    -34.8131,
    -56.0956
   ],
-  "stops": 121,
+  "stops": 122,
   "labels": 9
  },
  "102": {
@@ -243,7 +243,7 @@
    -34.8598,
    -55.9956
   ],
-  "stops": 156,
+  "stops": 155,
   "labels": 6
  },
  "105": {
@@ -380,7 +380,7 @@
   "labels": 7
  },
  "115": {
-  "sections": 28,
+  "sections": 27,
   "joints": 0,
   "totalPoints": 111,
   "colors": [
@@ -566,7 +566,7 @@
    -34.8434,
    -56.1916
   ],
-  "stops": 202,
+  "stops": 206,
   "labels": 4
  },
  "135": {
@@ -705,7 +705,7 @@
  "145": {
   "sections": 46,
   "joints": 0,
-  "totalPoints": 201,
+  "totalPoints": 203,
   "colors": [
    "#0490a5"
   ],
@@ -718,7 +718,7 @@
    -34.7961,
    -56.1298
   ],
-  "stops": 208,
+  "stops": 207,
   "labels": 7
  },
  "147": {
@@ -800,7 +800,7 @@
  "151": {
   "sections": 27,
   "joints": 0,
-  "totalPoints": 188,
+  "totalPoints": 189,
   "colors": [
    "#6897fd"
   ],
@@ -817,9 +817,9 @@
   "labels": 8
  },
  "155": {
-  "sections": 21,
+  "sections": 23,
   "joints": 0,
-  "totalPoints": 132,
+  "totalPoints": 134,
   "colors": [
    "#bca8fd"
   ],
@@ -829,10 +829,10 @@
   "bbox": [
    -34.9046,
    -56.2024,
-   -34.8215,
-   -56.0985
+   -34.8194,
+   -56.0886
   ],
-  "stops": 153,
+  "stops": 160,
   "labels": 3
  },
  "156": {
@@ -1289,12 +1289,12 @@
    -56.135
   ],
   "stops": 236,
-  "labels": 7
+  "labels": 6
  },
  "330": {
   "sections": 13,
   "joints": 0,
-  "totalPoints": 82,
+  "totalPoints": 83,
   "colors": [
    "#a752d4"
   ],
@@ -1304,16 +1304,16 @@
   "bbox": [
    -34.9064,
    -56.2024,
-   -34.806,
+   -34.8059,
    -56.1425
   ],
-  "stops": 105,
+  "stops": 107,
   "labels": 4
  },
  "370": {
   "sections": 40,
   "joints": 0,
-  "totalPoints": 203,
+  "totalPoints": 206,
   "colors": [
    "#f26966"
   ],
@@ -1326,7 +1326,7 @@
    -34.8544,
    -56.0832
   ],
-  "stops": 190,
+  "stops": 200,
   "labels": 7
  },
  "396": {
@@ -1421,7 +1421,7 @@
    -34.8699,
    -56.0835
   ],
-  "stops": 132,
+  "stops": 133,
   "labels": 3
  },
  "409": {
@@ -1440,7 +1440,7 @@
    -34.7874,
    -56.1762
   ],
-  "stops": 176,
+  "stops": 175,
   "labels": 6
  },
  "427": {
@@ -1459,7 +1459,7 @@
    -34.8175,
    -56.0834
   ],
-  "stops": 266,
+  "stops": 267,
   "labels": 7
  },
  "456": {
@@ -1482,9 +1482,9 @@
   "labels": 3
  },
  "468": {
-  "sections": 31,
+  "sections": 27,
   "joints": 0,
-  "totalPoints": 198,
+  "totalPoints": 189,
   "colors": [
    "#ab50d0"
   ],
@@ -1497,7 +1497,7 @@
    -34.753,
    -56.0835
   ],
-  "stops": 230,
+  "stops": 227,
   "labels": 6
  },
  "494": {
@@ -2010,7 +2010,7 @@
    -34.8101,
    -56.2725
   ],
-  "stops": 139,
+  "stops": 142,
   "labels": 3
  },
  "L2": {
@@ -2124,7 +2124,7 @@
    -34.787,
    -56.2422
   ],
-  "stops": 154,
+  "stops": 155,
   "labels": 3
  },
  "L8": {
@@ -2162,7 +2162,7 @@
    -34.8133,
    -56.0959
   ],
-  "stops": 53,
+  "stops": 54,
   "labels": 2
  },
  "L12": {
@@ -2201,7 +2201,7 @@
    -56.0942
   ],
   "stops": 61,
-  "labels": 2
+  "labels": 3
  },
  "L14": {
   "sections": 5,
@@ -2238,7 +2238,7 @@
    -34.8434,
    -56.2489
   ],
-  "stops": 115,
+  "stops": 119,
   "labels": 3
  },
  "L16": {
@@ -2451,9 +2451,9 @@
   "labels": 2
  },
  "L31": {
-  "sections": 7,
+  "sections": 10,
   "joints": 0,
-  "totalPoints": 26,
+  "totalPoints": 35,
   "colors": [
    "#fe8fb9"
   ],
@@ -2461,18 +2461,18 @@
    4
   ],
   "bbox": [
-   -34.8062,
+   -34.8064,
    -56.1709,
-   -34.7814,
-   -56.1359
+   -34.7812,
+   -56.1281
   ],
-  "stops": 36,
+  "stops": 47,
   "labels": 3
  },
  "L32": {
-  "sections": 4,
+  "sections": 7,
   "joints": 0,
-  "totalPoints": 26,
+  "totalPoints": 37,
   "colors": [
    "#04919c"
   ],
@@ -2485,13 +2485,13 @@
    -34.7751,
    -56.1257
   ],
-  "stops": 31,
-  "labels": 3
+  "stops": 35,
+  "labels": 2
  },
  "L33": {
-  "sections": 8,
+  "sections": 10,
   "joints": 0,
-  "totalPoints": 36,
+  "totalPoints": 45,
   "colors": [
    "#9fe9ae"
   ],
@@ -2499,13 +2499,13 @@
    4
   ],
   "bbox": [
-   -34.8062,
-   -56.1375,
-   -34.7751,
-   -56.1279
+   -34.7923,
+   -56.1576,
+   -34.7686,
+   -56.1235
   ],
-  "stops": 30,
-  "labels": 2
+  "stops": 50,
+  "labels": 4
  },
  "L35": {
   "sections": 2,
@@ -2656,7 +2656,7 @@
    -34.8343,
    -56.2489
   ],
-  "stops": 82,
+  "stops": 84,
   "labels": 2
  }
 }
