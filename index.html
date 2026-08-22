@@ -241,7 +241,32 @@
                 </div>
             </div>
 
-            <p id="dataFreshness" class="data-freshness" hidden></p>
+            <!-- Footer row: the data date and the support link share ONE line on
+                 purpose. The mobile sheet has ~7 px of slack against its 24 %
+                 map-space budget with a line selected (mobile-panel.spec.js), so
+                 a block of its own is not affordable — and neither is the link
+                 pushing the date onto a second line. -->
+            <div class="panel-footer">
+                <p id="dataFreshness" class="data-freshness" hidden></p>
+                <!-- The heart is a span of its own, and the label another:
+                     applyTranslations replaces textContent, which would take the
+                     heart with it. Same shape as the sibling project's button
+                     (safe-sun-map), deliberately. -->
+                <a
+                    id="supportLink"
+                    class="support-link"
+                    href="https://ko-fi.com/nikolaikolosov"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Apoyá al autor en Ko-fi (se abre en otra pestaña)"
+                    title="Apoyá al autor en Ko-fi (se abre en otra pestaña)"
+                    data-i18n-aria="support.aria"
+                    data-i18n-title="support.aria"
+                >
+                    <span class="support-heart" aria-hidden="true">❤️</span>
+                    <span class="support-label" data-i18n="support.label">Apoyar al autor</span>
+                </a>
+            </div>
         </div>
 
         <div

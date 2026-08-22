@@ -888,15 +888,98 @@ label {
     font-weight: 600;
 }
 
+/* Panel footer: the data date and the support link on ONE row. The mobile
+   sheet is height-budgeted (≥82 % of the screen stays map), so this row is what
+   the support link costs — nothing beyond the line the date already occupies. */
+.panel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 14px;
+}
+
 /* Data freshness label (manual-update workflow) */
 .data-freshness {
-    margin-top: 14px;
+    margin: 0;
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
 .data-freshness.stale {
     color: var(--stop-color);
+}
+
+/* "Support the author" (PayPal). Quiet by design: it sits in the footer next to
+   the data date, not in the way of the map or the search. `margin-left: auto`
+   keeps it on the right even before the date is known, since #dataFreshness is
+   `hidden` until the data loads. */
+.support-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    margin-left: auto;
+    padding: 3px 8px;
+    border: 1px solid var(--panel-border);
+    border-radius: 999px;
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+/* The heart is the ❤️ EMOJI, so it brings its own colour — no ink token here.
+   The font stack is named explicitly because the panel's own family (Inter) has
+   no emoji coverage: without it a box without a colour-emoji fallback would draw
+   a tofu square where the heart should be. */
+.support-heart {
+    flex: 0 0 auto;
+    font-family:
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Segoe UI Symbol', sans-serif;
+    font-size: 0.78rem;
+    line-height: 1;
+}
+
+@media (hover: hover) {
+    .support-link:hover {
+        background: var(--input-bg-hover);
+        border-color: var(--accent);
+        color: var(--text-main);
+    }
+}
+
+.support-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.support-link:active {
+    transform: scale(0.97);
+}
+
+/* Touch sizing that grows the TARGET, not the pill. Padding plus a negative
+   margin would keep the layout honest but paint a 41 px capsule crowding the
+   stat above it, so the hit area is an invisible overlay instead: the row stays
+   as tall as its text, the sheet keeps its budget (mobile-panel.spec.js), and a
+   finger still gets the ~40 px of R5. */
+@media (pointer: coarse) {
+    .support-link {
+        position: relative;
+    }
+
+    .support-link::after {
+        content: '';
+        position: absolute;
+        inset: -13px -8px;
+    }
 }
 
 /* Common Buttons */
@@ -1373,8 +1456,20 @@ label {
         min-width: 0;
     }
 
+    .panel-footer {
+        margin-top: 6px;
+    }
+
     .data-freshness {
-        margin-top: 8px;
+        font-size: 0.68rem;
+    }
+
+    /* Flatter than on desktop on purpose: the sheet has ~7 px of slack against
+       its map-space budget with a line selected, and every pixel of padding
+       here is a pixel of map. The tap target does not shrink with it — that is
+       the ::after overlay below. */
+    .support-link {
+        padding: 1px 8px;
         font-size: 0.68rem;
     }
 
@@ -1419,8 +1514,12 @@ label {
         display: none;
     }
 
+    /* 19vh, not 20: the footer row grew by the support link, and the itinerary
+       view is where the sheet is tallest (journey.spec.js caps it at 0.58 of the
+       screen). The list scrolls either way — this trades 8 px of a scroll area
+       for 8 px of map. */
     .journey-legs {
-        max-height: 20vh;
+        max-height: 19vh;
         gap: 8px;
         margin-top: 10px;
     }
