@@ -11,6 +11,7 @@ import { test, expect, devices } from '@playwright/test';
 import { openMap } from './helpers.js';
 
 const KOFI = 'https://ko-fi.com/nikolaikolosov';
+const HEART = '❤️'; // ❤️ — emoji presentation, variation selector included
 
 const PIXEL_7 = { ...devices['Pixel 7'] };
 delete PIXEL_7.defaultBrowserType;
@@ -29,7 +30,7 @@ test('points at the author’s Ko-fi, and opens it without handing over the tab'
 
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', KOFI);
-    await expect(link.locator('.support-heart')).toHaveText('♥');
+    await expect(link.locator('.support-heart')).toHaveText(HEART);
     await expect(link).toHaveAttribute('target', '_blank');
     // Without noopener the opened page gets window.opener and can navigate this
     // tab; noreferrer keeps the visitor's current view out of the referrer.
@@ -75,7 +76,7 @@ test('follows the language switcher without a reload', async ({ page }) => {
     await expect(label).toHaveText(LABELS.ru);
     await expect(page.locator('#supportLink')).toHaveAttribute('title', /Ko-fi/);
     // The heart is a span of its own precisely so a re-label cannot eat it.
-    await expect(page.locator('#supportLink .support-heart')).toHaveText('♥');
+    await expect(page.locator('#supportLink .support-heart')).toHaveText(HEART);
 
     await page.click('.lang-btn[data-lang="en"]');
     await expect(label).toHaveText(LABELS.en);

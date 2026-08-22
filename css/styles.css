@@ -23,10 +23,6 @@
        two are deliberately theme-independent. */
     --journey-origin: #1d4ed8;
     --journey-destination: #15803d;
-    /* Support heart. One value for both themes on purpose: it is the same mark
-       as in the sibling project (safe-sun-map), and rose-600 carries on the
-       panel in either palette. */
-    --support-heart: #e11d48;
     /* Leaflet's own control palette, mirrored here so our map control can match
        the zoom buttons it sits under. Leaflet's stylesheet knows nothing about
        our themes and paints `.leaflet-bar a` white in both, so these are
@@ -940,10 +936,15 @@ label {
         color 0.15s ease;
 }
 
+/* The heart is the ❤️ EMOJI, so it brings its own colour — no ink token here.
+   The font stack is named explicitly because the panel's own family (Inter) has
+   no emoji coverage: without it a box without a colour-emoji fallback would draw
+   a tofu square where the heart should be. */
 .support-heart {
     flex: 0 0 auto;
-    color: var(--support-heart);
-    font-size: 0.8rem;
+    font-family:
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Segoe UI Symbol', sans-serif;
+    font-size: 0.78rem;
     line-height: 1;
 }
 
