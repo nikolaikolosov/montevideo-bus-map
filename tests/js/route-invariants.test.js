@@ -159,8 +159,8 @@ beforeAll(() => {
 describe('dataset shape (frozen)', () => {
     it('has the expected cardinalities', () => {
         expect(routesByLine.size).toBe(140);
-        expect(routesData.features).toHaveLength(1083);
-        expect(uniqueStopsData).toHaveLength(4901);
+        expect(routesData.features).toHaveLength(1088);
+        expect(uniqueStopsData).toHaveLength(4938);
     });
 });
 

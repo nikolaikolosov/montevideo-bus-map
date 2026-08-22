@@ -1,7 +1,8 @@
 /**
  * Decluttering the all-stops view (ux-review-001 X4, finding F6: "downtown is a
- * solid field of rings on mobile" — measured, every one of the 4,901 rings is
- * inside a phone's viewport at zoom 10 and 3,121 at zoom 12).
+ * solid field of rings on mobile" — measured on the 2026-07-27 dataset, every
+ * one of its 4,901 rings is inside a phone's viewport at zoom 10 and 3,121 at
+ * zoom 12).
  *
  * Below STOP_THIN_MAX_ZOOM only one ring per grid cell is DRAWN. Every stop
  * stays in the layer: a first attempt removed them, and a stop that is not a
@@ -13,6 +14,19 @@ import { openMap, setView, openStopPopup } from './helpers.js';
 
 const PIXEL_7 = { ...devices['Pixel 7'] };
 delete PIXEL_7.defaultBrowserType;
+
+/**
+ * How many unique stops the committed dataset holds, read from the file the page
+ * itself loads. A data update legitimately moves this number (4,901 → 4,938 on
+ * 2026-08-22), and "every stop stays in the layer" is a statement about the
+ * layer matching the DATA, not about a frozen count — that canary lives in
+ * tests/js/route-invariants.test.js.
+ */
+const datasetStopCount = (page) =>
+    page.evaluate(async () => {
+        const data = await (await fetch('/stops.json')).json();
+        return new Set(data.features.map((f) => f.properties.COD_UBIC_P)).size;
+    });
 
 /** Rings actually drawn (radius > 0) and total markers present. */
 const rings = (page) =>
@@ -33,16 +47,17 @@ test.describe('on a phone', () => {
 
     test('thins the drawn rings at city zoom and restores them further in', async ({ page }) => {
         await openMap(page, { theme: 'dark' });
+        const total = await datasetStopCount(page);
 
         await setView(page, [-34.88, -56.16], 10);
         const wide = await rings(page);
-        expect(wide.present, 'every stop must stay in the layer').toBe(4901);
+        expect(wide.present, 'every stop must stay in the layer').toBe(total);
         expect(wide.drawn, 'the field must thin out').toBeLessThan(1200);
 
         await setView(page, [-34.88, -56.16], 13);
         const close = await rings(page);
-        expect(close.present).toBe(4901);
-        expect(close.drawn).toBe(4901); // once rings read as individual stops
+        expect(close.present).toBe(total);
+        expect(close.drawn).toBe(total); // once rings read as individual stops
         expect(close.drawn).toBeGreaterThan(wide.drawn * 3);
     });
 
