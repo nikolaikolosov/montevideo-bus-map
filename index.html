@@ -248,22 +248,23 @@
                  pushing the date onto a second line. -->
             <div class="panel-footer">
                 <p id="dataFreshness" class="data-freshness" hidden></p>
+                <!-- The heart is a span of its own, and the label another:
+                     applyTranslations replaces textContent, which would take the
+                     heart with it. Same shape as the sibling project's button
+                     (safe-sun-map), deliberately. -->
                 <a
                     id="supportLink"
                     class="support-link"
                     href="https://ko-fi.com/nikolaikolosov"
                     target="_blank"
                     rel="noopener noreferrer"
-                    title="Apoyá el proyecto con una donación por Ko-fi"
-                    data-i18n-title="support.title"
+                    aria-label="Apoyá al autor en Ko-fi (se abre en otra pestaña)"
+                    title="Apoyá al autor en Ko-fi (se abre en otra pestaña)"
+                    data-i18n-aria="support.aria"
+                    data-i18n-title="support.aria"
                 >
-                    <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
-                        <path
-                            fill="currentColor"
-                            d="M12 21S3.5 14.9 3.5 9.2A4.7 4.7 0 0 1 12 6.5a4.7 4.7 0 0 1 8.5 2.7C20.5 14.9 12 21 12 21z"
-                        />
-                    </svg>
-                    <span data-i18n="support.link">Apoyá al autor</span>
+                    <span class="support-heart" aria-hidden="true">♥</span>
+                    <span class="support-label" data-i18n="support.label">Apoyar al autor</span>
                 </a>
             </div>
         </div>

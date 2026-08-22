@@ -23,6 +23,10 @@
        two are deliberately theme-independent. */
     --journey-origin: #1d4ed8;
     --journey-destination: #15803d;
+    /* Support heart. One value for both themes on purpose: it is the same mark
+       as in the sibling project (safe-sun-map), and rose-600 carries on the
+       panel in either palette. */
+    --support-heart: #e11d48;
     /* Leaflet's own control palette, mirrored here so our map control can match
        the zoom buttons it sits under. Leaflet's stylesheet knows nothing about
        our themes and paints `.leaflet-bar a` white in both, so these are
@@ -917,7 +921,7 @@ label {
 .support-link {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     flex: 0 0 auto;
     margin-left: auto;
     padding: 3px 8px;
@@ -926,6 +930,7 @@ label {
     background: var(--input-bg);
     color: var(--text-muted);
     font-size: 0.72rem;
+    font-weight: 600;
     line-height: 1.2;
     text-decoration: none;
     white-space: nowrap;
@@ -935,9 +940,11 @@ label {
         color 0.15s ease;
 }
 
-.support-link svg {
+.support-heart {
     flex: 0 0 auto;
-    color: var(--stop-color);
+    color: var(--support-heart);
+    font-size: 0.8rem;
+    line-height: 1;
 }
 
 @media (hover: hover) {

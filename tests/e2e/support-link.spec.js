@@ -16,7 +16,7 @@ const PIXEL_7 = { ...devices['Pixel 7'] };
 delete PIXEL_7.defaultBrowserType;
 
 const LABELS = {
-    es: 'Apoyá al autor',
+    es: 'Apoyar al autor',
     en: 'Support the author',
     ru: 'Поддержать автора',
 };
@@ -29,6 +29,7 @@ test('points at the author’s Ko-fi, and opens it without handing over the tab'
 
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', KOFI);
+    await expect(link.locator('.support-heart')).toHaveText('♥');
     await expect(link).toHaveAttribute('target', '_blank');
     // Without noopener the opened page gets window.opener and can navigate this
     // tab; noreferrer keeps the visitor's current view out of the referrer.
@@ -51,25 +52,33 @@ test('every off-site link in the panel carries noopener', async ({ page }) => {
 for (const [lang, label] of Object.entries(LABELS)) {
     test(`reads "${label}" in ${lang}`, async ({ page }) => {
         await openMap(page, { theme: 'dark', lang });
-        await expect(page.locator('#supportLink')).toHaveText(label);
+        // The heart is part of the link's text, so the label is matched on the span.
+        await expect(page.locator('#supportLink .support-label')).toHaveText(label);
         // The tooltip is translated too — it is what says the money goes through
         // Ko-fi, which the label deliberately does not.
-        const title = await page.locator('#supportLink').getAttribute('title');
+        // The tooltip and the accessible name say where the money goes AND
+        // that the link leaves the site — the label deliberately does neither.
+        const link = page.locator('#supportLink');
+        const title = await link.getAttribute('title');
         expect(title).toContain('Ko-fi');
         expect(title).not.toBe(label);
+        expect(await link.getAttribute('aria-label')).toBe(title);
     });
 }
 
 test('follows the language switcher without a reload', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
-    await expect(page.locator('#supportLink')).toHaveText(LABELS.es);
+    const label = page.locator('#supportLink .support-label');
+    await expect(label).toHaveText(LABELS.es);
 
     await page.click('.lang-btn[data-lang="ru"]');
-    await expect(page.locator('#supportLink')).toHaveText(LABELS.ru);
+    await expect(label).toHaveText(LABELS.ru);
     await expect(page.locator('#supportLink')).toHaveAttribute('title', /Ko-fi/);
+    // The heart is a span of its own precisely so a re-label cannot eat it.
+    await expect(page.locator('#supportLink .support-heart')).toHaveText('♥');
 
     await page.click('.lang-btn[data-lang="en"]');
-    await expect(page.locator('#supportLink')).toHaveText(LABELS.en);
+    await expect(label).toHaveText(LABELS.en);
 });
 
 test.describe('on a phone', () => {
