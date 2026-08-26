@@ -55,6 +55,18 @@ html[data-theme='light'] {
     --highlight-stop-glow: rgba(15, 23, 42, 0.45);
 }
 
+/* Esri's dark canvas is a MID grey where CARTO's dark_all was near-black:
+   measured mean relative luminance 0.026 at city zoom and 0.079 at z16, against
+   the #0f172a (0.0088) proxy the line palette's ≥3:1 contrast gate is computed
+   against (scripts/assign_line_colors.mjs). Left alone, every line would sit at
+   roughly half the contrast the palette promises. Darkening the TILE pane —
+   and only the tile pane, so our own vector layers keep their exact colours —
+   puts z16 back at ~0.018, within 13 % of the assumption, without recolouring a
+   single line. */
+html[data-theme='dark'] .leaflet-tile-pane {
+    filter: brightness(0.45);
+}
+
 /* The dark h1 gradient is too pale on a light background. */
 html[data-theme='light'] h1 {
     background: linear-gradient(to right, #2563eb, #7c3aed);

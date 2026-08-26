@@ -23,7 +23,7 @@ export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
         },
         [theme, lang],
     );
-    await page.route('https://*.basemaps.cartocdn.com/**', (r) => r.abort());
+    await page.route('https://services.arcgisonline.com/**', (r) => r.abort());
     await page.route('https://fonts.googleapis.com/**', (r) => r.abort());
     await page.route('https://fonts.gstatic.com/**', (r) => r.abort());
 
