@@ -196,11 +196,22 @@ export const CONFIG = {
     JOURNEY_FIT_MAX_ZOOM: 16,
 
     // --- Theme (light/dark by real sunrise/sunset, see theme.js) ---
-    // Basemap per theme (same CARTO CDN, same attribution).
+    // Basemap per theme. Esri's Canvas services, which need NO API key: CARTO's
+    // basemaps did not either until 2026-08, when they started stamping
+    // "API KEY REQUIRED / carto.com/basemaps/apikey" across every tile (user
+    // report). These are the same kind of grey canvas in both polarities, so
+    // the line palette (tuned per theme against a grey backdrop) still holds.
+    // Note the {z}/{y}/{x} order — Esri's is row-before-column.
     TILE_URLS: {
-        dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        dark: 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        light: 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     },
+    // Deepest zoom the basemap HAS data for over Montevideo: past it Esri
+    // serves a grey "Map data not yet available" placeholder, measured at
+    // z17-19 in the city centre. Leaflet upscales z16 instead, so the backdrop
+    // goes soft rather than turning into a wall of that text — the app's own
+    // corridors, stops and labels are vector and stay sharp.
+    TILE_MAX_NATIVE_ZOOM: 16,
     // Browser chrome color (meta theme-color), matches --bg-color per theme.
     THEME_META_COLORS: { dark: '#0f172a', light: '#f1f5f9' },
     // Route line colors: same deterministic hue per line, but lightness and
