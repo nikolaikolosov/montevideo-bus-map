@@ -436,10 +436,14 @@ export function initMap(onHome) {
 
     baseTileLayer = L.tileLayer(CONFIG.TILE_URLS[getTheme()], {
         attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-            '&copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+            'Tiles &copy; <a href="https://www.esri.com/">Esri</a> — ' +
+            'Esri, HERE, Garmin, &copy; ' +
+            '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        // Esri serves one host, no {s} subdomains, and has no data past
+        // TILE_MAX_NATIVE_ZOOM here — beyond it Leaflet upscales the last real
+        // tiles instead of requesting the placeholder ones (see config).
         maxZoom: CONFIG.MAX_ZOOM,
+        maxNativeZoom: CONFIG.TILE_MAX_NATIVE_ZOOM,
     }).addTo(map);
 
     // Dedicated pane for stops — always renders above route lines
