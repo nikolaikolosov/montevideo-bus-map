@@ -1,17 +1,34 @@
 /** Shared fixtures for the render e2e suites. */
 import { expect, test } from '@playwright/test';
 import { statSync } from 'node:fs';
-import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** The repo root, which the app's URL paths map onto. */
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 /**
+ * Where index.html loads Leaflet from: unpkg, the version pinned and SRI-checked.
+ * Bump it together with index.html and the devDependency: a URL the page no
+ * longer requests leaves openMap's route idle and the suite quietly back on
+ * the network.
+ */
+const LEAFLET_URL = 'https://unpkg.com/leaflet@1.9.4/dist/';
+
+/**
+ * The same files from the `leaflet` devDependency, pinned to the same version
+ * in package.json. Resolved rather than joined onto ROOT, so a checkout that
+ * has not run `npm install` since the dependency was added fails here, at
+ * import, instead of every test timing out on the loader.
+ */
+const LEAFLET_DIST = dirname(createRequire(import.meta.url).resolve('leaflet/dist/leaflet.js'));
+
+/**
  * Opens the map with a pinned theme and language, external network stubbed
  * out (Esri tiles + Google Fonts aborted → deterministic canvas, no flake),
- * the app's own files served from disk, and waits until data + initial render
- * are done.
+ * the app's own files and Leaflet served from disk, and waits until data +
+ * initial render are done.
  */
 export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
     await page.addInitScript(
@@ -42,6 +59,13 @@ export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
     // fix is to need no connection. The route lives as long as the page, which
     // covers a test's own reload() and goBack() too.
     await page.route(`${test.info().project.use.baseURL}/**`, serveFromDisk);
+    // Leaflet too: unpkg was the suite's last network dependency, one external
+    // connection per test that can be lost the same way, with the CDN's own
+    // uptime on top. The devDependency ships the files unpkg serves, byte for
+    // byte, and the page still checks them against index.html's SRI hashes.
+    // The stylesheet's images (images/layers.png …) resolve under the same URL,
+    // so they come from here as well.
+    await page.route(`${LEAFLET_URL}**`, serveLeaflet);
 
     await page.goto('/');
     await page.waitForFunction(
@@ -67,6 +91,18 @@ export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
 function serveFromDisk(route) {
     const { pathname } = new URL(route.request().url());
     const file = join(ROOT, pathname.endsWith('/') ? `${pathname}index.html` : pathname);
+    return fulfillFile(route, file);
+}
+
+/** Answers a request for one of Leaflet's CDN files with the devDependency's copy. */
+function serveLeaflet(route) {
+    // The route's pattern guarantees the prefix; what follows is a dist path.
+    const file = join(LEAFLET_DIST, route.request().url().slice(LEAFLET_URL.length));
+    return fulfillFile(route, file);
+}
+
+/** Fulfils a route with a file from disk, or with a 404 when there is none. */
+function fulfillFile(route, file) {
     return statSync(file, { throwIfNoEntry: false })?.isFile()
         ? route.fulfill({ path: file })
         : route.fulfill({ status: 404 });
