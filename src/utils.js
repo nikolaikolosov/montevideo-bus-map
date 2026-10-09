@@ -8,13 +8,82 @@ import { projectPointOnPolyline } from './geometry.js';
 export const UNKNOWN_STREET = 'Desconocida';
 
 /**
- * Street names of a stop with the sentinel and empty strings collapsed to null,
- * so every caller decides what to show once instead of re-testing the literal.
+ * Placeholders the FEED itself uses where a street has no name, compared
+ * case-insensitively. Not names either: 35 stop sides read "CALLE FICTICIA"
+ * (literally "fictitious street"), 49 "CIRC INT SIN DENOM" ("internal roadway,
+ * no denomination"), and the rest are the "sin nombre" / "sin denominación"
+ * shorthands — riders were shown "CALLE FICTICIA y CALLE FICTICIA".
+ */
+const PLACEHOLDER_STREETS = new Set(
+    [UNKNOWN_STREET, 'CALLE FICTICIA', 'CIRC INT SIN DENOM', 'S/N', 'SIN NOMBRE', 'PSJE S/D'].map(
+        (name) => name.toUpperCase(),
+    ),
+);
+
+/** Words that stay lower case inside a Spanish place name. */
+const PARTICLES = new Set(['de', 'del', 'y']);
+/** Articles: lower case only right after "de" ("Paso de la Arena", but "La Paz"). */
+const ARTICLES = new Set(['el', 'la', 'las', 'los']);
+/** Regnal numbers ("Juan XXIII"), which title case would turn into "Xxiii". */
+const ROMAN_NUMERAL =
+    /^(?:ii|iii|iv|vi|vii|viii|ix|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx|xxi|xxii|xxiii)$/;
+
+/**
+ * A place name from the feed, in the mixed case Spanish signage uses.
+ *
+ * The feed shouts: every street is ALL CAPS ("AV 18 DE JULIO"), while its
+ * headsigns are naive Title Case with every particle capitalised ("Plaza De Los
+ * Treinta Y Tres"). The GTFS best practices ask for exactly the opposite of
+ * both — mixed case "following local conventions for capitalization of place
+ * names" — and the two styles side by side read as two different products.
+ *
+ * Rules, all from the committed data:
+ *  - every word capitalised, including after ´ ' - . / ( inside it
+ *    ("O´Higgins", "D´Amico", "C.Moller", "(Peloduro)");
+ *  - "de", "del", "y" lower case after the first word;
+ *  - "e" lower case only where it is the conjunction (before i-/hi-: "Av Italia
+ *    e Hipólito Yrigoyen") — elsewhere it is an initial ("Julio E Suárez");
+ *  - articles lower case only after "de" ("Av de las Instrucciones", but
+ *    "Berges - El Jardín", "Psje La Espiga");
+ *  - regnal numbers upper case; tokens starting with a digit keep their
+ *    letters lower ("1er").
+ * Single letters stay capitals: in this data they are initials ("Luis A de
+ * Herrera"), and "Cno A Punta Espinillo" reads fine either way.
+ *
+ * Display only — keys (URLs, headsign groups) keep the raw feed value.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function formatPlaceName(text) {
+    if (typeof text !== 'string') return text;
+    const words = text.trim().split(/\s+/);
+    return words
+        .map((word, i) => {
+            const lower = word.toLowerCase();
+            if (ROMAN_NUMERAL.test(lower)) return lower.toUpperCase();
+            if (i > 0) {
+                if (PARTICLES.has(lower)) return lower;
+                const next = words[i + 1]?.toLowerCase() ?? '';
+                if (lower === 'e' && /^h?i/.test(next)) return lower;
+                if (ARTICLES.has(lower) && words[i - 1].toLowerCase() === 'de') return lower;
+            }
+            return lower.replace(/(^|[´'’\-./(])(\p{L})/gu, (_, sep, ch) => sep + ch.toUpperCase());
+        })
+        .join(' ');
+}
+
+/**
+ * Street names of a stop as they should be SHOWN: placeholders and empty
+ * strings collapsed to null, a corner that merely repeats the street dropped,
+ * and the rest in mixed case (formatPlaceName) — so every caller decides what
+ * to show once instead of re-testing literals.
  *
  * Three call sites used to compare against 'Desconocida' by hand and only two
  * did it: the popup rendered "at Desconocida" / "угол Desconocida" verbatim, and
- * nothing anywhere handled a sentinel CALLE. 10 of the 4901 committed stops are
- * affected (4 unknown ESQUINA, 6 unknown CALLE).
+ * nothing anywhere handled a sentinel CALLE. The feed's own placeholders
+ * (PLACEHOLDER_STREETS) and the 5 stops whose corner is their own street
+ * ("AVDA DE LAS AMERICAS y AVDA DE LAS AMERICAS") had the same problem.
  *
  * @param {object} properties - a stop feature's GeoJSON properties
  * @returns {{calle: string|null, esquina: string|null}}
@@ -22,9 +91,15 @@ export const UNKNOWN_STREET = 'Desconocida';
 export const stopStreets = (properties) => {
     const clean = (value) => {
         const text = typeof value === 'string' ? value.trim() : '';
-        return text && text !== UNKNOWN_STREET ? text : null;
+        return text && !PLACEHOLDER_STREETS.has(text.toUpperCase()) ? text : null;
     };
-    return { calle: clean(properties?.CALLE), esquina: clean(properties?.ESQUINA) };
+    const calle = clean(properties?.CALLE);
+    let esquina = clean(properties?.ESQUINA);
+    if (calle && esquina && calle.toUpperCase() === esquina.toUpperCase()) esquina = null;
+    return {
+        calle: calle && formatPlaceName(calle),
+        esquina: esquina && formatPlaceName(esquina),
+    };
 };
 
 /**

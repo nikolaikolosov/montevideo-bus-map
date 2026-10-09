@@ -132,7 +132,7 @@ describe('search combobox', () => {
         const { input, onPick } = mount([STOP_ENTRY]);
         type(input, 'buenos');
         const opt = document.querySelector('#searchList [role="option"]');
-        expect(opt.textContent).toContain('BUENOS AIRES y ITUZAINGO');
+        expect(opt.textContent).toContain('Buenos Aires y Ituzaingo');
         expect(opt.textContent).toContain('4772');
         opt.click();
         expect(onPick).toHaveBeenCalledWith(STOP_ENTRY);

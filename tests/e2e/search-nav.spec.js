@@ -52,7 +52,7 @@ test('chip → downstream view with context bar; reset returns to the whole line
 
     expect(hash(page)).toBe('#/parada/4772/linea/102');
     await expect(page.locator('#contextBar')).toBeVisible();
-    await expect(page.locator('#contextText')).toHaveText('Desde: BUENOS AIRES y ITUZAINGO (4772)');
+    await expect(page.locator('#contextText')).toHaveText('Desde: Buenos Aires y Ituzaingo (4772)');
     await expect(page.locator('#contextReset')).toHaveText('Toda la línea');
     await expect(page.locator('#searchInput')).toHaveValue('Línea 102');
 
@@ -114,6 +114,18 @@ test('a stale deep link (unknown line) fails safe to the home view', async ({ pa
     await page.goto('/#/linea/NOPE');
     await page.waitForFunction(() => window.__mvdGetRenderState().stops > 4000);
     await expect(page.locator('#contextBar')).toBeHidden();
+    // …and the address bar says so, so the dead link is not shared on.
+    expect(new URL(page.url()).hash).toBe('#/');
+});
+
+test('a destination the line no longer serves degrades to the whole line, URL included', async ({
+    page,
+}) => {
+    await openMap(page, { theme: 'dark' });
+    await page.goto('/#/linea/104/destino/Nowhere');
+    await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
+    expect(new URL(page.url()).hash).toBe('#/linea/104');
+    await expect(page.locator('.destination-chip[aria-pressed="true"]')).toHaveText('Todos');
 });
 
 test('a downstream link whose line does not serve the stop degrades to the stop', async ({
@@ -131,7 +143,8 @@ test('a downstream link whose line does not serve the stop degrades to the stop'
     // Degraded to the stop view: full stop field, no context bar, no line label.
     await expect(page.locator('#contextBar')).toBeHidden();
     await expect(page.locator('#searchInput')).not.toHaveValue('Línea 2');
-    await expect(page.locator('#searchInput')).toHaveValue('BUENOS AIRES y ITUZAINGO');
+    await expect(page.locator('#searchInput')).toHaveValue('Buenos Aires y Ituzaingo');
+    expect(new URL(page.url()).hash).toBe('#/parada/4772');
     // A pair that IS real still renders the downstream view, so the guard is not
     // simply rejecting everything.
     await page.goto('/#/parada/4772/linea/124');

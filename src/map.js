@@ -6,14 +6,21 @@ import {
     isCoarsePointer,
     isWithinBounds,
     stopStreets,
+    formatPlaceName,
 } from './utils.js';
 import { appState, resetLayers } from './state.js';
-import { projectionCandidates, pointAt, M_PER_DEG_LON, M_PER_DEG_LAT } from './geometry.js';
+import {
+    projectionCandidates,
+    pointAt,
+    matchStopsToTrace,
+    M_PER_DEG_LON,
+    M_PER_DEG_LAT,
+} from './geometry.js';
 import { buildSections, buildJoints } from './bundling.js';
 import { OffsetPolyline, OffsetJoint } from './offsetline.js';
 import { getTheme } from './theme.js';
 import { t, tPlural } from './i18n.js';
-import { retireFirstUseHint } from './ui.js';
+import { retireFirstUseHint, stopDirectionBadge } from './ui.js';
 import { rideLegGeometry } from './journey-geometry.js';
 import {
     uniqueStopsData,
@@ -21,6 +28,7 @@ import {
     stopLinesMap,
     stopVariantsMap,
     stopsByVariant,
+    routesByVariant,
     getFilteredRouteFeatures,
     getFilteredStopFeatures,
     buildVariantOrdinalMap,
@@ -415,6 +423,102 @@ function addLocateControl() {
     new LocateControl({ position: 'topright' }).addTo(map);
 }
 
+/**
+ * Adds the "about this map" control under the locate button, and wires the panel
+ * it opens: nothing in the app explained what a strand is, what colour means, or
+ * where the data comes from, and the base-map credits had no home but Leaflet's
+ * corner (finding F11). Ported from PR #53, which never reached main.
+ */
+function addAboutControl() {
+    const panel = document.getElementById('aboutPanel');
+    const closeBtn = document.getElementById('aboutClose');
+    if (!panel) return;
+
+    let opener = null;
+    const close = () => {
+        panel.hidden = true;
+        opener?.focus();
+    };
+    const open = () => {
+        panel.hidden = false;
+        opener = document.activeElement;
+        closeBtn?.focus();
+    };
+
+    closeBtn?.addEventListener('click', close);
+    // Escape closes it, as a dialog must; and as an aria-modal dialog it keeps
+    // the keyboard inside — its one control is the close button, so Tab stays
+    // there instead of wandering to the page underneath.
+    document.addEventListener('keydown', (e) => {
+        if (panel.hidden) return;
+        if (e.key === 'Escape') close();
+        else if (e.key === 'Tab') {
+            e.preventDefault();
+            closeBtn?.focus();
+        }
+    });
+
+    const AboutControl = L.Control.extend({
+        onAdd() {
+            const btn = L.DomUtil.create('button', 'about-control');
+            btn.type = 'button';
+            btn.innerHTML =
+                '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" ' +
+                'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+                '<circle cx="12" cy="12" r="9"/>' +
+                '<path d="M12 11v5"/><path d="M12 7.5v.01"/></svg>';
+            btn.setAttribute('aria-label', t('about.aria'));
+            btn.title = t('about.aria');
+            btn.setAttribute('data-i18n-aria', 'about.aria');
+            btn.setAttribute('data-i18n-title', 'about.aria');
+            L.DomEvent.disableClickPropagation(btn);
+            L.DomEvent.on(btn, 'click', () => (panel.hidden ? open() : close()));
+            return btn;
+        },
+    });
+    new AboutControl({ position: 'topright' }).addTo(map);
+}
+
+/**
+ * Nudges the map so a freshly opened popup is not hidden by the panel.
+ *
+ * Leaflet auto-pans a popup into the MAP's viewport, but the panel is an overlay
+ * the map knows nothing about, so a stop near it opens underneath (finding F10).
+ * Measuring both rectangles after the open and panning by the overlap fixes it
+ * for whichever edge the panel occupies — top-left on desktop, the bottom sheet
+ * on a phone — without hard-coding either layout. Ported from PR #53.
+ */
+function keepPopupClearOfPanel() {
+    const popupEl = map.getPane('popupPane')?.querySelector('.leaflet-popup');
+    const panelEl = document.getElementById('ui-panel');
+    if (!popupEl || !panelEl) return;
+
+    const pop = popupEl.getBoundingClientRect();
+    const panel = panelEl.getBoundingClientRect();
+    const gap = 12;
+    const overlaps =
+        pop.right > panel.left &&
+        pop.left < panel.right &&
+        pop.bottom > panel.top &&
+        pop.top < panel.bottom;
+    if (!overlaps) return;
+
+    // Push along the shallower axis: the smaller correction keeps the stop the
+    // rider tapped as close to where they tapped as possible.
+    const pushDown = panel.bottom - pop.top + gap;
+    const pushUp = pop.bottom - panel.top + gap;
+    const pushRight = panel.right - pop.left + gap;
+    const pushLeft = pop.right - panel.left + gap;
+    const options = [
+        { dx: 0, dy: -pushDown, cost: Math.abs(pushDown) },
+        { dx: 0, dy: pushUp, cost: Math.abs(pushUp) },
+        { dx: -pushRight, dy: 0, cost: Math.abs(pushRight) },
+        { dx: pushLeft, dy: 0, cost: Math.abs(pushLeft) },
+    ].sort((a, b) => a.cost - b.cost);
+    const { dx, dy } = options[0];
+    map.panBy([dx, dy], { animate: false });
+}
+
 export function initMap(onHome) {
     const touch = isCoarsePointer();
 
@@ -430,6 +534,7 @@ export function initMap(onHome) {
     L.control.zoom({ position: 'topright' }).addTo(map);
     if (onHome) addHomeControl(onHome);
     addLocateControl();
+    addAboutControl();
     // The control shows whether the camera is still following, which any pan or
     // zoom can end.
     map.on('moveend zoomend', () => updateLocateControl());
@@ -460,6 +565,7 @@ export function initMap(onHome) {
     // done its job and gets out of the way — without recording a dismissal,
     // which stays the visitor's own deliberate act.
     map.on('popupopen', retireFirstUseHint);
+    map.on('popupopen', keepPopupClearOfPanel);
 
     return map;
 }
@@ -1013,14 +1119,29 @@ export function createStopPopup(feature, onShowRoutes) {
     div.className = 'popup-content';
     // No corner clause at all when the cross street is unknown — printing the
     // sentinel was worse than saying nothing, and worse still outside Spanish.
-    const corner = esquina ? `${t('popup.corner', { esquina: escapeHTML(esquina) })} · ` : '';
+    // With only the cross street known, IT is the title: "Calle sin nombre ·
+    // esq. Av Italia" located the stop worse than "Av Italia" alone.
+    const title = calle ?? esquina ?? t('stop.unknownStreet');
+    const corner =
+        calle && esquina ? `${t('popup.corner', { esquina: escapeHTML(esquina) })} · ` : '';
     div.innerHTML = `
-        <h3>${escapeHTML(calle ?? t('stop.unknownStreet'))}</h3>
+        <h3>${escapeHTML(title)}</h3>
         <p class="popup-sub">${corner}${t('popup.stop', { cod: escapeHTML(cod) })} · ${linesLabel}</p>
         <ul class="popup-lines" role="list"></ul>
         <button type="button" class="btn draw-lines-btn"
             aria-label="${t('popup.viewAllAria')}">${t('popup.viewAll')}</button>
     `;
+
+    // Which way the buses leave this stop: the corner's name is shared with
+    // the stop across the street, so the name alone does not say which kerb
+    // this is (stop-direction.js).
+    const direction = stopDirectionBadge(cod);
+    if (direction) {
+        const row = document.createElement('p');
+        row.className = 'popup-direction';
+        row.append(direction);
+        div.querySelector('h3').after(row);
+    }
 
     // One tappable chip per line: shows JUST that line downstream from here.
     const list = div.querySelector('.popup-lines');
@@ -1240,6 +1361,90 @@ export function trimToStops(coords, variantId) {
 }
 
 /**
+ * Where each stop of a route feature sits on its TRIMMED trace, matched as one
+ * ordered sequence (`matchStopsToTrace`). Keyed by the feature object itself,
+ * which data.js indexes once and never replaces, so a test that indexes a
+ * synthetic fixture cannot be answered from another dataset's entry.
+ *
+ * @type {WeakMap<object, Map<number, {i: number, t: number}>>}
+ */
+const stopCutsByFeature = new WeakMap();
+
+/**
+ * The cut for a downstream view: the boarding stop's place on the trimmed
+ * trace, consistent with the stop ORDER rather than merely nearest.
+ *
+ * The nearest projection is what this used to be, and on a route that passes
+ * the same street twice it picks a pass by distance alone: from stop 5407 line
+ * L1 was drawn from 2.6 km further on (the outbound pass is 9 m from the
+ * return one), so the stops the bus serves next were shown with no route under
+ * them; from 5408 it was drawn from 2.6 km EARLIER, so the "downstream" view
+ * included road the rider had already travelled. Nine stop visits on the
+ * committed data, all out-and-back spurs.
+ *
+ * @param {object} f - the original route feature
+ * @param {number[][]} coords - its cleaned, trimmed trace
+ * @param {number} stopCode - COD_UBIC_P of the boarding stop
+ * @returns {{i: number, t: number}|null} null when the stop is not in the pattern
+ */
+function downstreamCut(f, coords, stopCode) {
+    let cuts = stopCutsByFeature.get(f);
+    if (!cuts) {
+        const ordered = [...(stopsByVariant.get(f.properties.COD_VARIAN) ?? [])].sort(
+            (a, b) => a.ordinal - b.ordinal,
+        );
+        const matched = matchStopsToTrace(
+            ordered.map((s) => s.feature.geometry.coordinates),
+            coords,
+        );
+        cuts = new Map();
+        // Later visits overwrite earlier ones, mirroring the ordinal index the
+        // downstream STOP filter reads (data.js stopOrdinalsMap).
+        ordered.forEach((s, k) => cuts.set(s.feature.properties.COD_UBIC_P, matched[k]));
+        stopCutsByFeature.set(f, cuts);
+    }
+    return cuts.get(stopCode) ?? null;
+}
+
+/**
+ * Whether a stop is the LAST one a variant serves (an arrival only).
+ * @param {string} variantId
+ * @param {number} stopCode
+ * @returns {boolean} false when the stop is not in the variant's pattern
+ */
+function isLastStopOf(variantId, stopCode) {
+    const entries = stopsByVariant.get(variantId);
+    if (!entries?.length) return false;
+    let last = entries[0];
+    for (const e of entries) if (e.ordinal > last.ordinal) last = e;
+    return last.feature.properties.COD_UBIC_P === stopCode;
+}
+
+/**
+ * The trace from a cut on, the cut itself as the head point (on the segment,
+ * never a stop coordinate — R-FOREIGN). Same output shape as
+ * truncateLineDownstream, including dropping a head that coincides with the
+ * next vertex.
+ *
+ * @param {number[][]} coords
+ * @param {{i: number, t: number}} cut
+ * @returns {number[][]}
+ */
+function truncateAtCut(coords, { i, t }) {
+    const head = pointAt(coords, i, t);
+    const rest = coords.slice(i + 1);
+    const EPS = 1e-9;
+    if (
+        rest.length > 0 &&
+        Math.abs(rest[0][0] - head[0]) < EPS &&
+        Math.abs(rest[0][1] - head[1]) < EPS
+    ) {
+        return rest;
+    }
+    return [head, ...rest];
+}
+
+/**
  * Clones and cleans a route feature's geometry.
  * Uses shallow clone + geometry-only cloning instead of structuredClone
  * for better performance on large GeoJSON datasets.
@@ -1249,9 +1454,12 @@ export function trimToStops(coords, variantId) {
  *
  * @param {object} f - original GeoJSON Feature
  * @param {number[]|null} sourceLonLat - if set, truncate route from this point
+ * @param {number|null} [sourceCode] - the stop at `sourceLonLat`; when the
+ *   variant serves it, the cut follows the stop ORDER (downstreamCut) instead
+ *   of the nearest pass
  * @returns {object|null} cleaned feature, or null if geometry becomes empty
  */
-export function prepareRouteFeature(f, sourceLonLat) {
+export function prepareRouteFeature(f, sourceLonLat, sourceCode = null) {
     if (!f.geometry?.coordinates) return null;
 
     // Deep-clone coordinates to avoid mutating the original data
@@ -1267,7 +1475,16 @@ export function prepareRouteFeature(f, sourceLonLat) {
         // Show only the part the rider can still travel: from the clicked stop
         // downstream to the last stop. At a terminal there is nothing downstream
         // (coords collapses to <2 points) and the variant is dropped below.
-        coords = truncateLineDownstream(coords, sourceLonLat);
+        //
+        // Decided by the stop ORDER where the stop is in the pattern: a
+        // variant's last stop is an arrival, whatever few metres of trace the
+        // trim left beyond its projection. Measured, 14 of the 242 stop/line
+        // pairs that end at a stop still drew such a stub, with the line's
+        // label on top of the stop it had just arrived at.
+        if (sourceCode != null && isLastStopOf(f.properties.COD_VARIAN, sourceCode)) return null;
+        const flat = typeof coords?.[0]?.[0] === 'number' && coords.length >= 2;
+        const cut = flat && sourceCode != null ? downstreamCut(f, coords, sourceCode) : null;
+        coords = cut ? truncateAtCut(coords, cut) : truncateLineDownstream(coords, sourceLonLat);
     }
     if (!coords || coords.length <= 1) return null;
 
@@ -1285,13 +1502,20 @@ export function prepareRouteFeature(f, sourceLonLat) {
  * Collects candidate label positions from route features: the two endpoints of
  * every variant, which is where a line's identity is worth stating.
  *
+ * In a downstream view every variant STARTS at the boarding stop, so those
+ * starts are skipped: they all name lines already named by the context bar,
+ * and at a busy stop they stacked into blocks of chips over the very stop the
+ * rider tapped (stop 4018: three overlapping blocks of 14 ids). The ends are
+ * the answer to "where do these go", and they keep their labels.
+ *
  * Clustering is NOT done here — it depends on the zoom, so it happens at render
  * time and again whenever the zoom changes (see clusterLabelsByScreen).
  *
  * @param {object[]} features - cleaned GeoJSON Feature[]
+ * @param {{skipStarts?: boolean}} [options]
  * @returns {Array<{coords: number[], linea: string, color: string}>}
  */
-function buildLabelCandidates(features) {
+function buildLabelCandidates(features, { skipStarts = false } = {}) {
     const out = [];
     const add = (coords, linea, color) => {
         if (!coords || coords.length < 2) return;
@@ -1305,14 +1529,14 @@ function buildLabelCandidates(features) {
 
         if (feature.geometry.type === 'LineString') {
             if (coords.length > 0) {
-                add(coords[0], linea, color);
+                if (!skipStarts) add(coords[0], linea, color);
                 add(coords[coords.length - 1], linea, color);
             }
         } else if (feature.geometry.type === 'MultiLineString') {
             if (coords.length > 0) {
                 const first = coords[0];
                 const last = coords[coords.length - 1];
-                if (first.length > 0) add(first[0], linea, color);
+                if (first.length > 0 && !skipStarts) add(first[0], linea, color);
                 if (last.length > 0) add(last[last.length - 1], linea, color);
             }
         }
@@ -1477,6 +1701,21 @@ function renderRouteLabels(labelGroups) {
 // ---------------------------------------------------------------------------
 
 /**
+ * The destinations a set of variants serves, for a corridor popup: their
+ * headsigns, de-duplicated, in display case, alphabetical.
+ * @param {string[]} variants - COD_VARIAN ids
+ * @returns {string[]}
+ */
+function sectionHeadsigns(variants) {
+    const names = new Set();
+    for (const v of variants) {
+        const headsign = routesByVariant.get(v)?.[0]?.properties?.DESC_VARIA;
+        if (headsign) names.add(formatPlaceName(headsign));
+    }
+    return [...names].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+/**
  * Renders the filtered route lines on the map as bundled corridors.
  *
  * Instead of drawing every variant's own trace (which overlap and cross,
@@ -1540,16 +1779,22 @@ function renderRouteLines(features) {
 
             // Content function: regenerated on every open, so a language
             // switch is picked up without re-binding.
+            //
+            // Where the buses on this stretch are HEADED, not which variant
+            // codes drew it: the popup listed "Variantes: 4351, 4352, 8890",
+            // the pipeline's vocabulary the panel's own stat row was retired
+            // for (ux-review-001 X1).
             layer.bindPopup(() => {
-                const variantsRow = variants.length
-                    ? `<p>${tPlural('section.variants', variants.length, {
-                          list: escapeHTML(variants.join(', ')),
+                const headsigns = sectionHeadsigns(variants);
+                const towardsRow = headsigns.length
+                    ? `<p>${t('section.towards', {
+                          list: escapeHTML(headsigns.join(' · ')),
                       })}</p>`
                     : '';
                 return `
                 <div class="popup-content">
                     <h3>${t('section.title', { id: escapeHTML(lineId) })}</h3>
-                    ${variantsRow}
+                    ${towardsRow}
                 </div>
             `;
             });
@@ -1682,22 +1927,29 @@ export function renderRoutes({
     if (lineIds.length === 0) return { variantCount: 0, stopCount: 0 };
 
     const sourceLonLat = sourceFeature?.geometry?.coordinates ?? null;
-    const variantOrdinalMap = sourceFeature
-        ? buildVariantOrdinalMap(sourceFeature.properties.COD_UBIC_P)
-        : null;
+    const sourceCode = sourceFeature?.properties?.COD_UBIC_P ?? null;
+    const variantOrdinalMap = sourceFeature ? buildVariantOrdinalMap(sourceCode) : null;
 
     // --- Filter & prepare route features ---
     const rawRouteFeatures = getFilteredRouteFeatures(lineIds, variantsArr);
     const cleanedRouteFeatures = rawRouteFeatures
-        .map((f) => prepareRouteFeature(f, sourceLonLat))
+        .map((f) => prepareRouteFeature(f, sourceLonLat, sourceCode))
         .filter(Boolean);
 
     if (cleanedRouteFeatures.length === 0) {
         // No revenue route downstream (e.g. the clicked stop is a terminal).
-        // Keep just the clicked stop visible instead of blanking the map.
+        // Keep just the clicked stop visible instead of blanking the map — and
+        // on screen: from a shared link the camera is still on the city
+        // overview, where one highlighted stop is easy to miss.
         if (sourceFeature) {
             appState.currentStopsLayer = L.layerGroup().addTo(map);
             renderHighlightStop(sourceFeature);
+            if (fit) {
+                const [lon, lat] = sourceFeature.geometry.coordinates;
+                const bounds = L.latLngBounds([lat, lon], [lat, lon]);
+                const zoom = Math.max(map.getZoom(), CONFIG.FIT_BOUNDS_MAX_ZOOM);
+                map.fitBounds(bounds, panelAwareFit(bounds, zoom));
+            }
         }
         return { variantCount: 0, stopCount: 0 };
     }
@@ -1714,7 +1966,9 @@ export function renderRoutes({
         renderDirectionArrows(buildDirectionArrows(appState.arrowFeatures));
     }
 
-    appState.labelCandidates = buildLabelCandidates(cleanedRouteFeatures);
+    appState.labelCandidates = buildLabelCandidates(cleanedRouteFeatures, {
+        skipStarts: Boolean(sourceFeature),
+    });
     renderRouteLabels(clusterLabelsByScreen(appState.labelCandidates));
     renderRouteLines(cleanedRouteFeatures);
     renderStops(stopFeatures, onShowRoutes);
@@ -1724,11 +1978,17 @@ export function renderRoutes({
     }
 
     // --- Fit bounds ---
-    if (fit && !sourceFeature && appState.currentRouteLayer?.getLayers().length) {
-        map.fitBounds(appState.currentRouteLayer.getBounds(), {
-            padding: CONFIG.FIT_BOUNDS_PADDING,
-            maxZoom: CONFIG.FIT_BOUNDS_MAX_ZOOM,
-        });
+    // A downstream view is framed too, with its boarding stop in the frame.
+    // It used to keep the camera wherever it was, on the reasoning that the
+    // rider had just tapped a stop that is on screen — but the answer to "where
+    // does this line go from here" runs off that screen, and a shared or
+    // reloaded #/parada/…/linea/… link left the camera on the city overview
+    // with the route somewhere under the panel. Picking a line is the
+    // "inherently spatial" case of R8 (design/component-inventory.md).
+    if (fit && appState.currentRouteLayer?.getLayers().length) {
+        const bounds = appState.currentRouteLayer.getBounds();
+        if (sourceLonLat) bounds.extend([sourceLonLat[1], sourceLonLat[0]]);
+        map.fitBounds(bounds, panelAwareFit(bounds, CONFIG.FIT_BOUNDS_MAX_ZOOM));
     }
 
     // --- Return stats for UI ---
@@ -1761,40 +2021,69 @@ function journeyBeadStyle(zoom, isTouch) {
 }
 
 /**
- * fitBounds padding that keeps an itinerary clear of the floating UI panel.
+ * fitBounds options that keep a result clear of the floating UI panel.
  *
  * Leaflet pads against the map viewport, but `#ui-panel` sits ON TOP of it —
- * 320 px of it on desktop. Framing a cross-city trip with symmetric padding
- * therefore hides the "A" end behind the panel, which is precisely the thing
- * a journey view must show. Measured from the live element so it follows the
- * desktop card / mobile bottom-sheet split without duplicating the breakpoint.
+ * 320 px of it on desktop, the lower quarter of the screen on a phone. Framing
+ * with symmetric padding therefore hides whatever falls under it: the "A" end of
+ * a cross-city trip, the western terminal of a line, the southern half of a
+ * radial route under the bottom sheet. Every framed view goes through here —
+ * line, downstream and journey alike (the journey had its own copy; the other
+ * two padded symmetrically and lost their ends under the panel).
  *
- * @returns {{paddingTopLeft: number[], paddingBottomRight: number[]}}
+ * Measured from the live elements so it follows the desktop card / mobile
+ * bottom-sheet split without duplicating the breakpoint. On the desktop card the
+ * result is placed either to the RIGHT of the card or BELOW it, whichever frames
+ * it larger — an east-west line wants the width, a compact one loses nothing by
+ * dropping under a short card.
+ *
+ * @param {L.LatLngBounds} bounds - what is about to be framed
+ * @param {number} maxZoom
+ * @returns {{paddingTopLeft: number[], paddingBottomRight: number[], maxZoom: number}}
  */
-function journeyFitPadding() {
+function panelAwareFit(bounds, maxZoom) {
     const [padX, padY] = CONFIG.FIT_BOUNDS_PADDING;
-    const rect = document.getElementById('ui-panel')?.getBoundingClientRect();
+    const plain = { paddingTopLeft: [padX, padY], paddingBottomRight: [padX, padY], maxZoom };
+    const panel = document.getElementById('ui-panel')?.getBoundingClientRect();
+    const box = map.getContainer().getBoundingClientRect();
     const size = map.getSize();
-    if (!rect?.width || !size.x || !size.y) {
-        return { paddingTopLeft: [padX, padY], paddingBottomRight: [padX, padY] };
-    }
+    if (!panel?.width || !panel?.height || !size.x || !size.y) return plain;
+
     // Never eat more than this share of the viewport: an over-padded fit
     // zooms the whole city out to nothing. The mobile sheet gets the looser
     // cap because it legitimately covers half the screen while an itinerary
     // is listed, and the ends must still land in the strip above it.
     const cap = (value, extent, share) => Math.min(value, extent * share);
 
-    if (rect.width > window.innerWidth * 0.8) {
+    if (panel.width > box.width * 0.8) {
         // Bottom sheet (mobile): the panel covers the lower edge.
+        const covered = Math.max(0, box.bottom - panel.top);
         return {
             paddingTopLeft: [padX, padY],
-            paddingBottomRight: [padX, cap(rect.height + padY, size.y, 0.62)],
+            paddingBottomRight: [padX, cap(covered + padY, size.y, 0.62)],
+            maxZoom,
         };
     }
-    return {
-        paddingTopLeft: [cap(rect.right + padX, size.x, 0.5), padY],
+
+    const rightPad = panel.right - box.left + padX;
+    const belowPad = panel.bottom - box.top + padY;
+    const right = {
+        paddingTopLeft: [cap(rightPad, size.x, 0.5), padY],
         paddingBottomRight: [padX, padY],
     };
+    // Below the card only while the card is short enough to leave the larger
+    // half of the screen: a capped top padding would put the result back
+    // under the card's lower part (an itinerary makes the card ~560 px tall).
+    if (belowPad > size.y * 0.5) return { ...right, maxZoom };
+    const below = {
+        paddingTopLeft: [padX, belowPad],
+        paddingBottomRight: [padX, padY],
+    };
+    const zoomFor = (o) =>
+        map.getBoundsZoom(bounds, false, L.point(o.paddingTopLeft).add(o.paddingBottomRight));
+    const best =
+        Math.min(zoomFor(below), maxZoom) > Math.min(zoomFor(right), maxZoom) ? below : right;
+    return { ...best, maxZoom };
 }
 
 /** [lon, lat] of a stop code, or null when the stop is unknown. */
@@ -1900,7 +2189,7 @@ export function renderJourney({ option, fromCode, toCode, onShowRoutes, fit = tr
         }).addTo(routeLayer);
         ride.bindPopup(() => {
             const headsign = leg.headsign
-                ? `<p>${t('journey.towards', { headsign: escapeHTML(leg.headsign) })}</p>`
+                ? `<p>${t('journey.towards', { headsign: escapeHTML(formatPlaceName(leg.headsign)) })}</p>`
                 : '';
             return `
                 <div class="popup-content">
@@ -1953,10 +2242,8 @@ export function renderJourney({ option, fromCode, toCode, onShowRoutes, fit = tr
     if (destination) journeyMarker(destination, 'destination', 'B').addTo(stopsLayer);
 
     if (fit && routeLayer.getLayers().length) {
-        map.fitBounds(routeLayer.getBounds(), {
-            ...journeyFitPadding(),
-            maxZoom: CONFIG.JOURNEY_FIT_MAX_ZOOM,
-        });
+        const bounds = routeLayer.getBounds();
+        map.fitBounds(bounds, panelAwareFit(bounds, CONFIG.JOURNEY_FIT_MAX_ZOOM));
     }
 
     return { legCount: option.legs.length, approximateLegs };

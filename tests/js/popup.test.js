@@ -54,8 +54,9 @@ beforeAll(() => {
 describe('createStopPopup (synthetic)', () => {
     it('renders header, count and one chip per line in numeric order', () => {
         const popup = createStopPopup(stopFeature(1), vi.fn());
-        expect(popup.querySelector('h3').textContent).toBe('BUENOS AIRES');
-        expect(popup.querySelector('.popup-sub').textContent).toContain('esq. ITUZAINGO');
+        // Shown in mixed case (formatPlaceName), never the feed's ALL CAPS.
+        expect(popup.querySelector('h3').textContent).toBe('Buenos Aires');
+        expect(popup.querySelector('.popup-sub').textContent).toContain('esq. Ituzaingo');
         expect(popup.querySelector('.popup-sub').textContent).toContain('2 líneas');
         const chips = [...popup.querySelectorAll('.line-chip')];
         expect(chips.map((c) => c.textContent)).toEqual(['7', '102']); // numeric-aware
@@ -118,7 +119,8 @@ describe('createStopPopup (synthetic)', () => {
         const popup = createStopPopup(stopFeature(2, '<script>x</script>', '<b>xss</b>'), vi.fn());
         expect(popup.querySelector('script')).toBeNull();
         expect(popup.querySelector('.popup-sub b')).toBeNull();
-        expect(popup.querySelector('h3').textContent).toBe('<script>x</script>');
+        // Escaped text, not markup (re-cased like any name, hence the lower case).
+        expect(popup.querySelector('h3').textContent.toLowerCase()).toBe('<script>x</script>');
     });
 
     it('getStopLineVariants filters variants by line', () => {
@@ -136,7 +138,7 @@ describe('createStopPopup (synthetic)', () => {
 
             const noCorner = createStopPopup(stopFeature(1, 'AV ITALIA', UNKNOWN_STREET), vi.fn());
             expect(noCorner.textContent, lang).not.toContain(UNKNOWN_STREET);
-            expect(noCorner.querySelector('h3').textContent).toBe('AV ITALIA');
+            expect(noCorner.querySelector('h3').textContent).toBe('Av Italia');
             // The corner clause is dropped entirely, not filled with a placeholder.
             expect(noCorner.querySelector('.popup-sub').textContent).not.toContain(
                 t('popup.corner', { esquina: '' }).replace('{esquina}', '').trim(),
@@ -305,6 +307,6 @@ describe('localized popups (i18n)', () => {
         // fixture stop serves exactly 2 lines → «2 линии» (few)
         expect(popup.querySelector('.popup-sub').textContent).toContain('2 линии');
         expect(popup.querySelector('.popup-sub').textContent).toContain('Остановка 1');
-        expect(popup.querySelector('.popup-sub').textContent).toContain('угол ITUZAINGO');
+        expect(popup.querySelector('.popup-sub').textContent).toContain('угол Ituzaingo');
     });
 });

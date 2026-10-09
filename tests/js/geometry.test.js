@@ -15,6 +15,7 @@ import {
     projectPointOnPolyline,
     projectionCandidates,
     pointAt,
+    matchStopsToTrace,
     M_PER_DEG_LON,
     M_PER_DEG_LAT,
     segmentLengthM,
@@ -147,6 +148,120 @@ describe('pointAt', () => {
         ];
         expect(pointAt(line, 0, 0.5)).toEqual([5, 0]);
         expect(pointAt(line, 1, 0.25)).toEqual([10, 2.5]);
+    });
+});
+
+describe('matchStopsToTrace', () => {
+    // An out-and-back spur in degree space, ~1 m per 1e-5: 1 km east along
+    // y = 0, a 10 m jog north, and 1 km back west along y = 1e-4.
+    const spur = [
+        [0, 0],
+        [0.01, 0],
+        [0.01, 0.0001],
+        [0, 0.0001],
+    ];
+    const pos = (m) => m.i + m.t;
+
+    it('puts a return-leg stop on the return pass even where the outbound one is nearer', () => {
+        // Outbound stops at 200 m and 600 m, then a return-leg stop at 400 m
+        // that sits 2 m from the OUTBOUND carriageway and 8 m from its own —
+        // exactly the L1-at-5407 trap: nearest projection says pass one.
+        const stops = [
+            [0.002, 0],
+            [0.006, 0],
+            [0.004, 0.00002],
+            [0.001, 0.0001],
+        ];
+        const nearest = projectPointOnPolyline(stops[2], spur);
+        expect(nearest.i).toBe(0); // the trap is real: nearest is outbound
+
+        const matched = matchStopsToTrace(stops, spur, 3e-4);
+        expect(matched.map((m) => m.placed)).toEqual([true, true, true, true]);
+        expect(matched[2].i).toBe(2); // the return pass
+        expect(pos(matched[2])).toBeCloseTo(2 + 0.6, 9);
+        for (let k = 1; k < matched.length; k++) {
+            expect(pos(matched[k])).toBeGreaterThanOrEqual(pos(matched[k - 1]));
+        }
+    });
+
+    it('takes the NEAREST admissible pass, not the earliest (the old greedy rule)', () => {
+        // Stop 1 sits 1 m from the return carriageway and 9 m from the
+        // outbound one — line L33 at stop 1882. "Earliest pass not behind the
+        // previous stop" chose the outbound pass, so a ride boarding there was
+        // drawn round the whole turn-around.
+        const stops = [
+            [0.002, 0],
+            [0.006, 0.00009],
+            [0.003, 0.0001],
+        ];
+        const matched = matchStopsToTrace(stops, spur, 3e-4);
+        expect(matched[1].i).toBe(2);
+        expect(pos(matched[1])).toBeCloseTo(2.4, 9);
+        expect(pos(matched[2])).toBeCloseTo(2.7, 9);
+    });
+
+    it('lets the NEXT stop decide a stop that is nearer the wrong pass', () => {
+        // Stop 1 is 4 m from the return pass and 6 m from the outbound one,
+        // but stop 2 can only be on the outbound pass, 200 m further on — so
+        // the bus is still outbound at stop 1. Nearest-first would put stop 1
+        // on the return pass and strand stop 2 behind it.
+        const stops = [
+            [0.001, 0],
+            [0.005, 0.00006],
+            [0.007, 0.00001],
+        ];
+        const matched = matchStopsToTrace(stops, spur, 3e-4);
+        expect(matched.map((m) => m.placed)).toEqual([true, true, true]);
+        expect(matched[1].i).toBe(0);
+        expect(pos(matched[1])).toBeCloseTo(0.5, 9);
+        expect(pos(matched[2])).toBeCloseTo(0.7, 9);
+    });
+
+    it('agrees with projectPointOnPolyline bit for bit wherever the order allows it', () => {
+        // A winding polyline and stops placed along it in order, each a few
+        // metres off to one side.
+        const line = [];
+        for (let k = 0; k <= 40; k++) line.push([k * 0.001, Math.sin(k / 3) * 0.002]);
+        const stops = [];
+        for (let k = 1; k < 40; k += 3) {
+            const [x, y] = line[k];
+            stops.push([x + 0.0002, y + 0.00003]);
+        }
+        const matched = matchStopsToTrace(stops, line, 3e-4);
+        stops.forEach((p, k) => {
+            const n = projectPointOnPolyline(p, line);
+            expect(matched[k]).toEqual({ i: n.i, t: n.t, placed: true });
+        });
+    });
+
+    it('leaves an impossible stop unplaced and clamped without moving its neighbours', () => {
+        // Stop 1 lies beside the far end of the line while every other stop
+        // is early on it, in order: leaving stop 1 out costs one stop, while
+        // honouring it would strand the three after it.
+        const line = [
+            [0, 0],
+            [0.01, 0],
+        ];
+        const stops = [
+            [0.001, 0],
+            [0.0095, 0.00001],
+            [0.002, 0],
+            [0.003, 0],
+            [0.004, 0],
+        ];
+        const matched = matchStopsToTrace(stops, line, 3e-4);
+        expect(matched.map((m) => m.placed)).toEqual([true, false, true, true, true]);
+        expect(pos(matched[0])).toBeCloseTo(0.1, 9);
+        expect(pos(matched[2])).toBeCloseTo(0.2, 9);
+        expect(pos(matched[4])).toBeCloseTo(0.4, 9);
+        // Clamped between its neighbours, so the sequence stays sliceable.
+        expect(pos(matched[1])).toBeGreaterThanOrEqual(pos(matched[0]));
+        expect(pos(matched[1])).toBeLessThanOrEqual(pos(matched[2]));
+    });
+
+    it('handles empty input and a degenerate trace', () => {
+        expect(matchStopsToTrace([], spur)).toEqual([]);
+        expect(matchStopsToTrace([[0, 0]], [[0, 0]])).toEqual([]);
     });
 });
 

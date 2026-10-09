@@ -11,6 +11,13 @@
  * (stop, variant), prepareRouteFeature(f, stop) returns a suffix of
  * prepareRouteFeature(f, null)'s vertices, preceded by at most one head point
  * that lies exactly ON the trace segment it cuts.
+ *
+ * Second invariant (review 2026-10-09): the cut must follow the stop ORDER. On a
+ * route that passes the same street twice the nearest projection of a stop can
+ * sit on the other pass, and the downstream view then started kilometres from
+ * where the rider boards. Measured black-box through the same function: the
+ * drawn downstream length can only shrink as the boarding stop moves down the
+ * route.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -21,10 +28,12 @@ import { dirname, join } from 'node:path';
 import {
     buildIndexes,
     stopVariantsMap,
+    stopsByVariant,
     uniqueStopByCode,
     routesByVariant,
 } from '../../src/data.js';
 import { prepareRouteFeature } from '../../src/map.js';
+import { polylineLengthM } from '../../src/geometry.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -54,7 +63,7 @@ function checkVariantDownstream(stopCode, variantId) {
     if (!feature) return false;
 
     const full = prepareRouteFeature(feature, null);
-    const down = prepareRouteFeature(feature, source.geometry.coordinates);
+    const down = prepareRouteFeature(feature, source.geometry.coordinates, stopCode);
     if (!down) return false; // terminal: nothing downstream
 
     const trace = full.geometry.coordinates;
@@ -102,5 +111,73 @@ describe('downstream renders follow the recorded trace', () => {
             }
         }
         expect(checked).toBeGreaterThan(300);
+    });
+});
+
+/** Drawn downstream length (m) of a variant boarded at a stop; 0 at a terminal. */
+function downstreamLengthM(variantId, stopCode) {
+    const feature = routesByVariant.get(variantId)[0];
+    const source = uniqueStopByCode.get(stopCode).geometry.coordinates;
+    const down = prepareRouteFeature(feature, source, stopCode);
+    return down ? polylineLengthM(down.geometry.coordinates) : 0;
+}
+
+/** The variant's stop codes in service order. */
+const orderedCodes = (variantId) =>
+    [...stopsByVariant.get(variantId)]
+        .sort((a, b) => a.ordinal - b.ordinal)
+        .map((e) => e.feature.properties.COD_UBIC_P);
+
+describe('downstream renders follow the stop order', () => {
+    it('every variant: the drawn length never grows as the boarding stop moves on', () => {
+        // 5 m of slack: two stops at one corner can legitimately project a few
+        // metres apart in either order. The bug this guards against was 0.3 to
+        // 2.6 km (9 stop visits, before the order-aware cut).
+        const violations = [];
+        let pairs = 0;
+        for (const variantId of stopsByVariant.keys()) {
+            let previous = Infinity;
+            for (const code of orderedCodes(variantId)) {
+                const length = downstreamLengthM(variantId, code);
+                if (length > previous + 5) {
+                    violations.push(
+                        `${variantId}@${code}: ${previous.toFixed(0)} → ${length.toFixed(0)} m`,
+                    );
+                }
+                previous = length;
+                pairs++;
+            }
+        }
+        expect(pairs).toBeGreaterThan(50_000);
+        expect(violations).toEqual([]);
+    });
+
+    it('line L1 from stop 5407 keeps the out-and-back the bus still has to drive', () => {
+        // Variant 1554 runs out along Cno Sanguinetti and back on the same road.
+        // 5407 is served on the way OUT, 9 m from the return carriageway, and
+        // 5408 on the way BACK at the same corner. The nearest projection swapped
+        // them: the view from 5407 skipped the 2.6 km loop that serves the next
+        // ten stops, and the one from 5408 re-drew it.
+        const out = downstreamLengthM('1554', 5407);
+        const back = downstreamLengthM('1554', 5408);
+        const codes = orderedCodes('1554');
+        const next = downstreamLengthM('1554', codes[codes.indexOf(5407) + 1]);
+        expect(out).toBeGreaterThan(next);
+        expect(out - back).toBeGreaterThan(2000);
+    });
+});
+
+describe('a variant draws nothing downstream of its LAST stop', () => {
+    it('every variant: the last stop is an arrival, not a stub of trace', () => {
+        // 14 of the 242 stop/line pairs that end at a stop used to draw the few
+        // metres of trace the trim left beyond the last stop's projection, with
+        // the line's label sitting on the stop it had just arrived at.
+        const stubs = [];
+        for (const variantId of stopsByVariant.keys()) {
+            const codes = orderedCodes(variantId);
+            const last = codes[codes.length - 1];
+            if (downstreamLengthM(variantId, last) > 0) stubs.push(`${variantId}@${last}`);
+        }
+        expect(stubs).toEqual([]);
     });
 });

@@ -109,6 +109,12 @@ test('switching language closes an open popup and keeps the selected line', asyn
     await page.click('.lang-btn[data-lang="en"]');
     await expect(page.locator('#searchInput')).toHaveValue('Line 100');
     expect(new URL(page.url()).hash).toBe('#/linea/100');
+    // The "all destinations" chip is built in JS, out of the static i18n pass's
+    // reach — it stayed "Todos" in an English panel.
+    await expect(page.locator('.destination-chip').first()).toHaveText('All');
+    await page.click('.lang-btn[data-lang="ru"]');
+    await expect(page.locator('.destination-chip').first()).toHaveText('Все');
+    await expect(page.locator('.destination-chip').first()).toHaveAttribute('aria-pressed', 'true');
 
     // Back to the global stops view; open a stop popup and switch language:
     // the stale-language popup closes, reopening renders the new language.

@@ -6,6 +6,7 @@ import {
     debounce,
     isWithinBounds,
     stopStreets,
+    formatPlaceName,
     UNKNOWN_STREET,
 } from '../../src/utils.js';
 import { CONFIG } from '../../src/config.js';
@@ -223,16 +224,16 @@ describe('stopStreets', () => {
         // hand and only two did, so the popup printed it verbatim — in English
         // and Russian too.
         expect(stopStreets({ CALLE: 'BUENOS AIRES', ESQUINA: 'ITUZAINGO' })).toEqual({
-            calle: 'BUENOS AIRES',
-            esquina: 'ITUZAINGO',
+            calle: 'Buenos Aires',
+            esquina: 'Ituzaingo',
         });
         expect(stopStreets({ CALLE: 'AV ITALIA', ESQUINA: UNKNOWN_STREET })).toEqual({
-            calle: 'AV ITALIA',
+            calle: 'Av Italia',
             esquina: null,
         });
-        expect(stopStreets({ CALLE: UNKNOWN_STREET, ESQUINA: 'CIRC INT SIN DENOM' })).toEqual({
+        expect(stopStreets({ CALLE: UNKNOWN_STREET, ESQUINA: 'MATAOJO' })).toEqual({
             calle: null,
-            esquina: 'CIRC INT SIN DENOM',
+            esquina: 'Mataojo',
         });
         expect(stopStreets({ CALLE: '  ', ESQUINA: '' })).toEqual({ calle: null, esquina: null });
         expect(stopStreets({})).toEqual({ calle: null, esquina: null });
@@ -241,8 +242,8 @@ describe('stopStreets', () => {
 
     it('trims, because a padded name is still a name', () => {
         expect(stopStreets({ CALLE: ' RIVERA ', ESQUINA: ' SOCA ' })).toEqual({
-            calle: 'RIVERA',
-            esquina: 'SOCA',
+            calle: 'Rivera',
+            esquina: 'Soca',
         });
     });
 
@@ -264,5 +265,91 @@ describe('stopStreets', () => {
                 expect(calle === null || esquina === null).toBe(true);
             }
         });
+    });
+});
+
+describe("stopStreets — the feed's own placeholders", () => {
+    it('treats "fictitious street" and "no denomination" as unknown, not as names', () => {
+        // Riders were shown "CALLE FICTICIA y CALLE FICTICIA" (35 stop sides
+        // carry it) and "CIRC INT SIN DENOM" (49).
+        expect(stopStreets({ CALLE: 'CALLE FICTICIA', ESQUINA: 'CALLE FICTICIA' })).toEqual({
+            calle: null,
+            esquina: null,
+        });
+        expect(stopStreets({ CALLE: 'CIRC INT SIN DENOM', ESQUINA: 'AV ITALIA' })).toEqual({
+            calle: null,
+            esquina: 'Av Italia',
+        });
+        expect(stopStreets({ CALLE: 'S/N', ESQUINA: 'PSJE S/D' })).toEqual({
+            calle: null,
+            esquina: null,
+        });
+    });
+
+    it('drops a corner that only repeats the street', () => {
+        expect(
+            stopStreets({ CALLE: 'AVDA DE LAS AMERICAS', ESQUINA: 'AVDA DE LAS AMERICAS' }),
+        ).toEqual({ calle: 'Avda de las Americas', esquina: null });
+    });
+
+    it('no committed stop shows a placeholder or a doubled name', () => {
+        return import('node:fs').then(({ readFileSync }) => {
+            const stops = JSON.parse(
+                readFileSync(new URL('../../stops.json', import.meta.url), 'utf8'),
+            );
+            const shown = stops.features.flatMap((f) => {
+                const { calle, esquina } = stopStreets(f.properties);
+                return [calle, esquina].filter(Boolean).map((n) => n.toUpperCase());
+            });
+            for (const placeholder of ['CALLE FICTICIA', 'CIRC INT SIN DENOM', 'DESCONOCIDA']) {
+                expect(shown).not.toContain(placeholder);
+            }
+            for (const f of stops.features) {
+                const { calle, esquina } = stopStreets(f.properties);
+                if (calle && esquina) expect(calle.toUpperCase()).not.toBe(esquina.toUpperCase());
+            }
+        });
+    });
+});
+
+describe('formatPlaceName', () => {
+    it.each([
+        // Streets, as the feed spells them (ALL CAPS).
+        ['AV 18 DE JULIO', 'Av 18 de Julio'],
+        ['BV JOSE BATLLE Y ORDOÑEZ', 'Bv Jose Batlle y Ordoñez'],
+        ['AV DE LAS INSTRUCCIONES', 'Av de las Instrucciones'],
+        ['PASO DE LA ARENA', 'Paso de la Arena'],
+        ['DR LUIS ALBERTO DE HERRERA', 'Dr Luis Alberto de Herrera'],
+        ['RBLA O´HIGGINS', 'Rbla O´Higgins'],
+        ['MTRA DEBORA VITALE D´AMICO', 'Mtra Debora Vitale D´Amico'],
+        ['JULIO E SUAREZ (PELODURO)', 'Julio E Suarez (Peloduro)'],
+        ['PSJE CHARRUA (Bº 19 DE ABRIL)', 'Psje Charrua (Bº 19 de Abril)'],
+        ['PSJE LA ESPIGA', 'Psje La Espiga'],
+        ['CALLE 1ER CENTENARIO', 'Calle 1er Centenario'],
+        ['JUAN XXIII', 'Juan XXIII'],
+        ['C.moller', 'C.Moller'],
+        // Headsigns, as the feed spells them (naive Title Case).
+        ['Plaza De Los Treinta Y Tres', 'Plaza de los Treinta y Tres'],
+        ['Av Italia E Hipólito Yrigoyen', 'Av Italia e Hipólito Yrigoyen'],
+        ['Mendoza E Instrucciones', 'Mendoza e Instrucciones'],
+        ['Berges - El Jardín', 'Berges - El Jardín'],
+        ['Barrio Obrero (racine)', 'Barrio Obrero (Racine)'],
+        ['Luis B. Berres', 'Luis B. Berres'],
+        ['La Paz', 'La Paz'],
+        ['Barra Del Santa Lucía', 'Barra del Santa Lucía'],
+    ])('%s → %s', (raw, shown) => {
+        expect(formatPlaceName(raw)).toBe(shown);
+    });
+
+    it('is idempotent, so re-formatting a formatted name changes nothing', () => {
+        for (const raw of ['AV 18 DE JULIO', 'Plaza De Los Treinta Y Tres', 'RBLA O´HIGGINS']) {
+            const once = formatPlaceName(raw);
+            expect(formatPlaceName(once)).toBe(once);
+        }
+    });
+
+    it('passes non-strings through untouched', () => {
+        expect(formatPlaceName(null)).toBeNull();
+        expect(formatPlaceName(undefined)).toBeUndefined();
     });
 });

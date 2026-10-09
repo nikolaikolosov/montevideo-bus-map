@@ -18,21 +18,17 @@
  *    follows the trace; the stop markers show where the rider actually stands.
  *
  * On top of those: a loop variant passes some stops twice, so the nearest
- * projection of a single stop is ambiguous. Projecting the variant's stops
- * **in ordinal order under a monotonicity constraint** resolves it — the k-th
- * stop must not land before the (k−1)-th. That is what `patternPositions`
- * does, cached per variant because it is the same for every leg on that
- * variant.
+ * projection of a single stop is ambiguous. Matching the variant's stops
+ * **as one ordered sequence** resolves it — the k-th stop must not land before
+ * the (k−1)-th, and among the orders that satisfy that the closest one wins
+ * (`matchStopsToTrace`). That is what `patternPositions` does, cached per
+ * variant because it is the same for every leg on that variant.
  */
 
-import { projectionCandidates, pointAt } from './geometry.js';
+import { matchStopsToTrace, pointAt } from './geometry.js';
 import { cleanCoordinates } from './utils.js';
 import { routesByVariant, stopsByVariant } from './data.js';
 
-/** Projection slack (degrees) — same ~10 m budget trimToStops uses. */
-const SLACK_DEG = 1e-4;
-/** Candidates kept per stop; a loop rarely offers more than two real ones. */
-const MAX_CANDIDATES = 8;
 /** Two positions closer than this count as the same point. */
 const POS_EPS = 1e-9;
 
@@ -58,11 +54,14 @@ function orderedStops(variantId) {
  * Monotone non-decreasing positions (fractional `segmentIndex + t`) of a
  * variant's stops along its cleaned trace.
  *
- * Greedy forward pass: among the near-minimal projections of a stop, take the
- * earliest one that does not fall behind the previous stop's position. When
- * none qualifies (a stop genuinely off-trace, or trace/ordinal disagreement in
- * the source data) the nearest projection is used and clamped forward, so the
- * output is always non-decreasing and always slice-able.
+ * The stops are matched as one sequence (`matchStopsToTrace`). This used to be
+ * a greedy forward pass taking, per stop, the EARLIEST near-minimal projection
+ * not behind the previous stop — which commits before it can see the next stop:
+ * at an out-and-back (line L33 at stop 1882, served on the way back) it put the
+ * stop on the outbound pass, so a leg boarding there was drawn round the whole
+ * turn-around. Measured over every committed variant the greedy pass also sat
+ * a few metres early at 2,384 stop visits, because "earliest within ~10 m" is
+ * not "nearest".
  *
  * @param {string} variantId
  * @returns {{coords: number[][], positions: number[], stopCodes: number[]}|null}
@@ -78,31 +77,13 @@ export function patternPositions(variantId) {
     if (raw && typeof raw[0]?.[0] === 'number' && stops.length > 0) {
         const coords = cleanCoordinates(JSON.parse(JSON.stringify(raw)));
         if (coords.length >= 2) {
-            const positions = [];
-            let previous = 0;
-            for (const { feature: stopFeature } of stops) {
-                const candidates = projectionCandidates(
-                    stopFeature.geometry.coordinates,
-                    coords,
-                    SLACK_DEG,
-                )
-                    .map((c) => ({ pos: c.i + c.t, d2: c.d2 }))
-                    .sort((a, b) => a.pos - b.pos)
-                    .slice(0, MAX_CANDIDATES);
-
-                const forward = candidates.find((c) => c.pos >= previous - POS_EPS);
-                const nearest = candidates.reduce(
-                    (best, c) => (best === null || c.d2 < best.d2 ? c : best),
-                    null,
-                );
-                const chosen = forward ?? nearest;
-                const pos = chosen ? Math.max(chosen.pos, previous) : previous;
-                positions.push(pos);
-                previous = pos;
-            }
+            const matched = matchStopsToTrace(
+                stops.map((s) => s.feature.geometry.coordinates),
+                coords,
+            );
             result = {
                 coords,
-                positions,
+                positions: matched.map((m) => m.i + m.t),
                 stopCodes: stops.map((s) => s.feature.properties.COD_UBIC_P),
             };
         }
