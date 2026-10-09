@@ -2,7 +2,7 @@
 /**
  * Stop-popup line display: one colored, tappable chip per line (the explicit
  * test-coverage ask from brainstorm-003). Synthetic fixture for behavior,
- * real committed data for the 33-line reference stop 4772 and the
+ * real committed data for the busy reference stop 4772 and the
  * chips == stopLinesMap invariant.
  */
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
@@ -234,21 +234,32 @@ describe('journey actions in the popup', () => {
 });
 
 describe('createStopPopup (real data)', () => {
+    let stopsData;
+
     beforeAll(() => {
         // Re-index with the real dataset (module maps are additive; real codes
         // don't collide with the synthetic 1/2).
-        const stopsData = JSON.parse(readFileSync(join(ROOT, 'stops.json'), 'utf8'));
+        stopsData = JSON.parse(readFileSync(join(ROOT, 'stops.json'), 'utf8'));
         buildIndexes({ type: 'FeatureCollection', features: [] }, stopsData);
     });
 
-    it('stop 4772 (BUENOS AIRES y ITUZAINGO) renders its 33 lines as chips', () => {
+    it('stop 4772 (BUENOS AIRES y ITUZAINGO) renders every line that calls there as a chip', () => {
+        // Which lines call here is a fact about the feed, so it is read from the
+        // raw patterns — not from stopLinesMap, the index under test, and not
+        // frozen: it went from 34 to 33 when Ce2 retired on 2026-10-09.
+        const calling = new Set(
+            Object.values(stopsData.patterns)
+                .filter(({ paradas }) => paradas.some(([cod]) => cod === 4772))
+                .map(({ linea }) => linea),
+        );
         const feature = uniqueStopsData.find((f) => f.properties.COD_UBIC_P === 4772);
         expect(feature).toBeDefined();
         const popup = createStopPopup(feature, vi.fn());
         const chips = [...popup.querySelectorAll('.line-chip')];
-        expect(chips).toHaveLength(33);
-        expect(popup.querySelector('.popup-sub').textContent).toContain('33 líneas');
+        expect(chips).toHaveLength(calling.size);
+        expect(popup.querySelector('.popup-sub').textContent).toContain(`${calling.size} líneas`);
         const texts = chips.map((c) => c.textContent);
+        expect(new Set(texts)).toEqual(calling);
         expect(texts).toContain('102');
         expect(texts).toContain('Ce1');
         // numeric-aware order holds across the whole list

@@ -150,8 +150,16 @@ exit 0
     )
 
 
-def stub_npx(repo, fail_playwright_times=0):
+def stub_npx(repo, fail_playwright_times=0, fail_playwright_calls=()):
+    """An `npx` that logs its calls and fails Playwright the first N times, or on
+    the given calls (counted from 0).
+
+    The refresh path runs Playwright four times — the gate, the golden, the
+    baselines, the re-run — and naming the calls is how one step in the middle
+    is made to fail on its own.
+    """
     counter = repo / ".npx-pw-calls"
+    failing = " ".join(str(call) for call in fail_playwright_calls)
     return executable(
         repo / "npx-stub",
         f"""#!/usr/bin/env bash
@@ -159,6 +167,12 @@ echo "npx $*" >> "{counter.as_posix()}.log"
 if [ "$1" = "playwright" ]; then
     n=$(cat "{counter.as_posix()}" 2>/dev/null || echo 0)
     echo $((n + 1)) > "{counter.as_posix()}"
+    case " {failing} " in
+        *" $n "*)
+            echo "FAIL call $n"
+            exit 1
+            ;;
+    esac
     if [ "$n" -lt "{fail_playwright_times}" ]; then
         echo "FAIL scene: global-stops-dark"
         exit 1
@@ -169,7 +183,7 @@ exit 0
     )
 
 
-def run(repo, *args, fetcher="pass\n", npm_fail=0, npx_fail=0, **env):
+def run(repo, *args, fetcher="pass\n", npm_fail=0, npx_fail=0, npx_fail_calls=(), **env):
     """Runs the script with stubs standing in for the fetch and for node.
 
     The script cd's to its own directory and calls `"$PYTHON" fetch_api_data.py`,
@@ -186,7 +200,7 @@ def run(repo, *args, fetcher="pass\n", npm_fail=0, npx_fail=0, **env):
             **os.environ,
             "PYTHON": sys.executable,
             "NPM": str(stub_npm(repo, npm_fail)),
-            "NPX": str(stub_npx(repo, npx_fail)),
+            "NPX": str(stub_npx(repo, npx_fail, npx_fail_calls)),
             **env,
         },
     )
@@ -275,6 +289,53 @@ def test_a_failing_gate_stops_the_publish(repo):
     assert result.returncode == 1, result.stdout + result.stderr
     assert "unit suite failed on the new data" in result.stdout
     assert "--refresh-expectations" in result.stdout
+    assert git(repo, "rev-list", "--count", "HEAD") == "1"
+
+
+def test_the_hint_names_only_what_a_feed_change_moves(repo):
+    """The frozen counts, the golden and the pixel baselines — nothing else.
+
+    Every other expectation about the data reads its value from the files. On
+    2026-10-09 the stop and line counts were still literals, so a clean update
+    kept failing after the refresh; the hint must not send the operator off to
+    hand-edit those, and must say what a failure beyond the three means.
+    """
+    result = run(repo, fetcher=fetcher_writing(variants=4, stops=9), npm_fail=99)
+
+    assert result.returncode == 1, result.stdout + result.stderr
+    # The canary's new numbers come from the data, ready to copy.
+    assert "(1 lines, 4 variants, 9 stops)" in result.stdout
+    assert "UPDATE_GOLDEN=1 npx playwright test render-sweep" in result.stdout
+    assert "tests/e2e/visual.spec.js --update-snapshots=all" in result.stdout
+    assert "Every other expectation about the data reads it from the files" in result.stdout
+    assert "fixture" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("failing_call", "reason"),
+    [
+        (1, "the golden manifest could not be regenerated"),
+        (2, "the pixel baselines could not be refreshed"),
+    ],
+)
+def test_a_refresh_step_that_fails_stops_the_publish_and_says_which(repo, failing_call, reason):
+    """A refresh step can fail in its own right, and must say so.
+
+    UPDATE_GOLDEN=1 runs the sweep's assertions before it writes anything —
+    until 2026-10-09 that included a frozen line count, so a feed that retired a
+    line failed the golden refresh itself. Under `set -e` the wrapper then died
+    mid-refresh without a word of its own, saying neither what had stopped nor
+    that nothing shipped.
+    """
+    result = run(
+        repo,
+        "--refresh-expectations",
+        fetcher=fetcher_writing(variants=4, stops=9),
+        npx_fail_calls=(0, failing_call),
+    )
+
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert reason in result.stdout
     assert git(repo, "rev-list", "--count", "HEAD") == "1"
 
 

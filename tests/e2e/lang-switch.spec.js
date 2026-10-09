@@ -4,7 +4,7 @@
  * survives a reload.
  */
 import { test, expect } from '@playwright/test';
-import { openMap, openStopPopup } from './helpers.js';
+import { openMap, openStopPopup, datasetLinesAtStop } from './helpers.js';
 
 test('switching to Russian localizes panel, popup and <html lang>', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
@@ -31,7 +31,13 @@ test('switching to Russian localizes panel, popup and <html lang>', async ({ pag
     // Popups regenerate their content in the active language on open.
     await openStopPopup(page, 4772);
     await expect(page.locator('.draw-lines-btn')).toHaveText('Показать все маршруты');
-    await expect(page.locator('.popup-sub')).toContainText('33 линии');
+    // The count is the data's, and its Russian wording turns with it: the
+    // plural category picks the form (31 линия, 33 линии, 35 линий).
+    const { length } = await datasetLinesAtStop(page, 4772);
+    const form = { one: 'линия', few: 'линии', many: 'линий' }[
+        new Intl.PluralRules('ru').select(length)
+    ];
+    await expect(page.locator('.popup-sub')).toContainText(`${length} ${form}`);
 });
 
 test('the choice persists across reloads and English works too', async ({ page }) => {

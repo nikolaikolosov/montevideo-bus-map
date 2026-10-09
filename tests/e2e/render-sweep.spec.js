@@ -3,7 +3,7 @@
  * deterministic manifest of the resulting Leaflet layers (corridor count,
  * point count, colors, bounds, stop/label counts) against a committed golden.
  *
- * Catches construction/render-state regressions across ALL 138 lines on every
+ * Catches construction/render-state regressions across EVERY line on every
  * change, without pixel flake.
  *
  * Update the golden after an intentional rendering change:
@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { openMap, renderLine } from './helpers.js';
+import { openMap, renderLine, datasetLines } from './helpers.js';
 
 const GOLDEN_DIR = join(dirname(fileURLToPath(import.meta.url)), 'golden');
 const GOLDEN_PATH = join(GOLDEN_DIR, 'render-manifest.json');
@@ -23,7 +23,10 @@ test('render manifest of all lines matches the golden', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
 
     const lines = await page.evaluate(() => window.__mvdLines);
-    expect(lines).toHaveLength(138);
+    // Exactly the lines in the data. Not a frozen count: a feed update adds and
+    // retires lines (140 → 138 on 2026-10-09), and a frozen count failed this
+    // test BEFORE the UPDATE_GOLDEN=1 branch below could write the new golden.
+    expect([...lines].sort()).toEqual(await datasetLines(page));
 
     const manifest = {};
     for (const line of lines) {

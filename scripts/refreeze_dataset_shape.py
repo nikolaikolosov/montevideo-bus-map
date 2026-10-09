@@ -10,6 +10,11 @@ Doing it here rather than with sed in the shell keeps two properties: the number
 come from the data, never from a hand-typed guess, and a missing assertion is an
 error instead of a silent no-op.
 
+These three are the only real-data counts frozen in the suites, on purpose. A
+test that needs a fact about the feed (the lines calling at a stop, a line's
+headsigns) reads it from routes.json / stops.json, so nothing else needs
+rewriting here — grow the derivations, not this script.
+
 Usage: refreeze_dataset_shape.py <lines> <variants> <stops>
 """
 

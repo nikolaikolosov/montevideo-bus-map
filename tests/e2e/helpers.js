@@ -159,3 +159,46 @@ export async function setView(page, center, zoom) {
     expect(camera.lat, 'setView latitude was dropped').toBeCloseTo(center[0], 4);
     expect(camera.lng, 'setView longitude was dropped').toBeCloseTo(center[1], 4);
 }
+
+// ---------------------------------------------------------------------------
+// The committed dataset, as an oracle
+// ---------------------------------------------------------------------------
+//
+// Facts about the data, read from the files the page itself loads and never
+// from the app's indexes, so they stay independent of the code under test. A
+// feed update legitimately moves them — stop 4772 went from 34 to 33 lines when
+// Ce2 retired on 2026-10-09 — and every spec that froze one as a literal failed
+// that update as if the app had broken. "The dataset changed" has exactly one
+// canary: the frozen shape in tests/js/route-invariants.test.js.
+
+/** The lines whose stop patterns call at a stop, sorted. */
+export function datasetLinesAtStop(page, stopCode) {
+    return page.evaluate(async (code) => {
+        const { patterns } = await (await fetch('/stops.json')).json();
+        const lines = new Set();
+        for (const { linea, paradas } of Object.values(patterns)) {
+            if (paradas.some(([cod]) => cod === code)) lines.add(linea);
+        }
+        return [...lines].sort();
+    }, stopCode);
+}
+
+/** Every line the dataset carries, sorted. */
+export function datasetLines(page) {
+    return page.evaluate(async () => {
+        const { features } = await (await fetch('/routes.json')).json();
+        return [...new Set(features.map((f) => f.properties.DESC_LINEA))].sort();
+    });
+}
+
+/** The headsigns (`DESC_VARIA`) a line's variants carry, sorted; blanks are none. */
+export function datasetHeadsigns(page, lineId) {
+    return page.evaluate(async (line) => {
+        const { features } = await (await fetch('/routes.json')).json();
+        const headsigns = features
+            .filter((f) => f.properties.DESC_LINEA === line)
+            .map((f) => f.properties.DESC_VARIA)
+            .filter(Boolean);
+        return [...new Set(headsigns)].sort();
+    }, lineId);
+}

@@ -156,6 +156,12 @@ beforeAll(() => {
 
 // --- Dataset shape --------------------------------------------------------------
 
+// The canary for "the dataset changed", and the only real-data counts frozen in
+// the suites: a PR that is not a data update cannot move them unnoticed, and a
+// data update moves them on purpose (update_and_push.sh --refresh-expectations
+// rewrites them via scripts/refreeze_dataset_shape.py). Every other expectation
+// that is a fact about the feed — which lines call at a stop, how many lines
+// there are — reads its value from the files instead, so it follows the data.
 describe('dataset shape (frozen)', () => {
     it('has the expected cardinalities', () => {
         expect(routesByLine.size).toBe(138);
@@ -166,7 +172,9 @@ describe('dataset shape (frozen)', () => {
 
 // --- Construction invariants ------------------------------------------------------
 
-describe('corridor construction (all 138 lines, real data)', () => {
+const LINE_COUNT = new Set(routesData.features.map((f) => f.properties.DESC_LINEA)).size;
+
+describe(`corridor construction (all ${LINE_COUNT} lines, real data)`, () => {
     it('every line produces corridors that carry the line', () => {
         const empty = [];
         for (const [line, { sections }] of artifacts) {
@@ -280,7 +288,7 @@ describe('corridor construction (all 138 lines, real data)', () => {
 
 // --- Trim invariants -----------------------------------------------------------------
 
-describe('deadhead trim (all 1,083 variants)', () => {
+describe(`deadhead trim (all ${routesData.features.length.toLocaleString('en')} variants)`, () => {
     it('trimmed endpoints land near the first/last stop of the variant', () => {
         const offenders = [];
         let worst = 0;
@@ -320,15 +328,21 @@ describe('deadhead trim (all 1,083 variants)', () => {
     });
 });
 
-// --- Frozen edge cases (from the manual-verification playbook) -----------------------
+// --- Edge cases (from the manual-verification playbook) ------------------------------
 
-describe('frozen edge cases', () => {
-    it('stop 4018 (18 de Julio y Convención) serves 14 lines / 36 variants', () => {
-        expect(stopLinesMap.get(4018)?.size).toBe(14);
+describe('playbook edge cases (real data)', () => {
+    it('stop 4018 (18 de Julio y Convención) indexes every line and variant calling there', () => {
+        // What calls at a stop is a fact about the feed, so it is read from the
+        // raw patterns — not from the indexes under test, and not frozen: 15
+        // lines / 37 variants until the 2026-10-09 update, 14 / 36 after it.
+        const calling = Object.entries(stopsData.patterns).filter(([, { paradas }]) =>
+            paradas.some(([cod]) => cod === 4018),
+        );
+        expect(stopLinesMap.get(4018)).toEqual(new Set(calling.map(([, { linea }]) => linea)));
         const variants = [...(stopsByVariant.keys() ?? [])].filter((v) =>
             stopsByVariant.get(v).some((e) => e.feature.properties.COD_UBIC_P === 4018),
         );
-        expect(variants).toHaveLength(36);
+        expect(variants.sort()).toEqual(calling.map(([v]) => v).sort());
     });
 
     it('stop 4967 is terminal-only: no downstream geometry from it', () => {
