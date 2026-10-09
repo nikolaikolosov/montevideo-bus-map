@@ -18,6 +18,8 @@
  *     theme's basemap proxy.
  *  5. Incremental assignment never mutates existing entries (property test on
  *     the assigner itself).
+ *  6. The assigner's search floors are never laxer than these gates, so a
+ *     --regenerate-all cannot settle on a palette this suite rejects.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -32,6 +34,7 @@ import {
     linearToOklab,
     contrastRatio,
     worstInCliqueDeltaE,
+    floorForCliqueSize,
 } from '../../scripts/assign_line_colors.mjs';
 
 // Per-clique-size gates (user report 2026-07-05: lines 17 and 137 — both
@@ -142,6 +145,16 @@ describe('in-clique distinguishability (the core gate)', () => {
                 );
                 expect(d, `${a} vs ${b} in ${theme}`).toBeGreaterThanOrEqual(gateFor(2));
             }
+        }
+    });
+
+    it('the assigner searches against floors no laxer than these gates', () => {
+        // The search treats its floors as hard constraints; a floor under its
+        // gate would let --regenerate-all ship a palette this suite rejects.
+        for (const size of [2, 3, 5, 6, 10, 11, 41, Infinity]) {
+            expect(floorForCliqueSize(size), `clique of ${size} lines`).toBeGreaterThanOrEqual(
+                gateFor(size),
+            );
         }
     });
 
