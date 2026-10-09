@@ -57,20 +57,35 @@ data's generation date ("Datos: …"), turning amber after 45 days
    Expect both files to change moderately. A wild size swing (e.g. −80%) means a
    broken feed — stop and investigate before committing.
 
-3. Refresh the line color palette (only does anything when lines were added or
-   removed):
+3. Refresh the line color palette and re-check it against the new stops. The
+   in-clique gate depends on which lines share a stop, so it can fail even when
+   no line was added: a retired line or a reshaped variant can leave an existing
+   pair at a smaller stop, where the gate is stricter.
 
    ```bash
    npm run assign:colors    # appends colors for NEW lines; never recolors existing ones
+   npx prettier --write src/line-colors.js   # back to the committed (Prettier) style
    npm run verify:colors    # gates: coverage, uniqueness, in-clique ΔE, contrast
    git diff --stat src/line-colors.js qa/reports/line-colors-report.md
    ```
 
    Expect at most a few added entries. If `verify:colors` fails its in-clique
-   distance gate, a new line landed in a crowded stop the incremental mode
-   can't serve — rerun with `node scripts/assign_line_colors.mjs
-   --regenerate-all` and review the visual scene diffs (all baselines change).
-   CI fails on a missing palette entry, so skipping this step cannot ship.
+   gate (`A vs B (smallest shared stop: N lines) too close`), do not lower the
+   gate — stop and let the owner choose. On 2026-10-09, with Ce2 and L40
+   retired, L14 and L4 met at a 4-line stop at ΔE 0.072 against a 0.08 gate.
+
+   - **Recolor one line** — delete the entry of either line in the failing
+     pair from `src/line-colors.js` and re-run `npm run assign:colors`. Only
+     that line moves; its golden-manifest entry and the scenes that show it
+     change.
+   - **Rebuild the palette** — `node scripts/assign_line_colors.mjs
+     --regenerate-all` (deterministic, about a minute). Every line is
+     recolored, so the golden manifest and every visual baseline change.
+
+   The search treats the test's gates as hard floors (`DELTA_E_FLOORS`), so
+   either way it lands on a palette that clears them whenever one is within
+   its reach. CI fails on a missing palette entry, so skipping this step cannot
+   ship.
 
 4. Re-derive the geometry scale ladder (the bundling constants are sized
    against measured data properties — a new dataset must not drift past them):
@@ -182,6 +197,7 @@ turning up in CI:
 | `GTFS feed is missing …` | partial/broken download | retry; the session already retries transient 5xx |
 | `… route variants have no stop pattern (… > 5%)` | `stop_times.txt` truncated upstream — shapes fine, patterns mostly absent | retry later; the feed is mid-regeneration. Never bypass this one |
 | `… is …% of the … already on disk … refusing to overwrite good data` | the new dataset is a fraction of the committed one | investigate; if the contraction is genuine, re-run with `--allow-shrink` |
+| `verify:colors`: `A vs B (smallest shared stop: N lines) too close` | the feed changed which lines share a stop, or a new line landed where the incremental mode can't serve it | step 3: never lower the gate; the owner picks a one-line recolor or `--regenerate-all` |
 | `unrelated staged changes present; refusing to commit` (wrapper) | something else was `git add`ed before running `update_and_push.sh` | `git restore --staged <path>` and re-run — the wrapper publishes data files only |
 | `unit suite failed on the new data` / `e2e failed on the new data` (wrapper) | the frozen counts, the golden manifest or a pixel baseline still describe the old dataset | check the printed diff is just the feed moving, then re-run with `--refresh-expectations` |
 | `still failing after refreshing the expectations` (wrapper) | the failure is not the dataset moving — or the feed retired a test's fixture (step 6b) | read the suite output; a retired fixture is named by its test — move the test to another one. Anything else: do not publish |
