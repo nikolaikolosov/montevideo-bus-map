@@ -136,6 +136,143 @@ export function pointAt(coords, i, t) {
     return [ax + (bx - ax) * t, ay + (by - ay) * t];
 }
 
+/**
+ * Candidate band for `matchStopsToTrace` (degrees, ≈ 30 m): how much farther
+ * than its nearest pass a stop may be placed. Measured on the committed data,
+ * 1e-4 (the ~10 m `trimToStops` slack) leaves 121 of 60,919 stop visits with no
+ * candidate consistent with the stop order, 2e-4 leaves 46 and 3e-4 none — while
+ * the placements that differ from the nearest projection stay the same 9
+ * out-and-back visits at all three widths. The band only ever widens the choice;
+ * the programme still takes the nearest pass whenever the order allows it.
+ */
+export const STOP_MATCH_SLACK_DEG = 3e-4;
+
+/**
+ * Places an ORDERED stop sequence on a polyline: one segment projection per
+ * stop, never running backwards along the trace (map matching, rule R-PROJECT).
+ *
+ * The nearest projection of a stop is ambiguous wherever a route passes the
+ * same street twice — an out-and-back spur, a loop around a block, the two
+ * carriageways of an avenue. Taken stop by stop it lands on the wrong pass:
+ * on the committed data a downstream view of line L1 from stop 5407 started
+ * 2.6 km down the route (its outbound pass is 9 m from the return one), and
+ * from stop 5408 it started 2.6 km early. Resolving each stop greedily from the
+ * previous one is no better — it commits before it can see that the NEXT stop
+ * needs the other pass (line L33 at stop 1882).
+ *
+ * So the whole sequence is matched at once, the way GTFS consumers derive
+ * `shape_dist_traveled` when a feed omits it: every projection within
+ * `slack` of a stop's nearest one is a candidate, and a dynamic programme
+ * chooses one candidate per stop so that positions never decrease and the
+ * total EXCESS distance (candidate distance minus that stop's nearest
+ * distance) is minimal. A stop whose candidates cannot be put in order at all
+ * is left unplaced at a fixed cost of 2 × slack and clamped between its
+ * neighbours, so one bad stop can never drag the rest of the route with it.
+ *
+ * Where the order allows it every stop gets exactly the projection
+ * `projectPointOnPolyline` would give (same segment, same `t`, ties to the
+ * first segment), so this only ever changes the ambiguous placements.
+ *
+ * @param {number[][]} points - stop coordinates in service order
+ * @param {number[][]} coords - polyline (≥ 2 points)
+ * @param {number} [slack] - candidate band, same units as the coordinates
+ * @returns {Array<{i: number, t: number, placed: boolean}>} one entry per stop;
+ *   `i + t` is non-decreasing along the sequence
+ */
+export function matchStopsToTrace(points, coords, slack = STOP_MATCH_SLACK_DEG) {
+    const count = points.length;
+    if (count === 0 || coords.length < 2) return [];
+
+    // Candidates per stop, ordered along the trace. A stable sort keeps
+    // segment order for equal positions, so ties resolve to the first segment
+    // exactly as projectPointOnPolyline does.
+    const candidates = points.map((p) => {
+        const list = projectionCandidates(p, coords, slack).map((c) => ({
+            i: c.i,
+            t: c.t,
+            pos: c.i + c.t,
+            d: Math.sqrt(c.d2),
+        }));
+        const nearest = list.reduce((m, c) => Math.min(m, c.d), Infinity);
+        for (const c of list) c.excess = c.d - nearest;
+        return list.sort((a, b) => a.pos - b.pos);
+    });
+
+    const SKIP = 2 * slack;
+    const EPS = 1e-12;
+    /** cost[k][j]: best total with stop k placed at its candidate j. */
+    const cost = [];
+    /** from[k][j]: the previous PLACED stop on that best path, or null. */
+    const from = [];
+
+    for (let k = 0; k < count; k++) {
+        const list = candidates[k];
+        cost.push(new Float64Array(list.length));
+        from.push(new Array(list.length).fill(null));
+        for (let j = 0; j < list.length; j++) {
+            const pos = list[j].pos;
+            let best = k * SKIP; // every earlier stop left unplaced
+            let via = null;
+            for (let prev = k - 1; prev >= 0; prev--) {
+                const gap = (k - prev - 1) * SKIP;
+                if (gap >= best) break; // skipping further back cannot win
+                const prevList = candidates[prev];
+                for (let q = 0; q < prevList.length; q++) {
+                    if (prevList[q].pos > pos + EPS) break; // sorted: rest are later
+                    const total = cost[prev][q] + gap;
+                    if (total < best) {
+                        best = total;
+                        via = [prev, q];
+                    }
+                }
+            }
+            cost[k][j] = best + list[j].excess;
+            from[k][j] = via;
+        }
+    }
+
+    // Cheapest complete path: some last placed stop, the rest left unplaced.
+    let bestTotal = count * SKIP;
+    let end = null;
+    for (let k = 0; k < count; k++) {
+        const tail = (count - 1 - k) * SKIP;
+        for (let j = 0; j < candidates[k].length; j++) {
+            if (cost[k][j] + tail < bestTotal) {
+                bestTotal = cost[k][j] + tail;
+                end = [k, j];
+            }
+        }
+    }
+
+    const chosen = new Array(count).fill(null);
+    for (let node = end; node; node = from[node[0]][node[1]]) {
+        chosen[node[0]] = candidates[node[0]][node[1]];
+    }
+
+    // Unplaced stops: the nearest pass, clamped between the placed neighbours
+    // so the sequence stays monotone and sliceable.
+    const out = new Array(count);
+    let previous = null;
+    for (let k = 0; k < count; k++) {
+        if (chosen[k]) {
+            out[k] = { i: chosen[k].i, t: chosen[k].t, placed: true };
+            previous = out[k];
+            continue;
+        }
+        const next = chosen.slice(k + 1).find(Boolean) ?? null;
+        const nearest = candidates[k].reduce(
+            (m, c) => (m === null || c.excess < m.excess ? c : m),
+            null,
+        );
+        let pick = nearest ?? previous ?? next ?? { i: 0, t: 0 };
+        if (previous && pick.i + pick.t < previous.i + previous.t) pick = previous;
+        if (next && pick.i + pick.t > next.pos) pick = next;
+        out[k] = { i: pick.i, t: pick.t, placed: false };
+        previous = out[k];
+    }
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // 2. Meter-space measures (oracles, invariants, derivation scripts — NOT the
 //    pipeline)

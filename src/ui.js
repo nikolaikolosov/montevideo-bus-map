@@ -6,7 +6,8 @@
 import { CONFIG } from './config.js';
 import { t, tPlural, getLang, LOCALE_TAGS } from './i18n.js';
 import { getLineColor } from './data.js';
-import { stopStreets } from './utils.js';
+import { stopStreets, formatPlaceName } from './utils.js';
+import { stopDirection } from './stop-direction.js';
 
 // ---------------------------------------------------------------------------
 // Loader & error states
@@ -41,6 +42,80 @@ export function showError(message) {
     if (msgEl) msgEl.textContent = message;
     container.style.display = 'flex';
     container.removeAttribute('aria-hidden');
+}
+
+// ---------------------------------------------------------------------------
+// Stop direction badge
+// ---------------------------------------------------------------------------
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * "↗ hacia el noreste": which way buses leave a stop, as an arrow turned to the
+ * actual bearing plus the compass point in words. Null where there is no single
+ * direction (a junction where variants part, or a stop where every line ends).
+ *
+ * @param {number} code - COD_UBIC_P
+ * @returns {HTMLElement|null}
+ */
+export function stopDirectionBadge(code) {
+    const direction = stopDirection(code);
+    if (!direction) return null;
+    const badge = document.createElement('span');
+    badge.className = 'stop-direction';
+    // A shaft-and-head arrow, not a solid dart: at 12 px a dart turned to a
+    // diagonal bearing reads as pointing the wrong way (a 155° dart looked like
+    // "◄"), while a shaft says unambiguously which end is the tip.
+    const arrow = document.createElementNS(SVG_NS, 'svg');
+    arrow.setAttribute('viewBox', '0 0 12 12');
+    arrow.setAttribute('width', '12');
+    arrow.setAttribute('height', '12');
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.style.transform = `rotate(${Math.round(direction.bearing)}deg)`;
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', 'M6 10.5V1.8M2.6 5.2L6 1.8l3.4 3.4');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '1.7');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    arrow.append(path);
+    badge.append(arrow, document.createTextNode(t(`stop.heading.${direction.compass}`)));
+    return badge;
+}
+
+// ---------------------------------------------------------------------------
+// Bottom-sheet inset (mobile)
+// ---------------------------------------------------------------------------
+
+/**
+ * Publishes how much of the map the mobile bottom sheet covers, as the CSS
+ * variable `--sheet-inset`, so the map's bottom-corner controls can sit above
+ * it.
+ *
+ * The one control there is the tile attribution, and on a phone the sheet hid
+ * it completely — only its light background showed through the translucent
+ * sheet as a pale band behind the footer. Esri's terms and OpenStreetMap's
+ * licence both require that credit to be visible on the map. The sheet's height
+ * depends on the view (home, line, itinerary), so CSS alone cannot know it.
+ *
+ * Desktop's floating card never touches the bottom edge, so the inset is 0
+ * there and the attribution stays in Leaflet's own corner.
+ */
+export function initSheetInset() {
+    const panel = document.getElementById('ui-panel');
+    if (!panel) return;
+    const root = document.documentElement;
+    const sync = () => {
+        const rect = panel.getBoundingClientRect();
+        const isSheet =
+            rect.width > window.innerWidth * 0.8 && rect.bottom >= window.innerHeight - 1;
+        const inset = isSheet ? Math.max(0, Math.round(window.innerHeight - rect.top)) : 0;
+        root.style.setProperty('--sheet-inset', `${inset}px`);
+    };
+    if (typeof ResizeObserver === 'function') new ResizeObserver(sync).observe(panel);
+    window.addEventListener('resize', sync);
+    sync();
 }
 
 // ---------------------------------------------------------------------------
@@ -166,12 +241,15 @@ let searchDisplayText = '';
  * @param {(q: string) => import('./search.js').SearchEntry[]} options.search
  * @param {string[]} options.lines - all line ids (default browse list)
  * @param {(entry: {type: string, id?: string, code?: number}) => void} options.onPick
+ * @param {() => void} [options.onClear] - the × button and a second Escape;
+ *   defaults to picking "all stops"
  */
-export function initSearchBox({ search, lines, onPick }) {
+export function initSearchBox({ search, lines, onPick, onClear }) {
     const input = document.getElementById('searchInput');
     const list = document.getElementById('searchList');
     if (!input || !list) return;
     const clear = document.getElementById('searchClear');
+    const clearSearch = onClear ?? (() => onPick({ type: 'all' }));
 
     let entries = [];
     let active = -1;
@@ -181,7 +259,7 @@ export function initSearchBox({ search, lines, onPick }) {
     };
     syncClear();
     clear?.addEventListener('click', () => {
-        onPick({ type: 'all' });
+        clearSearch();
     });
 
     const close = () => {
@@ -206,6 +284,11 @@ export function initSearchBox({ search, lines, onPick }) {
             li.appendChild(dot);
             li.appendChild(document.createTextNode(t('panel.lineOption', { id: entry.id })));
         } else {
+            // Name on top, then code and departure direction: half the stops
+            // share their name with the stop across the street, and the
+            // direction is what tells the two apart (stop-direction.js).
+            const text = document.createElement('span');
+            text.className = 'search-stop';
             const name = document.createElement('span');
             const { calle, esquina } = stopStreets({ CALLE: entry.name, ESQUINA: entry.esquina });
             name.textContent =
@@ -215,7 +298,10 @@ export function initSearchBox({ search, lines, onPick }) {
             const sub = document.createElement('span');
             sub.className = 'search-sub';
             sub.textContent = t('popup.stop', { cod: entry.code });
-            li.append(name, sub);
+            const direction = stopDirectionBadge(entry.code);
+            if (direction) sub.append(' · ', direction);
+            text.append(name, sub);
+            li.append(text);
         }
         li.addEventListener('mousedown', (e) => e.preventDefault()); // keep input focus
         li.addEventListener('click', () => {
@@ -281,7 +367,7 @@ export function initSearchBox({ search, lines, onPick }) {
         if (list.hidden) {
             // Second Escape (list already closed): clear the selection, go home.
             if (e.key === 'Escape' && input.value.length > 0) {
-                onPick({ type: 'all' });
+                clearSearch();
                 e.preventDefault();
             }
             return;
@@ -430,7 +516,7 @@ function rideLegRow(leg, stopName) {
     const detail = document.createElement('p');
     detail.className = 'journey-leg-sub';
     const bits = [];
-    if (leg.headsign) bits.push(t('journey.towards', { headsign: leg.headsign }));
+    if (leg.headsign) bits.push(t('journey.towards', { headsign: formatPlaceName(leg.headsign) }));
     bits.push(tPlural('journey.legStops', Math.max(0, leg.stopCodes.length - 1)));
     bits.push(`≈ ${formatDuration(leg.seconds)}`);
     detail.textContent = bits.join(' · ');
@@ -498,10 +584,19 @@ export function renderJourneyPanel(model, handlers = {}) {
     const tabs = document.getElementById('journeyOptions');
     const legs = document.getElementById('journeyLegs');
     const note = document.getElementById('journeyNote');
+    const summary = document.getElementById('journeySummary');
     tabs.textContent = '';
     legs.textContent = '';
 
     const options = model.options ?? [];
+    // The trip's total is the answer the panel exists to give. Each tab of a
+    // tablist carries its own; a LONE itinerary builds no tablist, and so its
+    // total used to appear nowhere — the note below even said "includes ≈ 5 min
+    // of waiting" about a total that was not on screen.
+    if (summary) {
+        summary.hidden = options.length !== 1;
+        summary.textContent = options.length === 1 ? optionSummary(options[0]) : '';
+    }
     if (options.length === 0) {
         tabs.hidden = true;
         note.hidden = true;
@@ -573,12 +668,12 @@ export function renderJourneyPanel(model, handlers = {}) {
     }
 
     // Waiting is a modelled penalty, not a leg — say so instead of hiding it
-    // inside the total.
+    // inside the total. One sentence per language: the two halves used to be
+    // glued together, which printed "…frecuencias. incluye ≈ 5 min…" with the
+    // second sentence starting in lower case in all three languages.
     const wait = options[active].waitSeconds ?? 0;
     note.textContent =
-        wait > 0
-            ? `${t('journey.approx')} ${t('journey.waitNote', { n: Math.round(wait / 60) })}`
-            : t('journey.approx');
+        wait > 0 ? t('journey.approxWait', { n: Math.round(wait / 60) }) : t('journey.approx');
     note.hidden = false;
 }
 
@@ -602,11 +697,19 @@ export function initJourneyControls({ onClear, onSwap, onChangeOrigin, onChangeD
 
 /**
  * Updates the route-info stats panel.
+ *
+ * `note` replaces the stop count with a sentence. It exists for the one view
+ * where the count is not an answer: a line tapped at the stop where it ENDS
+ * draws nothing downstream, and "Total de paradas: 0" beside an empty map
+ * read as a broken app (242 stop/line pairs on the committed data, and 39
+ * stops where every line ends).
+ *
  * @param {object} options
  * @param {boolean} options.show
- * @param {number} [options.stopCount]
+ * @param {number|string} [options.stopCount]
+ * @param {string} [options.note] - shown instead of the count when non-empty
  */
-export function updateStatsPanel({ show, stopCount = 0 }) {
+export function updateStatsPanel({ show, stopCount = 0, note = '' }) {
     const routeInfo = document.getElementById('routeInfo');
     if (!show) {
         routeInfo.classList.remove('active');
@@ -617,6 +720,13 @@ export function updateStatsPanel({ show, stopCount = 0 }) {
 
     const statStops = document.getElementById('statStops');
     if (statStops) statStops.textContent = stopCount;
+    const noteEl = document.getElementById('routeNote');
+    if (noteEl) {
+        noteEl.textContent = note;
+        noteEl.hidden = !note;
+    }
+    const statRow = statStops?.closest('.stat-row');
+    if (statRow) statRow.hidden = Boolean(note);
 }
 
 /**
@@ -660,7 +770,8 @@ export function renderDestinationPicker({ groups, active, onPick }) {
     };
 
     chips.append(chip(t('panel.allDestinations'), null));
-    for (const g of groups) chips.append(chip(g.headsign, g.headsign));
+    // Shown in display case; the raw headsign stays the key (it is the URL).
+    for (const g of groups) chips.append(chip(formatPlaceName(g.headsign), g.headsign));
 }
 
 // ---------------------------------------------------------------------------

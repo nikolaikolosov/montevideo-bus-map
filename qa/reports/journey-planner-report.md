@@ -25,7 +25,7 @@ variant in the feed.
 | stop pairs measured | 59828 |
 | **aggregate (Σ traced ÷ Σ straight)** | **1.053** |
 | configured `JOURNEY_BUS_DETOUR_FACTOR` | 1.05 |
-| ratio p05 / p50 / p95 / p99 / max | 1.00 / 1.00 / 1.36 / 1.75 / 17.49 |
+| ratio p05 / p50 / p95 / p99 / max | 1.00 / 1.00 / 1.35 / 1.74 / 17.49 |
 | inter-stop straight distance p50 / p95 | 267 m / 491 m |
 
 The median is ~1.00: consecutive stops are ~267 m apart and the street
@@ -46,7 +46,7 @@ Montevideo is, and is documented as an assumption rather than evidence.
 | pattern-stop entries | 60919 |
 | footpath edges (directed, ≤ 400 m) | 52888 |
 | footpaths per stop mean / p95 / max | 10.7 / 21 / 43 |
-| graph build | 28 ms |
+| graph build | 27 ms |
 
 ## 3. Search behaviour on 200 sampled origin/destination pairs
 
@@ -54,7 +54,7 @@ Montevideo is, and is documented as an assumption rather than evidence.
 |---|---|
 | pairs sampled | 200 |
 | planned / no route | 200 / 0 |
-| plan time mean / max | 3.2 ms / 8 ms |
+| plan time mean / max | 3.2 ms / 7 ms |
 | itineraries offered, mean | 1.50 |
 | transfers in the best itinerary, mean | 1.36 |
 | ride legs across all offered itineraries | 671 |

@@ -63,6 +63,7 @@ import {
     initLangSwitcher,
     updateLangSwitcher,
     initErrorRetry,
+    initSheetInset,
     renderJourneyPanel,
     initJourneyControls,
 } from './ui.js';
@@ -140,6 +141,21 @@ function handleShowRoutes(linesArr, variantsArr, sourceFeature) {
 const sortLines = (arr) =>
     [...arr].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
+/** Variants the last downstream view drew (0 = nothing runs on from the stop). */
+let lastDownstreamVariants = null;
+
+/**
+ * The sentence that replaces the stop count when nothing runs on from a stop:
+ * the line (or every line) ENDS there, so a downstream view has nothing to draw.
+ * @param {{line: string|null}} state - a downstream route state
+ * @param {number} variantCount - variants renderRoutes actually drew
+ * @returns {string} '' when something was drawn
+ */
+function terminalNote(state, variantCount) {
+    if (variantCount > 0) return '';
+    return state.line !== null ? t('route.endsHere', { id: state.line }) : t('route.allEndHere');
+}
+
 const stopDisplayName = (feature) => {
     const { calle, esquina } = stopStreets(feature.properties);
     if (calle && esquina) return `${calle} y ${esquina}`;
@@ -160,6 +176,32 @@ const journeySelection = () =>
 function goJourney(from, to, option = 0) {
     if (from == null && to == null) router.go({ view: 'all' });
     else router.go({ view: 'journey', from, to, option });
+}
+
+/** True while a journey has one end and the map is waiting for the other. */
+const pickingJourneyEnd = () => {
+    const { from, to } = journeySelection();
+    return currentState.view === 'journey' && (from == null) !== (to == null);
+};
+
+/**
+ * A stop picked in the search box.
+ *
+ * Normally that opens the stop view. While a journey is waiting for its other
+ * end it must not: leaving the journey view threw away the end already picked,
+ * so the natural flow — origin tapped on the map, destination found by name —
+ * lost the origin, and the destination's "Hacia acá" then started a trip with
+ * no origin at all. The stop is shown in place instead, popup open, where its
+ * buttons complete the trip.
+ *
+ * @param {number} code
+ */
+function pickStopFromSearch(code) {
+    if (pickingJourneyEnd() && focusStop(code)) {
+        setSearchDisplay(stopDisplayName(uniqueStopByCode.get(code)));
+        return;
+    }
+    router.go({ view: 'stop', stop: code });
 }
 
 /** Popup wiring: the two "from here" / "to here" buttons on every stop. */
@@ -252,6 +294,43 @@ function renderJourneyState(state, { redrawMap = true } = {}) {
     }
 }
 
+/**
+ * The destination chips of a line view. Also called on a language switch: the
+ * "all destinations" chip is a translated label the static i18n pass cannot
+ * reach, and it stayed "Todos" in an English or Russian panel.
+ *
+ * @param {{line: string, headsign?: string|null}} state - a line route state
+ * @returns {{headsign: string, variants: string[]}|null} the picked group
+ */
+function renderLinePicker(state) {
+    const groups = getLineHeadsigns(state.line);
+    const picked = groups.find((g) => g.headsign === state.headsign) ?? null;
+    renderDestinationPicker({
+        groups,
+        active: picked ? picked.headsign : null,
+        onPick: (headsign) => router.go({ view: 'line', line: state.line, headsign }),
+    });
+    return picked;
+}
+
+/**
+ * Rewrites the address bar to the view actually shown, in place (no history
+ * entry). A degraded link — a line or stop a data update removed, a line that
+ * does not serve the stop, a destination that is gone — used to keep its dead
+ * URL, so sharing the page again shared the broken link and the address bar
+ * disagreed with the screen. Journeys are left alone: a trip with a vanished
+ * stop keeps its URL and SAYS so in the panel ("Esa parada no está…").
+ *
+ * @param {import('./router.js').RouteState} state - the effective state
+ */
+function canonicalizeUrl(state) {
+    if (state.view === 'journey') return;
+    const hash = router.buildHash(state);
+    const shown = location.hash;
+    if (hash === shown || (hash === '#/' && (shown === '' || shown === '#'))) return;
+    router.replace(state);
+}
+
 /** Renders one route state. The only caller is the router. */
 function renderForState(state) {
     closeMapPopup();
@@ -275,6 +354,15 @@ function renderForState(state) {
     ) {
         state = { view: 'stop', stop: state.stop };
     }
+    // Same for a destination the line no longer serves: the whole line is shown.
+    if (
+        state.view === 'line' &&
+        state.headsign &&
+        !getLineHeadsigns(state.line).some((g) => g.headsign === state.headsign)
+    ) {
+        state = { view: 'line', line: state.line, headsign: null };
+    }
+    canonicalizeUrl(state);
     currentState = state;
 
     if (state.view !== 'journey') renderJourneyPanel({ visible: false });
@@ -291,21 +379,19 @@ function renderForState(state) {
             renderJourneyState(state);
             break;
         case 'line': {
-            const groups = getLineHeadsigns(state.line);
-            const picked = groups.find((g) => g.headsign === state.headsign) ?? null;
+            // Panel BEFORE map, as for a journey: the camera fit measures the
+            // panel to keep the route clear of it, so the panel must already
+            // have its final rows (the destination strip, the stats).
+            updateStatsPanel({ show: true, stopCount: '…' });
+            const picked = renderLinePicker(state);
+            setSearchDisplay(t('panel.lineOption', { id: state.line }));
+            renderContextBar(null);
             const { stopCount } = renderRoutes({
                 lineIds: [state.line],
                 variantsArr: picked ? picked.variants : undefined,
                 onShowRoutes: handleShowRoutes,
             });
             updateStatsPanel({ show: true, stopCount });
-            renderDestinationPicker({
-                groups,
-                active: picked ? picked.headsign : null,
-                onPick: (headsign) => router.go({ view: 'line', line: state.line, headsign }),
-            });
-            setSearchDisplay(t('panel.lineOption', { id: state.line }));
-            renderContextBar(null);
             break;
         }
         case 'stop': {
@@ -324,19 +410,22 @@ function renderForState(state) {
             const variantsArr = single
                 ? getStopLineVariants(state.stop, state.line)
                 : Array.from(stopVariantsMap.get(state.stop) ?? []);
-            const { stopCount } = renderRoutes({
-                lineIds,
-                variantsArr,
-                sourceFeature: feature,
-                onShowRoutes: handleShowRoutes,
-            });
-            updateStatsPanel({ show: true, stopCount });
+            // Panel first: the route fit measures it (see the line view).
+            updateStatsPanel({ show: true, stopCount: '…' });
             setSearchDisplay(single ? t('panel.lineOption', { id: state.line }) : '');
             renderContextBar({ name: stopDisplayName(feature), code: state.stop, single }, () =>
                 single
                     ? router.go({ view: 'line', line: state.line })
                     : router.go({ view: 'stop', stop: state.stop }),
             );
+            const { variantCount, stopCount } = renderRoutes({
+                lineIds,
+                variantsArr,
+                sourceFeature: feature,
+                onShowRoutes: handleShowRoutes,
+            });
+            lastDownstreamVariants = variantCount;
+            updateStatsPanel({ show: true, stopCount, note: terminalNote(state, variantCount) });
             break;
         }
         default: {
@@ -419,6 +508,8 @@ async function initApp() {
         });
 
         initErrorRetry(() => location.reload());
+        // Keeps the map's bottom-corner credit above the mobile bottom sheet.
+        initSheetInset();
 
         // Load datasets in parallel
         const [routesData, stopsData, generatedAt] = await loadData();
@@ -462,7 +553,13 @@ async function initApp() {
             lines: sortedLines,
             onPick: (entry) => {
                 if (entry.type === 'line') router.go({ view: 'line', line: entry.id });
-                else if (entry.type === 'stop') router.go({ view: 'stop', stop: entry.code });
+                else if (entry.type === 'stop') pickStopFromSearch(entry.code);
+                else router.go({ view: 'all' });
+            },
+            // Clearing the field while a journey waits for its other end
+            // clears the FIELD — the journey has its own cancel button.
+            onClear: () => {
+                if (pickingJourneyEnd()) setSearchDisplay('');
                 else router.go({ view: 'all' });
             },
         });
@@ -490,6 +587,7 @@ function relabelForLang() {
     const s = currentState;
     if (s.view === 'line') {
         setSearchDisplay(t('panel.lineOption', { id: s.line }));
+        renderLinePicker(s);
     } else if (s.view === 'journey') {
         // Panel only — a language switch must not re-frame the map (R8).
         renderJourneyState(s, { redrawMap: false });
@@ -502,6 +600,9 @@ function relabelForLang() {
                 ? router.go({ view: 'line', line: s.line })
                 : router.go({ view: 'stop', stop: s.stop }),
         );
+        if (lastDownstreamVariants === 0) {
+            updateStatsPanel({ show: true, stopCount: 0, note: terminalNote(s, 0) });
+        }
     }
 }
 

@@ -115,6 +115,28 @@ describe('patternPositions (every committed variant)', () => {
         expect(worstOffset).toBeLessThan(MAX_STOP_OFFSET_M);
     });
 
+    it('places a stop served on the way BACK on the return pass (line L33, stop 1882)', () => {
+        // Variant 9295 runs up Av de las Instrucciones past Cno La Espiga
+        // (stop 1870), turns round and comes back past the same corner on the
+        // other side (stop 1882) before Cno La Calera (1883). Both stops are
+        // within the ~10 m band of both passes, and the old greedy rule took
+        // the EARLIEST admissible pass — the outbound one — for 1882 as well.
+        const { stopCodes } = patternPositions('9295');
+        const at = (code) => stopCodes.indexOf(code);
+        const stop = (code) => uniqueStopByCode.get(code).geometry.coordinates;
+        expect(at(1882)).toBe(at(1870) + 1);
+        expect(at(1883)).toBe(at(1882) + 1);
+
+        // 1882 → 1883 is one block down the avenue: no turn-around in it.
+        const onward = rideLegGeometry('9295', at(1882), at(1883));
+        expect(polylineLengthM(onward)).toBeLessThan(1.5 * segmentLengthM(stop(1882), stop(1883)));
+
+        // 1870 → 1882 is the turn-around itself, far longer than the few
+        // metres between the two kerbs of one corner.
+        const turn = rideLegGeometry('9295', at(1870), at(1882));
+        expect(polylineLengthM(turn)).toBeGreaterThan(400);
+    });
+
     it('caches per variant (the same object comes back)', () => {
         const [variantId] = [...stopsByVariant.keys()];
         expect(patternPositions(variantId)).toBe(patternPositions(variantId));

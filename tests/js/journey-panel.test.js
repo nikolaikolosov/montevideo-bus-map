@@ -20,6 +20,7 @@ const PANEL_HTML = `
         </button>
         <p id="journeyMessage" hidden></p>
         <div id="journeyOptions" role="tablist" hidden></div>
+        <p id="journeySummary" hidden></p>
         <ol id="journeyLegs" role="tabpanel"></ol>
         <p id="journeyNote" hidden></p>
     </section>`;
@@ -294,8 +295,60 @@ describe('renderJourneyPanel', () => {
         );
         const note = document.getElementById('journeyNote');
         expect(note.hidden).toBe(false);
-        expect(note.textContent).toContain(t('journey.approx'));
-        expect(note.textContent).toContain(t('journey.waitNote', { n: 5 }));
+        expect(note.textContent).toBe(t('journey.approxWait', { n: 5 }));
+    });
+
+    it('writes the waiting note as whole sentences in every language', () => {
+        // It used to be two strings glued with a space, so the second sentence
+        // started in lower case: "…frecuencias. incluye ≈ 5 min de espera".
+        for (const lang of ['es', 'en', 'ru']) {
+            setLang(lang);
+            renderJourneyPanel(
+                baseModel({ options: [option([ride('1', 1, 9, 4, 600)], 900, 0, 0, 600)] }),
+            );
+            const text = document.getElementById('journeyNote').textContent;
+            expect(text).toContain('10');
+            for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+                expect(sentence[0], `${lang}: "${sentence}"`).toBe(sentence[0].toUpperCase());
+            }
+        }
+    });
+
+    it('a walk-only trip gets the plain note, with no waiting to mention', () => {
+        renderJourneyPanel(
+            baseModel({ options: [option([walk(1, 9, 300, 240)], 240, 0, 300, 0)] }),
+        );
+        expect(document.getElementById('journeyNote').textContent).toBe(t('journey.approx'));
+    });
+
+    it('shows the total of a lone itinerary, which has no tab to carry it', () => {
+        renderJourneyPanel(
+            baseModel({
+                options: [option([ride('180', 1, 5, 2, 120), walk(5, 9, 30, 24)], 444, 0, 30)],
+            }),
+        );
+        const summary = document.getElementById('journeySummary');
+        expect(summary.hidden).toBe(false);
+        expect(summary.textContent).toContain(formatDuration(444));
+        expect(summary.textContent).toContain(tPlural('journey.transfers', 0));
+        expect(summary.textContent).toContain(t('journey.walkTotal', { m: 30 }));
+    });
+
+    it('leaves the totals to the tabs when there are alternatives, and clears them with the trip', () => {
+        renderJourneyPanel(
+            baseModel({
+                options: [
+                    option([ride('1', 1, 5, 3, 600)], 900, 0),
+                    option([ride('2', 1, 9, 3, 700)], 1100, 0),
+                ],
+            }),
+        );
+        expect(document.getElementById('journeySummary').hidden).toBe(true);
+        renderJourneyPanel(baseModel({ options: [option([ride('1', 1, 9, 4, 600)], 900, 0)] }));
+        expect(document.getElementById('journeySummary').hidden).toBe(false);
+        renderJourneyPanel(baseModel({ options: [], message: t('journey.pickDestination') }));
+        expect(document.getElementById('journeySummary').hidden).toBe(true);
+        expect(document.getElementById('journeySummary').textContent).toBe('');
     });
 
     it('re-renders cleanly instead of stacking rows', () => {
@@ -321,8 +374,8 @@ describe('renderJourneyPanel', () => {
             expect(rows[1].querySelector('.journey-leg-main').textContent).toBe(
                 t('journey.legWalk', { m: 120, stop: NAMES[9] }),
             );
-            expect(document.getElementById('journeyNote').textContent).toContain(
-                t('journey.approx'),
+            expect(document.getElementById('journeyNote').textContent).toBe(
+                t('journey.approxWait', { n: 5 }),
             );
         }
     });

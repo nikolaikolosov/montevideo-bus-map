@@ -23,7 +23,7 @@
 | Stage | Code | In → Out | Postconditions |
 |---|---|---|---|
 | S0 raw | `routes.json` | — | per-variant [lon,lat] traces, 1–5 m jitter |
-| S1 prepare | `prepareRouteFeature` → `cleanCoordinates`, `trimToStops`, optional `truncateLineDownstream` (src/map.js, src/utils.js) | trace → revenue-segment trace | endpoints ON the trace (projection); no foreign coordinates; near-duplicate vertices dropped |
+| S1 prepare | `prepareRouteFeature` → `cleanCoordinates`, `trimToStops`, optional downstream cut at the boarding stop's ORDER-CONSISTENT place (`matchStopsToTrace`; `truncateLineDownstream` only when the stop is not in the variant's pattern) (src/map.js, src/geometry.js, src/utils.js) | trace → revenue-segment trace | endpoints ON the trace (projection); no foreign coordinates; near-duplicate vertices dropped; downstream length non-increasing along the stop order (R-ORDER) |
 | S2 bundle | `buildSections` (src/bundling.js): cluster → node sequences → **re-centre nodes on their strands** → on-path insertion → edge graph → diamond merge + triangle dissolve (both to a fixpoint) → chain merge → `smoothPath` → `simplifyPath` | traces of displayed lines → corridor sections | composition conserved; per-operator displacement ≤ budget (ladder below); corridors within CHORD budget of the traces |
 | S3 joints | `buildJoints` (src/bundling.js) | sections → joint descriptors | every line continuing through a 2-section node is stitched; ≥3-section nodes untouched |
 | S4 render | `OffsetPolyline` / `OffsetJoint` (src/offsetline.js), slot order in src/map.js | sections + joints → pixel strands | offsets computed per zoom in pixel space with ONE shared math; global slot order (no side swaps) |
@@ -33,12 +33,28 @@
 - **R-PROJECT.** Every cut/trim/match operates on segment *projections*, never
   nearest vertices. The shared primitives (`src/geometry.js`:
   `projectPointOnSegment`, `projectPointOnPolyline`, `projectionCandidates`,
-  `unclampedSegmentParam`, `pointAt`) are the only implementation; new code
+  `unclampedSegmentParam`, `pointAt`, `matchStopsToTrace`) are the only implementation; new code
   imports them instead of re-deriving the math. (History: both vertex-snap
   re-implementations shipped bugs — PR #4 loop truncation, PR #9 chords.)
 - **R-FOREIGN.** Coordinates that are not trace vertices or on-trace
   projections (stop positions, labels, user location) never enter route
   geometry. Cuts land on the trace; markers show off-trace positions.
+- **R-ORDER.** A stop is placed on a variant's trace as part of that variant's
+  ORDERED stop sequence, never by its own nearest projection alone:
+  `matchStopsToTrace` takes every projection within `STOP_MATCH_SLACK_DEG`
+  (~30 m) of each stop's nearest one and picks, by dynamic programming, the
+  non-decreasing assignment with the least total excess distance; a stop with no
+  admissible candidate is left unplaced and clamped between its neighbours.
+  Where a route passes one street twice (out-and-back spurs, loops round a
+  block) the nearest projection lands on the wrong pass: on the 2026-10-09
+  dataset the downstream view of line L1 from stop 5407 started 2.6 km down the
+  route and from 5408 2.6 km early (9 stop visits network-wide), and the greedy
+  "earliest admissible pass" the journey legs used put line L33's stop 1882 on
+  its outbound pass. Downstream cuts (`prepareRouteFeature` with a stop code) and
+  ride legs (`patternPositions`) both go through it. Gate:
+  `route-downstream.test.js` — over all 60,919 stop visits the drawn downstream
+  length never grows as the boarding stop moves down the route (9 violations
+  before, 0 after) — plus the synthetic out-and-back cases in `geometry.test.js`.
 - **R-BOUNDED.** Every geometry-mutating operator has a stated displacement
   budget and a guard for features above its scale: `cleanCoordinates` ~1 m,
   `simplifyPath` ≤ 4 m (Hausdorff), `smoothPath` ≤ ~11 m/vertex and only

@@ -201,12 +201,14 @@ describe('russian plural edge cases (teens and hundreds)', () => {
         expect(tPlural('popup.lines', n)).toBe(expected);
     });
 
-    it('section variants pluralize per locale', () => {
-        expect(tPlural('section.variants', 1, { list: 'A' })).toBe('Variante: A');
-        expect(tPlural('section.variants', 2, { list: 'A, B' })).toBe('Variantes: A, B');
+    it('a corridor popup says where its buses are headed, per locale', () => {
+        // It listed variant codes ("Variantes: 4351, 4352") — pipeline
+        // vocabulary a rider cannot act on (ux-review-001 X1).
+        expect(t('section.towards', { list: 'Pocitos · Géant' })).toBe('Hacia Pocitos · Géant');
+        setLang('en');
+        expect(t('section.towards', { list: 'Pocitos' })).toBe('Towards Pocitos');
         setLang('ru');
-        expect(tPlural('section.variants', 1, { list: 'A' })).toBe('Вариант: A');
-        expect(tPlural('section.variants', 3, { list: 'A, B, C' })).toBe('Варианты: A, B, C');
+        expect(t('section.towards', { list: 'Pocitos' })).toBe('В сторону: Pocitos');
     });
 });
 

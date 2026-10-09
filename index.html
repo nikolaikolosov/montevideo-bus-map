@@ -215,6 +215,9 @@
 
                 <p id="journeyMessage" class="journey-message" hidden></p>
                 <div id="journeyOptions" class="journey-options" role="tablist" hidden></div>
+                <!-- The total of a lone itinerary: with alternatives each tab
+                     carries its own, without them nothing else does. -->
+                <p id="journeySummary" class="journey-summary" hidden></p>
                 <ol id="journeyLegs" class="journey-legs" role="tabpanel"></ol>
                 <p id="journeyNote" class="journey-note" data-i18n="journey.approx" hidden></p>
             </section>
@@ -239,6 +242,9 @@
                     <span class="stat-label" data-i18n="panel.statStops">Total de paradas</span>
                     <span id="statStops" class="stat-value">-</span>
                 </div>
+                <!-- Replaces the count where a count is not an answer: a line
+                     tapped at the stop where it ends draws nothing downstream. -->
+                <p id="routeNote" class="route-note" hidden></p>
             </div>
 
             <!-- Footer row: the data date and the support link share ONE line on
@@ -275,6 +281,33 @@
             aria-label="Mapa interactivo de recorridos de ómnibus"
             data-i18n-aria="map.aria"
         ></div>
+
+        <!-- About / legend (ux-review-001 R9, finding F11): nothing explained the
+             visual language — what a strand is, what colour means — and the base
+             map credits had no home but Leaflet's corner. Ported from PR #53,
+             which was merged into an already-merged branch and never reached
+             main (review 2026-10-09). -->
+        <div
+            id="aboutPanel"
+            class="about-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="aboutTitle"
+            hidden
+        >
+            <h2 id="aboutTitle" data-i18n="about.title">Sobre este mapa</h2>
+            <p data-i18n="about.strands">Cada trazo de color es una línea.</p>
+            <p data-i18n="about.colors">El color identifica la línea.</p>
+            <p data-i18n="about.arrows">Las flechas indican el sentido.</p>
+            <p data-i18n="about.stops">Cada parada dice hacia dónde salen sus ómnibus.</p>
+            <p data-i18n="about.data">Datos del transporte de Montevideo.</p>
+            <p class="about-credits" data-i18n="about.credits">
+                Mapa base © Esri — Esri, HERE, Garmin; © colaboradores de OpenStreetMap.
+            </p>
+            <button type="button" id="aboutClose" class="about-close" data-i18n="about.close">
+                Cerrar
+            </button>
+        </div>
 
         <!-- First-use hint (ux-review-001 R7, finding F6): the all-stops entry
              view answers no job by itself and nothing tells a first-time visitor

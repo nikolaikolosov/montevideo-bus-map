@@ -116,3 +116,53 @@ describe('search ranking', () => {
         expect(rows.filter((e) => e.code === 18)).toHaveLength(1);
     });
 });
+
+describe('search — what riders actually type', () => {
+    it('finds a corner written the way the app prints it, in either order', () => {
+        // The app shows "Av Cibils y Verdun"; a substring of "AV CIBILS VERDUN"
+        // matched neither that nor the reverse order.
+        for (const q of [
+            'cibils y verdun',
+            'verdun y cibils',
+            'verdun cibils',
+            'av cibils esq verdun',
+        ]) {
+            expect(
+                index.search(q).map((e) => e.code),
+                q,
+            ).toEqual([1000]);
+        }
+    });
+
+    it('folds street types to the feed abbreviations', () => {
+        expect(index.search('avenida cibils').map((e) => e.code)).toEqual([1000]);
+        expect(index.search('camino maldonado').map((e) => e.code)).toEqual([47725]);
+    });
+
+    it('reads a typed label as a label, not as part of the id', () => {
+        // The field shows a picked line as "Línea 104"; editing that text found
+        // nothing, because no line id contains the word.
+        expect(index.search('Línea 104')[0]).toEqual({ type: 'line', id: '104' });
+        expect(index.search('line 124')[0]).toEqual({ type: 'line', id: '124 Sd' });
+        expect(index.search('линия d1')[0]).toEqual({ type: 'line', id: 'D1' });
+        expect(index.search('parada 4772')[0]).toMatchObject({ type: 'stop', code: 4772 });
+    });
+
+    it('lists word matches after the plain substring matches', () => {
+        const ix = buildSearchIndex(
+            [],
+            [stop(1, 'EJIDO', 'AV 18 DE JULIO'), stop(2, 'AV 18 DE JULIO', 'EJIDO')],
+        );
+        // Stop 2 contains "18 de julio ejido" verbatim; stop 1 only word for word.
+        expect(ix.search('18 de julio ejido').map((e) => e.code)).toEqual([2, 1]);
+    });
+
+    it('fills the list with names when nothing else matches', () => {
+        // The reserved share for names used to be a cap as well as a floor:
+        // "rivera" listed 6 of its stops in a list with room for 20.
+        const street = Array.from({ length: 30 }, (_, i) =>
+            stop(5000 + i, 'AV GRAL RIVERA', `X${i}`),
+        );
+        expect(buildSearchIndex([], street).search('rivera')).toHaveLength(20);
+    });
+});

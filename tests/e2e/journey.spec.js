@@ -63,10 +63,10 @@ test('picking origin then destination plans the trip', async ({ page }) => {
     // Waiting state: origin known, the panel asks for the other end.
     expect(new URL(page.url()).hash).toBe('#/viaje/desde/1000');
     await expect(page.locator('#journeyPanel')).toBeVisible();
-    await expect(page.locator('#journeyOrigin')).toHaveText('AV CIBILS y VERDUN');
+    await expect(page.locator('#journeyOrigin')).toHaveText('Av Cibils y Verdun');
     await expect(page.locator('#journeyDestination')).toHaveText('—');
     await expect(page.locator('#journeyMessage')).toHaveText(
-        'Elegí en el mapa la parada de destino.',
+        'Elegí en el mapa la parada de destino, o buscala.',
     );
     await expect(page.locator('#journeyLegs li')).toHaveCount(0);
 
@@ -75,7 +75,7 @@ test('picking origin then destination plans the trip', async ({ page }) => {
 
     expect(new URL(page.url()).hash).toBe('#/viaje/1000/1480');
     await expect(page.locator('#journeyMessage')).toBeHidden();
-    await expect(page.locator('#journeyDestination')).toHaveText('AV MILLAN y SITIO GRANDE');
+    await expect(page.locator('#journeyDestination')).toHaveText('Av Millan y Sitio Grande');
     await expect(page.locator('#journeyLegs li').first()).toBeVisible();
     await expect(page.locator('#journeyNote')).toContainText('Tiempos estimados');
 
@@ -118,11 +118,67 @@ test('both ends of the itinerary are framed clear of the panel', async ({ page }
     });
 
     for (const pin of [box.origin, box.destination]) {
-        expect(pin.x).toBeGreaterThan(box.panel.right);
+        // Clear of the card on whichever side the fit chose — RIGHT of it or
+        // BELOW it (panelAwareFit takes the one that frames the trip larger).
+        const rightOfPanel = pin.x > box.panel.right;
+        const belowPanel = pin.y > box.panel.bottom;
+        expect(rightOfPanel || belowPanel, 'pin under the panel').toBe(true);
+        expect(pin.x).toBeGreaterThan(0);
         expect(pin.right).toBeLessThan(box.viewport.w);
         expect(pin.y).toBeGreaterThan(0);
         expect(pin.bottom).toBeLessThan(box.viewport.h);
     }
+});
+
+test('a destination found by SEARCH completes the trip, keeping the origin', async ({ page }) => {
+    // Search used to navigate to the stop view, which left the journey and
+    // threw the picked origin away: the destination's "Hacia acá" then started
+    // a trip with no origin at all.
+    await openMap(page, { theme: 'dark' });
+    await openStopPopup(page, ORIGIN, { center: true });
+    await page.locator('.journey-from-btn').click();
+    expect(new URL(page.url()).hash).toBe('#/viaje/desde/1000');
+
+    await page.locator('#searchInput').fill('millan y sitio grande');
+    await page.locator('#searchList [role="option"]').first().click();
+
+    // Still the same half-built trip, with the found stop's popup open on it.
+    expect(new URL(page.url()).hash).toBe('#/viaje/desde/1000');
+    await expect(page.locator('#journeyOrigin')).toHaveText('Av Cibils y Verdun');
+    // The origin's popup fades out over ~200 ms; wait for it to go.
+    await page.waitForFunction(() => document.querySelectorAll('.leaflet-popup').length === 1);
+    await expect(page.locator('.popup-content h3')).toHaveText('Av Millan');
+    await page.locator('.journey-to-btn').click();
+
+    expect(new URL(page.url()).hash).toBe(`#/viaje/1000/${DESTINATION}`);
+    await expect(page.locator('#journeyLegs li').first()).toBeVisible();
+});
+
+test('clearing the search field mid-trip clears the field, not the trip', async ({ page }) => {
+    await openMap(page, { theme: 'dark' });
+    await page.goto('/#/viaje/desde/1000');
+    await page.waitForSelector('#journeyPanel:not([hidden])');
+    await page.locator('#searchInput').fill('millan');
+    await page.locator('#searchClear').click();
+    expect(new URL(page.url()).hash).toBe('#/viaje/desde/1000');
+    await expect(page.locator('#searchInput')).toHaveValue('');
+    await expect(page.locator('#journeyOrigin')).toHaveText('Av Cibils y Verdun');
+});
+
+test('a lone itinerary shows its total, which no tab carries', async ({ page }) => {
+    await openMap(page, { theme: 'dark' });
+    await planJourney(page, DOWNTOWN_FROM, DOWNTOWN_TO);
+    const plan = await page.evaluate(
+        ([f, t]) => window.__mvdGetJourney(f, t).options,
+        [DOWNTOWN_FROM, DOWNTOWN_TO],
+    );
+    // Guard the premise: this pair must still be a single-option trip.
+    expect(plan, 'pair no longer has exactly one itinerary').toHaveLength(1);
+    await expect(page.locator('#journeyOptions')).toBeHidden();
+    const minutes = Math.max(1, Math.round(plan[0].seconds / 60));
+    await expect(page.locator('#journeySummary')).toBeVisible();
+    await expect(page.locator('#journeySummary')).toContainText(`≈ ${minutes} min`);
+    await expect(page.locator('#journeySummary')).toContainText('sin trasbordos');
 });
 
 test('the origin stop offers to undo itself', async ({ page }) => {
@@ -168,7 +224,7 @@ test('one end can be re-picked without discarding the trip', async ({ page }) =>
     // row is the way back to picking that end.
     await page.locator('#journeyEditDestination').click();
     expect(new URL(page.url()).hash).toBe('#/viaje/desde/1000');
-    await expect(page.locator('#journeyOrigin')).toHaveText('AV CIBILS y VERDUN');
+    await expect(page.locator('#journeyOrigin')).toHaveText('Av Cibils y Verdun');
     await expect(page.locator('#journeyDestination')).toHaveText('—');
     await expect(page.locator('#journeyEditDestination')).toBeDisabled();
 
@@ -184,8 +240,8 @@ test('swap reverses the trip, clear ends it', async ({ page }) => {
 
     await page.locator('#journeySwap').click();
     expect(new URL(page.url()).hash).toBe('#/viaje/1480/1000');
-    await expect(page.locator('#journeyOrigin')).toHaveText('AV MILLAN y SITIO GRANDE');
-    await expect(page.locator('#journeyDestination')).toHaveText('AV CIBILS y VERDUN');
+    await expect(page.locator('#journeyOrigin')).toHaveText('Av Millan y Sitio Grande');
+    await expect(page.locator('#journeyDestination')).toHaveText('Av Cibils y Verdun');
 
     await page.locator('#journeyClear').click();
     expect(new URL(page.url()).hash).toBe('#/');
@@ -196,7 +252,7 @@ test('a deep-linked itinerary renders on load', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
     await page.goto(`/#/viaje/${DOWNTOWN_FROM}/${DOWNTOWN_TO}`);
     await page.waitForSelector('#journeyPanel:not([hidden])');
-    await expect(page.locator('#journeyOrigin')).toHaveText('BUENOS AIRES y ITUZAINGO');
+    await expect(page.locator('#journeyOrigin')).toHaveText('Buenos Aires y Ituzaingo');
     await expect(page.locator('#journeyLegs li').first()).toBeVisible();
     // A ride leg carries the line as a coloured chip.
     await expect(page.locator('#journeyLegs .line-chip').first()).toBeVisible();
