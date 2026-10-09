@@ -9,563 +9,555 @@
 
 export const LINE_COLORS = {
     2: {
-        dark: '#d43b88',
-        light: '#82074d',
-    },
-    17: {
-        dark: '#049583',
-        light: '#005549',
-    },
-    21: {
-        dark: '#ad7ff4',
-        light: '#6b42a2',
-    },
-    60: {
-        dark: '#cb8e07',
-        light: '#7b5300',
-    },
-    62: {
-        dark: '#768c00',
-        light: '#414f00',
-    },
-    64: {
-        dark: '#3378f5',
-        light: '#093f9c',
-    },
-    71: {
-        dark: '#88ab00',
-        light: '#506600',
-    },
-    76: {
-        dark: '#20d4b6',
-        light: '#008570',
-    },
-    79: {
-        dark: '#73e7ff',
-        light: '#0098af',
-    },
-    100: {
-        dark: '#0ca7eb',
-        light: '#006490',
-    },
-    102: {
-        dark: '#fe9594',
-        light: '#b14d50',
-    },
-    103: {
-        dark: '#7feccf',
-        light: '#249d83',
-    },
-    104: {
         dark: '#fccb7e',
         light: '#ac7e2f',
     },
-    105: {
+    17: {
+        dark: '#0ba4f8',
+        light: '#006298',
+    },
+    21: {
+        dark: '#1ca2fd',
+        light: '#00609e',
+    },
+    60: {
+        dark: '#04919c',
+        light: '#005259',
+    },
+    62: {
+        dark: '#e469ae',
+        light: '#952f6b',
+    },
+    64: {
+        dark: '#c444ac',
+        light: '#781367',
+    },
+    71: {
+        dark: '#d93975',
+        light: '#86023f',
+    },
+    76: {
         dark: '#60d291',
         light: '#0d8750',
     },
-    106: {
-        dark: '#8bb9fd',
-        light: '#3e71bc',
-    },
-    109: {
-        dark: '#d4cdfe',
-        light: '#887bc5',
-    },
-    110: {
-        dark: '#f26c52',
-        light: '#9f301b',
-    },
-    111: {
-        dark: '#8fa907',
-        light: '#546500',
-    },
-    112: {
-        dark: '#049677',
-        light: '#005642',
-    },
-    113: {
-        dark: '#dd6cbe',
-        light: '#8f3278',
-    },
-    115: {
-        dark: '#a37800',
-        light: '#5e4200',
-    },
-    116: {
-        dark: '#a1c75e',
-        light: '#5f7e18',
-    },
-    117: {
-        dark: '#f1677f',
-        light: '#9e2c45',
-    },
-    121: {
-        dark: '#9e56dc',
-        light: '#5e258a',
-    },
-    124: {
+    79: {
         dark: '#e9780d',
         light: '#8f4400',
     },
-    125: {
-        dark: '#589bfd',
-        light: '#1c59ae',
+    100: {
+        dark: '#41b658',
+        light: '#007024',
     },
-    127: {
-        dark: '#a07a00',
-        light: '#5c4300',
+    102: {
+        dark: '#a383f9',
+        light: '#6345a7',
     },
-    128: {
-        dark: '#9cb4fd',
-        light: '#546bbd',
+    103: {
+        dark: '#f16779',
+        light: '#9f2c40',
     },
-    130: {
+    104: {
+        dark: '#b59a07',
+        light: '#6d5b00',
+    },
+    105: {
+        dark: '#c277e3',
+        light: '#7b3b95',
+    },
+    106: {
         dark: '#fec6aa',
         light: '#bd724a',
     },
+    109: {
+        dark: '#7c91fd',
+        light: '#4351af',
+    },
+    110: {
+        dark: '#3d9800',
+        light: '#1a5700',
+    },
+    111: {
+        dark: '#0eaec3',
+        light: '#006976',
+    },
+    112: {
+        dark: '#8a5fe9',
+        light: '#502c93',
+    },
+    113: {
+        dark: '#d4cdfe',
+        light: '#887bc5',
+    },
+    115: {
+        dark: '#bf6500',
+        light: '#703500',
+    },
+    116: {
+        dark: '#f9bcfd',
+        light: '#a870ad',
+    },
+    117: {
+        dark: '#70e9f9',
+        light: '#0699a8',
+    },
+    121: {
+        dark: '#908200',
+        light: '#524900',
+    },
+    124: {
+        dark: '#fc90bd',
+        light: '#aa4d77',
+    },
+    125: {
+        dark: '#6fc0fd',
+        light: '#0a78b7',
+    },
+    127: {
+        dark: '#f0d17d',
+        light: '#a1842c',
+    },
+    128: {
+        dark: '#c675df',
+        light: '#7e3a92',
+    },
+    130: {
+        dark: '#61b341',
+        light: '#286e00',
+    },
     133: {
-        dark: '#e8ab3e',
-        light: '#966700',
+        dark: '#049868',
+        light: '#005638',
     },
     135: {
-        dark: '#0eb590',
-        light: '#006d55',
+        dark: '#0eb3a6',
+        light: '#006b63',
     },
     137: {
         dark: '#d7397b',
         light: '#850344',
     },
     140: {
-        dark: '#90b8fd',
-        light: '#4470bd',
+        dark: '#a0b3fd',
+        light: '#596abd',
     },
     141: {
-        dark: '#febde5',
-        light: '#b56c9a',
+        dark: '#eb761d',
+        light: '#924100',
     },
     142: {
-        dark: '#c4a4fd',
-        light: '#7e5db1',
+        dark: '#16cee6',
+        light: '#008090',
     },
     143: {
-        dark: '#ea689d',
-        light: '#992d5d',
+        dark: '#e06bb8',
+        light: '#913173',
     },
     144: {
-        dark: '#fa9e56',
-        light: '#a95a09',
+        dark: '#8d8bfd',
+        light: '#524cad',
     },
     145: {
-        dark: '#0490a5',
-        light: '#00525f',
+        dark: '#b04ecc',
+        light: '#691e7e',
     },
     147: {
-        dark: '#fa90c2',
-        light: '#a84d7b',
+        dark: '#ace7a2',
+        light: '#619858',
     },
     148: {
-        dark: '#049b38',
-        light: '#005818',
+        dark: '#d6ccfe',
+        light: '#8b7ac3',
     },
     149: {
-        dark: '#f6a24e',
-        light: '#a55d00',
+        dark: '#f6ce7d',
+        light: '#a7812d',
     },
     150: {
-        dark: '#81ad16',
-        light: '#4b6800',
+        dark: '#9e84fb',
+        light: '#5f47a8',
     },
     151: {
-        dark: '#6897fd',
-        light: '#2f56af',
-    },
-    155: {
-        dark: '#bca8fd',
-        light: '#7760b5',
-    },
-    156: {
-        dark: '#b9d7fe',
-        light: '#588ac9',
-    },
-    157: {
-        dark: '#9bc963',
-        light: '#597f1f',
-    },
-    158: {
-        dark: '#a3e8aa',
-        light: '#579a60',
-    },
-    163: {
-        dark: '#fec4bc',
-        light: '#c16c63',
-    },
-    169: {
         dark: '#4db550',
         light: '#097017',
     },
+    155: {
+        dark: '#c89007',
+        light: '#795500',
+    },
+    156: {
+        dark: '#e995e2',
+        light: '#9b5295',
+    },
+    157: {
+        dark: '#7f63ee',
+        light: '#482f97',
+    },
+    158: {
+        dark: '#17d3c4',
+        light: '#00837a',
+    },
+    163: {
+        dark: '#70e9f5',
+        light: '#069aa5',
+    },
+    169: {
+        dark: '#0bccf4',
+        light: '#007f99',
+    },
     174: {
-        dark: '#de3f20',
-        light: '#890a00',
+        dark: '#0eb68b',
+        light: '#006d51',
     },
     175: {
-        dark: '#49d3a1',
-        light: '#008660',
+        dark: '#79ecd7',
+        light: '#149d8a',
     },
     180: {
-        dark: '#00d4c0',
-        light: '#008477',
+        dark: '#7feccf',
+        light: '#249d83',
     },
     181: {
-        dark: '#5471f5',
-        light: '#293a9c',
+        dark: '#ff9a64',
+        light: '#ad5622',
     },
     182: {
-        dark: '#d23c8f',
-        light: '#810952',
+        dark: '#c75e00',
+        light: '#753000',
     },
     183: {
-        dark: '#d98506',
-        light: '#854d00',
+        dark: '#0ca7eb',
+        light: '#006490',
     },
     185: {
-        dark: '#dc9af1',
-        light: '#9156a2',
+        dark: '#f26873',
+        light: '#9f2c3b',
     },
     186: {
-        dark: '#95a707',
-        light: '#586400',
+        dark: '#9886fd',
+        light: '#5b48aa',
     },
     187: {
-        dark: '#72e8fc',
-        light: '#0099ac',
+        dark: '#c9a2fd',
+        light: '#815caf',
     },
     188: {
-        dark: '#e26ab3',
-        light: '#93306f',
+        dark: '#83cd77',
+        light: '#418437',
     },
     191: {
-        dark: '#b17df1',
-        light: '#6e41a0',
+        dark: '#fec6a7',
+        light: '#bc7346',
     },
     192: {
-        dark: '#fec7a3',
-        light: '#bb7443',
+        dark: '#fe93a1',
+        light: '#b04c5d',
     },
     195: {
-        dark: '#d171d1',
-        light: '#863687',
+        dark: '#de3a49',
+        light: '#8a011e',
     },
     199: {
-        dark: '#6c6af3',
-        light: '#3a349a',
+        dark: '#049b20',
+        light: '#005905',
     },
     300: {
-        dark: '#d59cf8',
-        light: '#8b58a8',
+        dark: '#a4b1fd',
+        light: '#5e68bc',
     },
     306: {
-        dark: '#dd410d',
-        light: '#851800',
+        dark: '#fec1cf',
+        light: '#be6a81',
     },
     316: {
         dark: '#4b74f6',
         light: '#223c9c',
     },
     328: {
-        dark: '#0dadcf',
-        light: '#00677d',
-    },
-    329: {
-        dark: '#d7db84',
-        light: '#8b8e36',
-    },
-    330: {
-        dark: '#a752d4',
-        light: '#642284',
-    },
-    370: {
-        dark: '#f26966',
-        light: '#9f2d30',
-    },
-    396: {
-        dark: '#febfde',
-        light: '#b86b93',
-    },
-    402: {
-        dark: '#f4befe',
-        light: '#a671b0',
-    },
-    404: {
-        dark: '#e6d67e',
-        light: '#98882e',
-    },
-    405: {
-        dark: '#049a46',
-        light: '#005822',
-    },
-    407: {
-        dark: '#16cdea',
-        light: '#008093',
-    },
-    409: {
-        dark: '#bd9607',
-        light: '#725900',
-    },
-    427: {
-        dark: '#79ecd7',
-        light: '#149d8a',
-    },
-    456: {
-        dark: '#1dcaf7',
-        light: '#007e9c',
-    },
-    468: {
-        dark: '#ab50d0',
-        light: '#662081',
-    },
-    494: {
-        dark: '#fe9b5f',
-        light: '#ab571b',
-    },
-    495: {
-        dark: '#febde9',
-        light: '#b36c9e',
-    },
-    505: {
-        dark: '#0287cf',
-        light: '#004c7a',
-    },
-    522: {
-        dark: '#c36200',
-        light: '#733300',
-    },
-    524: {
-        dark: '#dfd981',
-        light: '#928b32',
-    },
-    526: {
-        dark: '#f16779',
-        light: '#9f2c40',
-    },
-    538: {
-        dark: '#0184dd',
-        light: '#004983',
-    },
-    546: {
-        dark: '#038fac',
-        light: '#005163',
-    },
-    582: {
-        dark: '#c4d3fe',
-        light: '#6e84ca',
-    },
-    '124 Sd': {
-        dark: '#5d6ff5',
-        light: '#30389c',
-    },
-    Bt1: {
-        dark: '#0eb2ae',
-        light: '#006b68',
-    },
-    Bt2: {
-        dark: '#dc3860',
-        light: '#880030',
-    },
-    Ce1: {
-        dark: '#fec0d5',
-        light: '#bc6a89',
-    },
-    Ce2: {
-        dark: '#0eb68b',
-        light: '#006d51',
-    },
-    D1: {
-        dark: '#ca74da',
-        light: '#81398e',
-    },
-    D10: {
-        dark: '#caba40',
-        light: '#807300',
-    },
-    D11: {
-        dark: '#048fa8',
-        light: '#005161',
-    },
-    D5: {
-        dark: '#0daec7',
-        light: '#006878',
-    },
-    D8: {
-        dark: '#fe9a6c',
-        light: '#ae5528',
-    },
-    D9: {
-        dark: '#bf6500',
-        light: '#703500',
-    },
-    E14: {
-        dark: '#de3951',
-        light: '#890024',
-    },
-    G10: {
-        dark: '#038ac4',
-        light: '#004e73',
-    },
-    G11: {
-        dark: '#fec6a7',
-        light: '#bc7346',
-    },
-    G3: {
-        dark: '#70e9f5',
-        light: '#069aa5',
-    },
-    G6: {
-        dark: '#68d18c',
-        light: '#1e874b',
-    },
-    G8: {
-        dark: '#db3867',
-        light: '#870035',
-    },
-    L1: {
-        dark: '#da6dc3',
-        light: '#8d337c',
-    },
-    L12: {
-        dark: '#c6e18e',
-        light: '#7b9242',
-    },
-    L13: {
-        dark: '#0289c9',
-        light: '#004d76',
-    },
-    L14: {
         dark: '#0286d5',
         light: '#004b7e',
     },
-    L15: {
-        dark: '#b0adfd',
-        light: '#6b64ba',
+    329: {
+        dark: '#ca40a1',
+        light: '#7c0f5f',
     },
-    L16: {
-        dark: '#cf5500',
-        light: '#7b2a00',
+    330: {
+        dark: '#04976d',
+        light: '#00563c',
     },
-    L19: {
-        dark: '#d3dd87',
-        light: '#878f39',
+    370: {
+        dark: '#fe9a6c',
+        light: '#ae5528',
     },
-    L2: {
+    396: {
+        dark: '#ed6791',
+        light: '#9b2c54',
+    },
+    402: {
+        dark: '#c145b2',
+        light: '#75156b',
+    },
+    404: {
+        dark: '#70ebeb',
+        light: '#079b9b',
+    },
+    405: {
+        dark: '#e696e6',
+        light: '#985399',
+    },
+    407: {
+        dark: '#b1c351',
+        light: '#6d7a00',
+    },
+    409: {
+        dark: '#8c8300',
+        light: '#4f4a00',
+    },
+    427: {
+        dark: '#8eebbe',
+        light: '#3d9c73',
+    },
+    456: {
+        dark: '#646cf4',
+        light: '#35369b',
+    },
+    468: {
+        dark: '#de3c37',
+        light: '#8a050d',
+    },
+    494: {
+        dark: '#efc0fe',
+        light: '#a372b3',
+    },
+    495: {
+        dark: '#e5ad3c',
+        light: '#936900',
+    },
+    505: {
+        dark: '#c36200',
+        light: '#733300',
+    },
+    522: {
+        dark: '#ed7429',
+        light: '#963e00',
+    },
+    524: {
+        dark: '#007df3',
+        light: '#004591',
+    },
+    526: {
+        dark: '#fa90c2',
+        light: '#a84d7b',
+    },
+    538: {
+        dark: '#fec1cd',
+        light: '#bf6a7d',
+    },
+    546: {
+        dark: '#0289c9',
+        light: '#004d76',
+    },
+    582: {
+        dark: '#049296',
+        light: '#005356',
+    },
+    '124 Sd': {
         dark: '#1f9b00',
         light: '#035800',
     },
+    Bt1: {
+        dark: '#049677',
+        light: '#005642',
+    },
+    Bt2: {
+        dark: '#febde5',
+        light: '#b56c9a',
+    },
+    Ce1: {
+        dark: '#ef713b',
+        light: '#9d3500',
+    },
+    D1: {
+        dark: '#aedafe',
+        light: '#458fc5',
+    },
+    D10: {
+        dark: '#dd410d',
+        light: '#851800',
+    },
+    D11: {
+        dark: '#fa9e56',
+        light: '#a95a09',
+    },
+    D5: {
+        dark: '#7693fd',
+        light: '#3d52af',
+    },
+    D8: {
+        dark: '#a752d4',
+        light: '#642284',
+    },
+    D9: {
+        dark: '#fec1d2',
+        light: '#bd6a85',
+    },
+    E14: {
+        dark: '#ceb83e',
+        light: '#837200',
+    },
+    G10: {
+        dark: '#7cecd3',
+        light: '#1c9d86',
+    },
+    G11: {
+        dark: '#de3f20',
+        light: '#890a00',
+    },
+    G3: {
+        dark: '#808800',
+        light: '#484d00',
+    },
+    G6: {
+        dark: '#cd3f9b',
+        light: '#7d0d5b',
+    },
+    G8: {
+        dark: '#049489',
+        light: '#00544e',
+    },
+    L1: {
+        dark: '#fe91af',
+        light: '#ad4c6a',
+    },
+    L12: {
+        dark: '#edd37d',
+        light: '#9f862c',
+    },
+    L13: {
+        dark: '#6c6af3',
+        light: '#3a349a',
+    },
+    L14: {
+        dark: '#68d18c',
+        light: '#1e874b',
+    },
+    L15: {
+        dark: '#e8c4fe',
+        light: '#9e73b8',
+    },
+    L16: {
+        dark: '#828ffd',
+        light: '#484fae',
+    },
+    L19: {
+        dark: '#b9e498',
+        light: '#6e954d',
+    },
+    L2: {
+        dark: '#938000',
+        light: '#544800',
+    },
     L20: {
-        dark: '#da4700',
-        light: '#812000',
+        dark: '#f4befe',
+        light: '#a671b0',
     },
     L22: {
-        dark: '#c742a7',
-        light: '#7a1163',
+        dark: '#fec0d5',
+        light: '#bc6a89',
     },
     L23: {
-        dark: '#71ebe7',
-        light: '#079c98',
+        dark: '#b34dc7',
+        light: '#6c1c7a',
     },
     L24: {
-        dark: '#d1cefe',
-        light: '#857cc6',
+        dark: '#81e5fe',
+        light: '#0798b2',
     },
     L25: {
-        dark: '#c2e291',
-        light: '#779346',
+        dark: '#a3e8aa',
+        light: '#579a60',
     },
     L26: {
-        dark: '#abdbfe',
-        light: '#3f90c3',
+        dark: '#c8d2fe',
+        light: '#7681ca',
     },
     L28: {
+        dark: '#fe9594',
+        light: '#b14d50',
+    },
+    L29: {
+        dark: '#c09407',
+        light: '#745700',
+    },
+    L3: {
+        dark: '#0ca8e5',
+        light: '#00648c',
+    },
+    L30: {
+        dark: '#fec3c3',
+        light: '#c16b6e',
+    },
+    L31: {
+        dark: '#febbf2',
+        light: '#af6ea4',
+    },
+    L32: {
+        dark: '#be47b8',
+        light: '#73176f',
+    },
+    L33: {
+        dark: '#fec5b0',
+        light: '#bf7051',
+    },
+    L35: {
+        dark: '#ab50d0',
+        light: '#662081',
+    },
+    L36: {
+        dark: '#d23c8f',
+        light: '#810952',
+    },
+    L38: {
+        dark: '#cb5a00',
+        light: '#782e00',
+    },
+    L39: {
+        dark: '#a7dcfe',
+        light: '#3a91c1',
+    },
+    L4: {
+        dark: '#dd6cbe',
+        light: '#8f3278',
+    },
+    L41: {
+        dark: '#d29dfb',
+        light: '#885aaa',
+    },
+    L46: {
+        dark: '#049393',
+        light: '#005354',
+    },
+    L5: {
+        dark: '#bc6800',
+        light: '#6e3700',
+    },
+    L6: {
+        dark: '#7b8a00',
+        light: '#444e00',
+    },
+    L7: {
         dark: '#217bf4',
         light: '#00419b',
     },
-    L29: {
-        dark: '#67c1fd',
-        light: '#0079b5',
-    },
-    L3: {
-        dark: '#f891c7',
-        light: '#a74e7f',
-    },
-    L30: {
-        dark: '#00b96d',
-        light: '#006f3f',
-    },
-    L31: {
-        dark: '#fe8fb9',
-        light: '#ab4d73',
-    },
-    L32: {
-        dark: '#04919c',
-        light: '#005259',
-    },
-    L33: {
-        dark: '#9fe9ae',
-        light: '#529a63',
-    },
-    L35: {
-        dark: '#8d8bfd',
-        light: '#524cad',
-    },
-    L36: {
-        dark: '#ae9d07',
-        light: '#685d00',
-    },
-    L38: {
-        dark: '#038bbf',
-        light: '#004e70',
-    },
-    L39: {
-        dark: '#61b341',
-        light: '#286e00',
-    },
-    L4: {
-        dark: '#4076f5',
-        light: '#183d9c',
-    },
-    L40: {
-        dark: '#f0d17d',
-        light: '#a1842c',
-    },
-    L41: {
-        dark: '#94b7fd',
-        light: '#4a6ebd',
-    },
-    L46: {
-        dark: '#c444ac',
-        light: '#781367',
-    },
-    L5: {
-        dark: '#049486',
-        light: '#00544b',
-    },
-    L6: {
-        dark: '#589300',
-        light: '#2e5400',
-    },
-    L7: {
-        dark: '#905de6',
-        light: '#542a91',
-    },
     L77: {
-        dark: '#00cdf0',
-        light: '#007f96',
+        dark: '#e77a00',
+        light: '#8d4700',
     },
     L8: {
-        dark: '#b04ecc',
-        light: '#691e7e',
+        dark: '#a37800',
+        light: '#5e4200',
     },
     L9: {
-        dark: '#febfdb',
-        light: '#b96b90',
+        dark: '#75befd',
+        light: '#1c77b8',
     },
 };

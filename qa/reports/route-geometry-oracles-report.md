@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | DUPLICATE | 9 | 0 | 0 | 0 |
 | KINK | 28 | 0 | 0 | 0 |
-| PHANTOM-FORK | 0 | 0 | 0 | 319 |
+| PHANTOM-FORK | 0 | 0 | 0 | 316 |
 | SELF-CROSS | 1 | 0 | 0 | 0 |
 | WOBBLE | 12 | 0 | 0 | 0 |
 

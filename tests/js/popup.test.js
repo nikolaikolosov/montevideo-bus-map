@@ -2,7 +2,7 @@
 /**
  * Stop-popup line display: one colored, tappable chip per line (the explicit
  * test-coverage ask from brainstorm-003). Synthetic fixture for behavior,
- * real committed data for the 34-line reference stop 4772 and the
+ * real committed data for the 33-line reference stop 4772 and the
  * chips == stopLinesMap invariant.
  */
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
@@ -241,13 +241,13 @@ describe('createStopPopup (real data)', () => {
         buildIndexes({ type: 'FeatureCollection', features: [] }, stopsData);
     });
 
-    it('stop 4772 (BUENOS AIRES y ITUZAINGO) renders its 34 lines as chips', () => {
+    it('stop 4772 (BUENOS AIRES y ITUZAINGO) renders its 33 lines as chips', () => {
         const feature = uniqueStopsData.find((f) => f.properties.COD_UBIC_P === 4772);
         expect(feature).toBeDefined();
         const popup = createStopPopup(feature, vi.fn());
         const chips = [...popup.querySelectorAll('.line-chip')];
-        expect(chips).toHaveLength(34);
-        expect(popup.querySelector('.popup-sub').textContent).toContain('34 líneas');
+        expect(chips).toHaveLength(33);
+        expect(popup.querySelector('.popup-sub').textContent).toContain('33 líneas');
         const texts = chips.map((c) => c.textContent);
         expect(texts).toContain('102');
         expect(texts).toContain('Ce1');

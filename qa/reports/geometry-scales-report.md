@@ -4,7 +4,7 @@
 > Dataset: committed routes.json / stops.json. Method: prepared traces
 > (trimToStops applied), same-line variant pairs sampled every 75 m,
 > parallel = axis angle ≤ 25°, near cap 40 m.
-> Representativeness: full network (140 lines), no cache, deterministic.
+> Representativeness: full network (138 lines), no cache, deterministic.
 
 ## Constants under test (src/config.js)
 
@@ -19,32 +19,32 @@
 
 |  | same direction | opposite direction |
 |---|---|---|
-| samples | 697394 | 637193 |
+| samples | 699886 | 640120 |
 | P50 | 0.0 m | 1.4 m |
 | P75 | — | 7.5 m |
-| P90 | 2.0 m | 14.3 m |
-| P99 | 9.8 m | — |
+| P90 | 2.1 m | 14.2 m |
+| P99 | 10.0 m | — |
 
 Opposite-direction histogram (the 6–20 m band is the visible-duplicate
-residue band of the smoothness oracle; share: 27.7 %):
+residue band of the smoothness oracle; share: 27.8 %):
 
 | band | samples |
 |---|---|
-| 0–4 m | 379356 |
-| 4–8 m | 111815 |
-| 8–12 m | 61039 |
-| 12–16 m | 33287 |
-| 16–20 m | 24033 |
-| 20–24 m | 14186 |
-| 24–28 m | 7275 |
-| 28–32 m | 4010 |
-| 32–36 m | 1461 |
-| 36–40 m | 731 |
+| 0–4 m | 380709 |
+| 4–8 m | 112220 |
+| 8–12 m | 61925 |
+| 12–16 m | 33723 |
+| 16–20 m | 24209 |
+| 20–24 m | 14026 |
+| 24–28 m | 7141 |
+| 28–32 m | 3973 |
+| 32–36 m | 1456 |
+| 36–40 m | 738 |
 
 ## Corner / segment stats (prepared traces)
 
-- corner vertices (60–150° turn): 14046, of which guard-protected
-  (both flanks > 55 m): 7723
+- corner vertices (60–150° turn): 13961, of which guard-protected
+  (both flanks > 55 m): 7666
 - segment length P50/P90/P99: 101 / 325 / 681 m
 
 ## Assertion results

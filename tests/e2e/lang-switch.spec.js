@@ -31,7 +31,7 @@ test('switching to Russian localizes panel, popup and <html lang>', async ({ pag
     // Popups regenerate their content in the active language on open.
     await openStopPopup(page, 4772);
     await expect(page.locator('.draw-lines-btn')).toHaveText('Показать все маршруты');
-    await expect(page.locator('.popup-sub')).toContainText('34 линии');
+    await expect(page.locator('.popup-sub')).toContainText('33 линии');
 });
 
 test('the choice persists across reloads and English works too', async ({ page }) => {

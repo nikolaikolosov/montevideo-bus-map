@@ -5,14 +5,14 @@
 import { test, expect } from '@playwright/test';
 import { openMap, openStopPopup } from './helpers.js';
 
-const BUSY_STOP = 4772; // BUENOS AIRES y ITUZAINGO — 34 lines
+const BUSY_STOP = 4772; // BUENOS AIRES y ITUZAINGO — 33 lines
 
 test('busy stop popup lists all its lines as chips', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
     await openStopPopup(page, BUSY_STOP);
     const chips = page.locator('.popup-content .line-chip');
-    await expect(chips).toHaveCount(34);
-    await expect(page.locator('.popup-sub')).toContainText('34 líneas');
+    await expect(chips).toHaveCount(33);
+    await expect(page.locator('.popup-sub')).toContainText('33 líneas');
     await expect(chips.first()).toHaveAccessibleName(
         /Ver el recorrido de la línea .+ desde esta parada/,
     );
@@ -51,5 +51,5 @@ test('"Ver todos los recorridos" renders the whole bundle', async ({ page }) => 
     await page.waitForFunction(() => window.__mvdGetRenderState().sections > 0);
     const state = await page.evaluate(() => window.__mvdGetRenderState());
     const colors = new Set(state.sectionList.map((s) => s.color));
-    expect(colors.size).toBeGreaterThan(20); // 34 lines' colors on screen
+    expect(colors.size).toBeGreaterThan(20); // 33 lines' colors on screen
 });

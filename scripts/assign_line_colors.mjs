@@ -5,7 +5,8 @@
  * generates a perceptually-spread candidate palette in OKLab (one dark-theme
  * and one light-theme variant per slot, same hue identity), and assigns a
  * unique slot to every line maximizing the minimum pairwise ΔE(OKLab) within
- * every stop's line set.
+ * every stop's line set — with the CI gate floors (DELTA_E_FLOORS) as hard
+ * constraints, searched by iterated local search with a fixed seed.
  *
  * Stability contract: by default the run is INCREMENTAL — entries already in
  * src/line-colors.js are kept verbatim and only lines missing from the map
@@ -138,6 +139,25 @@ export const DELTA_E_TARGETS = [
 export const targetForCliqueSize = (size) =>
     DELTA_E_TARGETS.find((b) => size <= b.maxClique).target;
 
+/**
+ * Hard per-clique floors: the values the CI gate (CLIQUE_GATES in
+ * tests/js/line-colors.test.js) pins just under the committed palette's
+ * minima. The search satisfies these FIRST and only then maximizes the
+ * ΔE/target ratio — a ratio-only search settled 0.0005 under the 2-line gate
+ * on the 2026-10-09 data while a gate-clearing palette existed. The test
+ * asserts these never sit under its gates.
+ */
+export const DELTA_E_FLOORS = [
+    { maxClique: 2, floor: 0.14 },
+    { maxClique: 5, floor: 0.08 },
+    { maxClique: 10, floor: 0.058 },
+    { maxClique: Infinity, floor: 0.042 },
+];
+
+/** @param {number} size - clique (stop line-count) @returns {number} ΔE floor */
+export const floorForCliqueSize = (size) =>
+    DELTA_E_FLOORS.find((b) => size <= b.maxClique).floor;
+
 export const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 
 /**
@@ -244,44 +264,81 @@ export function buildCandidates() {
 // Assignment
 // ---------------------------------------------------------------------------
 
-/** ΔE between two slots = the worse of the two theme variants. */
-const slotDistance = (s1, s2) =>
-    Math.min(deltaE(s1.labDark, s2.labDark), deltaE(s1.labLight, s2.labLight));
+/** OKLab of a shipped #rrggbb color — exactly what the CI gate measures. */
+const hexToOklab = (hex) => linearToOklab(hexToLinear(hex));
+
+/** Fixed-seed PRNG (mulberry32): the search may perturb, but two runs must agree. */
+function mulberry32(seed) {
+    let a = seed >>> 0;
+    return () => {
+        a = (a + 0x6d2b79f5) >>> 0;
+        let t = Math.imul(a ^ (a >>> 15), a | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+// Local-search budget. A climb converges within tens of moves; the kicks are
+// what leave the first local optimum, where a from-scratch run used to stop.
+const NEAR = 0.05; // ratio units (~5% of a met target)
+const EPS = 1e-9;
+const MAX_CLIMB_MOVES = 5000;
+const MAX_KICKS = 300;
+const KICK_PATIENCE = 60; // kicks without a new best before giving up
+const KICK_LINES = [2, 5]; // lines relocated per kick (inclusive)
+const KICK_HOT_SHARE = 0.75; // chance a kicked line is drawn from the hot set
+const KICK_SEED = 0x5eed;
 
 /**
  * Assigns a unique candidate slot to every line.
  *
- * Deterministic (no randomness; ties broken by candidate order and line sort).
+ * Objective, compared lexicographically over the co-located pairs with at
+ * least one movable end: (1) the gate floors (DELTA_E_FLOORS) — the worst
+ * pair's ΔE/floor up to 1, then fewer pairs under their floor; (2) the minimum
+ * ΔE/target ratio; (3) fewer pairs near that minimum. Greedy construction, a
+ * first-improvement climb (move a line to a free slot, or swap two movable
+ * lines), then kick-and-climb rounds that keep the best palette seen.
+ *
+ * Deterministic: kicks draw from a fixed-seed PRNG; ties break by candidate
+ * order and line sort.
  * Incremental: lines present in `existing` keep their colors untouched; their
  * slots are located by hex match (or reserved as opaque colors if the palette
- * definition changed) and only missing lines are assigned.
+ * definition changed) and only missing lines are assigned or moved.
  *
- * @param {{ lines: string[], neighbors: Map<string, Set<string>> }} graph
+ * @param {{ lines: string[], neighbors: Map<string, Set<string>>,
+ *   pairMinClique: Map<string, number> }} graph
  * @param {Record<string, {dark: string, light: string}>} existing
  * @returns {{ colors: Record<string, {dark: string, light: string}>, added: string[] }}
  */
 export function assignColors(graph, existing = {}) {
     const candidates = buildCandidates();
-    const byHexPair = new Map(candidates.map((c) => [`${c.dark}|${c.light}`, c]));
+    const C = candidates.length;
+    const byHexPair = new Map(candidates.map((c, s) => [`${c.dark}|${c.light}`, s]));
 
-    /** line -> slot (slot = candidate or ad-hoc slot for legacy colors) */
+    // Slots 0..C-1 are the candidates; a legacy color off the grid gets an
+    // opaque slot of its own after them (never handed to another line).
+    const slots = candidates.map(({ dark, light }) => ({ dark, light }));
+    /** line -> slot index */
     const slotOf = new Map();
-    const used = new Set();
-
     for (const [line, pair] of Object.entries(existing)) {
-        const known = byHexPair.get(`${pair.dark}|${pair.light}`);
-        const slot = known ?? {
-            id: `legacy:${line}`,
-            dark: pair.dark,
-            light: pair.light,
-            labDark: linearToOklab(hexToLinear(pair.dark)),
-            labLight: linearToOklab(hexToLinear(pair.light)),
-        };
-        slotOf.set(line, slot);
-        used.add(slot.id);
+        let s = byHexPair.get(`${pair.dark}|${pair.light}`);
+        if (s === undefined) {
+            s = slots.length;
+            slots.push({ dark: pair.dark, light: pair.light });
+        }
+        slotOf.set(line, s);
     }
+    const toColors = () => {
+        const colors = {};
+        for (const line of [...slotOf.keys()].sort()) {
+            const { dark, light } = slots[slotOf.get(line)];
+            colors[line] = { dark, light };
+        }
+        return colors;
+    };
 
     const missing = graph.lines.filter((l) => !slotOf.has(l));
+    if (missing.length === 0) return { colors: toColors(), added: missing };
     // Hardest first: highest conflict degree, then lexicographic for determinism.
     missing.sort(
         (a, b) =>
@@ -289,122 +346,303 @@ export function assignColors(graph, existing = {}) {
             (a < b ? -1 : 1),
     );
 
+    // ΔE between two slots = the worse of the two theme variants, measured on
+    // the 8-bit hex that ships: the unquantized OKLCH point can sit a few
+    // thousandths of ΔE away — the whole margin of a pair parked at a gate.
+    const S = slots.length;
+    const labs = slots.map(({ dark, light }) => [hexToOklab(dark), hexToOklab(light)]);
+    const dist = new Float64Array(S * S);
+    for (let i = 0; i < S; i++) {
+        for (let j = i + 1; j < S; j++) {
+            const d = Math.min(deltaE(labs[i][0], labs[j][0]), deltaE(labs[i][1], labs[j][1]));
+            dist[i * S + j] = d;
+            dist[j * S + i] = d;
+        }
+    }
+    const used = new Uint8Array(S);
+    for (const s of slotOf.values()) used[s] = 1;
+
     // All scores are RATIOS ΔE/target, where the target scales with the
     // smallest stop clique the pair shares (DELTA_E_TARGETS): a pair alone at
     // a 2-line stop must be far more distinct than a pair inside a 41-line
     // bundle. Maximizing the minimum ratio spends the color budget where the
     // rider actually compares few routes side by side.
-    const targetFor = (a, b) =>
-        targetForCliqueSize(graph.pairMinClique.get(pairKey(a, b)) ?? Infinity);
+    const cliqueOf = (a, b) => graph.pairMinClique.get(pairKey(a, b)) ?? Infinity;
 
-    const scoreFor = (line, cand) => {
+    const scoreFor = (line, s) => {
         let minNeighbor = Infinity;
         for (const n of graph.neighbors.get(line) ?? []) {
-            const s = slotOf.get(n);
-            if (s) minNeighbor = Math.min(minNeighbor, slotDistance(cand, s) / targetFor(line, n));
+            const t = slotOf.get(n);
+            if (t === undefined) continue;
+            minNeighbor = Math.min(
+                minNeighbor,
+                dist[s * S + t] / targetForCliqueSize(cliqueOf(line, n)),
+            );
         }
         if (minNeighbor !== Infinity) return minNeighbor;
         // No colored neighbor yet: spread globally instead.
         let minAny = Infinity;
-        for (const s of slotOf.values()) minAny = Math.min(minAny, slotDistance(cand, s));
+        for (const t of slotOf.values()) minAny = Math.min(minAny, dist[s * S + t]);
         return minAny === Infinity ? 1 : minAny;
     };
 
     for (const line of missing) {
-        let best = null;
+        let best = -1;
         let bestScore = -1;
-        for (const cand of candidates) {
-            if (used.has(cand.id)) continue;
-            const score = scoreFor(line, cand);
+        for (let s = 0; s < C; s++) {
+            if (used[s]) continue;
+            const score = scoreFor(line, s);
             if (score > bestScore) {
                 bestScore = score;
-                best = cand;
+                best = s;
             }
         }
-        if (!best) throw new Error(`palette exhausted at line ${line}`);
+        if (best < 0) throw new Error(`palette exhausted at line ${line}`);
         slotOf.set(line, best);
-        used.add(best.id);
+        used[best] = 1;
     }
 
-    // Local improvement, movable lines only (never disturbs `existing`).
-    // Hill-climb on the GLOBAL objective: raise the minimum ΔE/target RATIO
-    // over all co-located pairs; tie-break by shrinking the number of pairs
-    // sitting near that minimum. Per-line greedy scores are deliberately not
-    // used here — improving one line locally can degrade a neighbor's worst.
-    const EPS = 1e-9;
-    const NEAR = 0.05; // ratio units (~5% of a met target)
+    // Local search over the movable lines only (never disturbs `existing`).
+    // Lines become indices, the movable ones first (0..M-1).
     const movable = new Set(missing);
-    const pairList = [];
-    for (const [line, ns] of graph.neighbors) {
-        for (const n of ns) if (line < n) pairList.push([line, n, targetFor(line, n)]);
-    }
+    const order = [...missing, ...[...slotOf.keys()].filter((l) => !movable.has(l))];
+    const index = new Map(order.map((l, i) => [l, i]));
+    const M = missing.length;
+    const slot = Int32Array.from(order, (l) => slotOf.get(l));
 
+    // Active pairs: at least one movable end. A pair of two fixed lines is a
+    // constant, and scoring it would only mask the moves that matter.
+    const pairA = [];
+    const pairB = [];
+    const invTarget = [];
+    const floorOf = [];
+    const incident = Array.from({ length: M }, () => []);
+    for (const [line, ns] of graph.neighbors) {
+        for (const n of ns) {
+            if (!(line < n) || (!movable.has(line) && !movable.has(n))) continue;
+            const p = pairA.length;
+            const a = index.get(line);
+            const b = index.get(n);
+            const size = cliqueOf(line, n);
+            pairA.push(a);
+            pairB.push(b);
+            invTarget.push(1 / targetForCliqueSize(size));
+            floorOf.push(floorForCliqueSize(size));
+            if (a < M) incident[a].push(p);
+            if (b < M) incident[b].push(p);
+        }
+    }
+    const P = pairA.length;
+    const pd = new Float64Array(P); // current ΔE per active pair
+    const refresh = (p) => {
+        pd[p] = dist[slot[pairA[p]] * S + slot[pairB[p]]];
+    };
+    const place = (i, s) => {
+        slot[i] = s;
+        for (const p of incident[i]) refresh(p);
+    };
+    for (let p = 0; p < P; p++) refresh(p);
+
+    // The objective is GLOBAL. Per-line greedy scores are deliberately not
+    // used here — improving one line locally can degrade a neighbor's worst.
     const evaluate = () => {
+        let minFloor = Infinity;
+        let under = 0;
         let min = Infinity;
-        for (const [a, b, t] of pairList) {
-            const d = slotDistance(slotOf.get(a), slotOf.get(b)) / t;
-            if (d < min) min = d;
+        for (let p = 0; p < P; p++) {
+            const d = pd[p];
+            if (d < floorOf[p]) under++;
+            minFloor = Math.min(minFloor, d / floorOf[p]);
+            min = Math.min(min, d * invTarget[p]);
         }
         let ties = 0;
-        for (const [a, b, t] of pairList) {
-            if (slotDistance(slotOf.get(a), slotOf.get(b)) / t < min + NEAR) ties++;
-        }
-        return { min, ties };
+        for (let p = 0; p < P; p++) if (pd[p] * invTarget[p] < min + NEAR) ties++;
+        return { gate: Math.min(1, minFloor), under, min, ties };
     };
-    const better = (e1, e2) => e1.min > e2.min + EPS || (e1.min > e2.min - EPS && e1.ties < e2.ties);
-
-    let current = evaluate();
-    for (let iter = 0; iter < 160; iter++) {
-        // Movable lines involved in pairs near the current minimum.
+    const better = (e1, e2) => {
+        if (Math.abs(e1.gate - e2.gate) > EPS) return e1.gate > e2.gate;
+        if (e1.under !== e2.under) return e1.under < e2.under;
+        if (Math.abs(e1.min - e2.min) > EPS) return e1.min > e2.min;
+        return e1.ties < e2.ties;
+    };
+    /** Movable lines in a pair under its floor or near the minimum ratio. */
+    const hotLines = (e) => {
         const hot = new Set();
-        for (const [a, b, t] of pairList) {
-            if (slotDistance(slotOf.get(a), slotOf.get(b)) / t < current.min + NEAR) {
-                if (movable.has(a)) hot.add(a);
-                if (movable.has(b)) hot.add(b);
-            }
+        for (let p = 0; p < P; p++) {
+            if (pd[p] >= floorOf[p] && pd[p] * invTarget[p] >= e.min + NEAR) continue;
+            if (pairA[p] < M) hot.add(pairA[p]);
+            if (pairB[p] < M) hot.add(pairB[p]);
         }
-        let improved = false;
-        outer: for (const line of hot) {
-            const prev = slotOf.get(line);
-            // Try free candidates.
-            for (const cand of candidates) {
-                if (used.has(cand.id)) continue;
-                slotOf.set(line, cand);
-                const e = evaluate();
-                if (better(e, current)) {
-                    used.delete(prev.id);
-                    used.add(cand.id);
-                    current = e;
-                    improved = true;
-                    break outer;
-                }
-                slotOf.set(line, prev);
-            }
-            // Try swapping with other movable lines.
-            for (const other of missing) {
-                if (other === line) continue;
-                const so = slotOf.get(other);
-                slotOf.set(line, so);
-                slotOf.set(other, prev);
-                const e = evaluate();
-                if (better(e, current)) {
-                    current = e;
-                    improved = true;
-                    break outer;
-                }
-                slotOf.set(line, prev);
-                slotOf.set(other, so);
-            }
-        }
-        if (!improved) break;
-    }
+        return [...hot];
+    };
 
-    const colors = {};
-    for (const line of [...slotOf.keys()].sort()) {
-        const s = slotOf.get(line);
-        colors[line] = { dark: s.dark, light: s.light };
+    // A trial move is scored from the pairs it touches alone: the untouched
+    // pairs' minima and near-minimum count come from a snapshot of the current
+    // palette, sorted once per sweep — O(touched + log P) per trial instead of
+    // O(P), with the very same arithmetic as evaluate().
+    const baseD = new Float64Array(P);
+    const byRatio = new Int32Array(P); // pairs by ΔE/target, ascending
+    const byFloor = new Int32Array(P); // pairs by ΔE/floor, ascending
+    const sortedRatio = new Float64Array(P);
+    const ratio = new Float64Array(P);
+    const floorRatio = new Float64Array(P);
+    const seen = new Int32Array(P); // per-trial stamp: a swap's shared pair counts once
+    const touched = [];
+    let stamp = 0;
+    let baseUnder = 0;
+    const snapshot = () => {
+        baseD.set(pd);
+        baseUnder = 0;
+        for (let p = 0; p < P; p++) {
+            ratio[p] = pd[p] * invTarget[p];
+            floorRatio[p] = pd[p] / floorOf[p];
+            if (pd[p] < floorOf[p]) baseUnder++;
+            byRatio[p] = p;
+            byFloor[p] = p;
+        }
+        byRatio.sort((p, q) => ratio[p] - ratio[q]);
+        byFloor.sort((p, q) => floorRatio[p] - floorRatio[q]);
+        for (let k = 0; k < P; k++) sortedRatio[k] = ratio[byRatio[k]];
+    };
+    /** Number of snapshot ratios strictly under x. */
+    const countUnder = (x) => {
+        let lo = 0;
+        let hi = P;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (sortedRatio[mid] < x) lo = mid + 1;
+            else hi = mid;
+        }
+        return lo;
+    };
+    /** evaluate() for the current trial, given the lines it moved since snapshot(). */
+    const evaluateMove = (i, j = -1) => {
+        stamp++;
+        touched.length = 0;
+        for (const line of j < 0 ? [i] : [i, j]) {
+            for (const p of incident[line]) {
+                if (seen[p] === stamp) continue;
+                seen[p] = stamp;
+                touched.push(p);
+            }
+        }
+        let minFloor = Infinity;
+        let under = baseUnder;
+        let min = Infinity;
+        for (const p of touched) {
+            const d = pd[p];
+            if (baseD[p] < floorOf[p]) under--;
+            if (d < floorOf[p]) under++;
+            minFloor = Math.min(minFloor, d / floorOf[p]);
+            min = Math.min(min, d * invTarget[p]);
+        }
+        let k = 0;
+        while (k < P && seen[byRatio[k]] === stamp) k++;
+        if (k < P) min = Math.min(min, ratio[byRatio[k]]);
+        k = 0;
+        while (k < P && seen[byFloor[k]] === stamp) k++;
+        if (k < P) minFloor = Math.min(minFloor, floorRatio[byFloor[k]]);
+        const band = min + NEAR;
+        let ties = countUnder(band);
+        for (const p of touched) {
+            if (ratio[p] < band) ties--;
+            if (pd[p] * invTarget[p] < band) ties++;
+        }
+        return { gate: Math.min(1, minFloor), under, min, ties };
+    };
+
+    // First-improvement climb: move a hot line to a free candidate, or swap it
+    // with another movable line, while either beats the current palette.
+    const climb = (start) => {
+        let cur = start;
+        for (let moves = 0; moves < MAX_CLIMB_MOVES; moves++) {
+            snapshot();
+            let improved = false;
+            outer: for (const i of hotLines(cur)) {
+                const prev = slot[i];
+                used[prev] = 0;
+                for (let s = 0; s < C; s++) {
+                    if (used[s] || s === prev) continue;
+                    place(i, s);
+                    const e = evaluateMove(i);
+                    if (better(e, cur)) {
+                        used[s] = 1;
+                        cur = e;
+                        improved = true;
+                        break outer;
+                    }
+                }
+                place(i, prev);
+                used[prev] = 1;
+                for (let j = 0; j < M; j++) {
+                    if (j === i) continue;
+                    const other = slot[j];
+                    place(i, other);
+                    place(j, prev);
+                    const e = evaluateMove(i, j);
+                    if (better(e, cur)) {
+                        cur = e;
+                        improved = true;
+                        break outer;
+                    }
+                    place(j, other);
+                    place(i, prev);
+                }
+            }
+            if (!improved) break;
+        }
+        return cur;
+    };
+
+    // Iterated local search: kick a few lines (mostly hot ones) to random free
+    // slots, climb again, and keep the result only if it beats the best seen.
+    let bestEval = climb(evaluate());
+    let best = slot.slice(0, M);
+    const restoreBest = () => {
+        for (let i = 0; i < M; i++) used[slot[i]] = 0;
+        for (let i = 0; i < M; i++) {
+            slot[i] = best[i];
+            used[best[i]] = 1;
+        }
+        for (let p = 0; p < P; p++) refresh(p);
+    };
+    const rng = mulberry32(KICK_SEED);
+    const randomInt = (n) => Math.floor(rng() * n);
+    let free = 0;
+    for (let s = 0; s < C; s++) if (!used[s]) free++;
+    for (let kick = 0, stale = 0; P > 0 && kick < MAX_KICKS && stale < KICK_PATIENCE; kick++) {
+        const hot = hotLines(bestEval);
+        const count = KICK_LINES[0] + randomInt(KICK_LINES[1] - KICK_LINES[0] + 1);
+        for (let k = 0; k < count; k++) {
+            const i =
+                hot.length > 0 && rng() < KICK_HOT_SHARE ? hot[randomInt(hot.length)] : randomInt(M);
+            if (free > 0) {
+                let s = randomInt(C);
+                while (used[s]) s = randomInt(C);
+                used[slot[i]] = 0;
+                used[s] = 1;
+                place(i, s);
+            } else {
+                const j = randomInt(M);
+                const si = slot[i];
+                place(i, slot[j]);
+                place(j, si);
+            }
+        }
+        const e = climb(evaluate());
+        if (better(e, bestEval)) {
+            bestEval = e;
+            best = slot.slice(0, M);
+            stale = 0;
+        } else {
+            restoreBest();
+            stale++;
+        }
     }
-    return { colors, added: missing };
+    restoreBest();
+
+    for (let i = 0; i < M; i++) slotOf.set(order[i], slot[i]);
+    return { colors: toColors(), added: missing };
 }
 
 // ---------------------------------------------------------------------------
@@ -507,8 +745,10 @@ if (isMain) {
     linesOut.push('');
     linesOut.push('Method: OKLab candidate palette (hue×ring grid, sRGB-gamut and ≥3:1');
     linesOut.push('contrast vs theme basemap proxy #0f172a / #f1f5f9), greedy max-min-ΔE');
-    linesOut.push('assignment over the stop co-location conflict graph + local search.');
-    linesOut.push('ΔE = Euclidean OKLab. Estimate class: measured on committed data.');
+    linesOut.push('assignment over the stop co-location conflict graph + iterated local');
+    linesOut.push('search (fixed seed), with the CI gate floors as hard constraints.');
+    linesOut.push('ΔE = Euclidean OKLab on the shipped hex. Estimate class: measured on');
+    linesOut.push('committed data.');
     linesOut.push('');
     linesOut.push('| Metric | dark | light |');
     linesOut.push('|---|---|---|');

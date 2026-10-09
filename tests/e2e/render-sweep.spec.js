@@ -3,7 +3,7 @@
  * deterministic manifest of the resulting Leaflet layers (corridor count,
  * point count, colors, bounds, stop/label counts) against a committed golden.
  *
- * Catches construction/render-state regressions across ALL 140 lines on every
+ * Catches construction/render-state regressions across ALL 138 lines on every
  * change, without pixel flake.
  *
  * Update the golden after an intentional rendering change:
@@ -23,7 +23,7 @@ test('render manifest of all lines matches the golden', async ({ page }) => {
     await openMap(page, { theme: 'dark' });
 
     const lines = await page.evaluate(() => window.__mvdLines);
-    expect(lines).toHaveLength(140);
+    expect(lines).toHaveLength(138);
 
     const manifest = {};
     for (const line of lines) {
