@@ -14,10 +14,13 @@ cron jobs, Actions workflows, or hosted schedulers for the fetch. The procedure 
 `architecture/contracts/data-contract.md` (format v2), enforced by `scripts/validate_data.py`.
 
 **Line colors are committed data, not computed.** `src/line-colors.js` holds a conflict-aware
-palette; the hash in `getLineColor` is only a fallback for lines missing from the map. Data
-updates must never recolor an existing line — `scripts/assign_line_colors.mjs` is incremental
-by default and `--regenerate-all` also invalidates the golden manifest and every visual
-baseline. Gates: `npm run verify:colors`.
+palette; the hash in `getLineColor` is only a fallback for lines missing from the map. A data
+update never recolors an existing line on its own — `scripts/assign_line_colors.mjs` is
+incremental by default. When new data breaks the in-clique gate, stop and let the user choose:
+recolor one line (delete its entry, re-run incrementally) or a full `--regenerate-all`
+(runbook step 3), which recolors every line and invalidates the golden manifest and every
+visual baseline. The search treats the test's gates as hard floors (`DELTA_E_FLOORS`); never
+lower a gate to make a palette pass. Gates: `npm run verify:colors`.
 
 **`src/geometry.js` owns projection math.** It was consolidated from six copies; a new inline
 projection loop in cut/trim/match code is a review flag. Rules and the scale ladder:
