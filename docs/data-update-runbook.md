@@ -100,8 +100,8 @@ data's generation date ("Datos: …"), turning amber after 45 days
    must show today.
 
 6b. Re-check what PINS the dataset's shape. A feed change legitimately moves
-   three expectations, and each of them fails CI if it ships stale — this is what
-   left `main` red on 2026-08-22:
+   three expectations — and only these three — and each of them fails CI if it
+   ships stale; this is what left `main` red on 2026-08-22:
 
    ```bash
    npm test                                 # frozen cardinalities (lines / variants / stops)
@@ -114,6 +114,18 @@ data's generation date ("Datos: …"), turning amber after 45 days
    fetch just printed. Pixel baselines are per platform: regenerating them here
    only covers the platform you are on, and the other one needs the CI-artifact
    round-trip below.
+
+   Nothing else is frozen. Every other expectation that is a fact about the feed
+   — the lines calling at the reference stops 4772 and 4018, the network's line
+   list, line 104's destinations — is read from `routes.json` / `stops.json`
+   inside the test, so it follows the data with no edit. (Read from the raw
+   files, not the app's indexes, so it still catches a code regression. Until
+   2026-10-09 these were literals, and a clean update kept failing after the
+   refresh as if the app had broken.) So once the three steps above pass, a
+   failing test is not the feed moving — with one exception: a test built around
+   a particular stop, line or headsign (the `102` chip at stop 4772, line 104's
+   "Pocitos") fails when the feed retires it. The test names its fixture; move
+   it to another one rather than deleting it.
 
 7. Commit and push (push to `main` **is** the production deploy — GitHub Pages
    rebuilds automatically; CI validates the data again on the push):
@@ -150,8 +162,9 @@ turning up in CI:
   from step 6b and exits before the commit; with it, the frozen counts, the
   golden manifest and this platform's baselines are refreshed from the new data,
   the suites are re-run, and only what the script itself refreshed joins the
-  commit. On a non-Linux machine it also drops the linux baselines and reminds
-  you about the artifact round-trip.
+  commit. If regenerating the golden or the baselines fails in its own right, it
+  stops there and says which. On a non-Linux machine it also drops the linux
+  baselines and reminds you about the artifact round-trip.
 - `DRY_RUN=1` stops after staging and prints what would ship; `SKIP_FETCH=1`
   gates the files already on disk.
 
@@ -171,5 +184,6 @@ turning up in CI:
 | `… is …% of the … already on disk … refusing to overwrite good data` | the new dataset is a fraction of the committed one | investigate; if the contraction is genuine, re-run with `--allow-shrink` |
 | `unrelated staged changes present; refusing to commit` (wrapper) | something else was `git add`ed before running `update_and_push.sh` | `git restore --staged <path>` and re-run — the wrapper publishes data files only |
 | `unit suite failed on the new data` / `e2e failed on the new data` (wrapper) | the frozen counts, the golden manifest or a pixel baseline still describe the old dataset | check the printed diff is just the feed moving, then re-run with `--refresh-expectations` |
-| `still failing after refreshing the expectations` (wrapper) | the failure is not the dataset moving | read the suite output; do not publish |
+| `still failing after refreshing the expectations` (wrapper) | the failure is not the dataset moving — or the feed retired a test's fixture (step 6b) | read the suite output; a retired fixture is named by its test — move the test to another one. Anything else: do not publish |
+| `the golden manifest could not be regenerated` / `the pixel baselines could not be refreshed` (wrapper) | render-sweep or a visual scene fails on the new data for a reason other than the expectation being refreshed | read the Playwright output above the error; do not publish |
 | `on branch 'x', expected 'main'` (wrapper) | publishing from a feature branch | check out `main`, or set `TARGET_BRANCH` deliberately |

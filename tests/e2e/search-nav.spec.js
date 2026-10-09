@@ -4,7 +4,7 @@
  * downstream context bar with its reset action.
  */
 import { test, expect } from '@playwright/test';
-import { openMap, openStopPopup } from './helpers.js';
+import { openMap, openStopPopup, datasetLinesAtStop } from './helpers.js';
 
 const hash = (page) => new URL(page.url()).hash;
 
@@ -37,7 +37,8 @@ test('the search box is a keyboard path to a stop popup', async ({ page }) => {
     await page.waitForSelector('.popup-content');
     expect(hash(page)).toBe('#/parada/4772');
     await expect(page.locator('.popup-sub')).toContainText('4772');
-    await expect(page.locator('.line-chip')).toHaveCount(33);
+    const { length } = await datasetLinesAtStop(page, 4772);
+    await expect(page.locator('.line-chip')).toHaveCount(length);
 });
 
 test('chip → downstream view with context bar; reset returns to the whole line', async ({

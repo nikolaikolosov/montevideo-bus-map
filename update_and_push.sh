@@ -14,6 +14,12 @@
 # reason. Everything below runs BEFORE the commit, so a surprise stops the
 # publish instead of being found in CI afterwards.
 #
+# Those three are the only ones. Every other expectation about the data — the
+# lines calling at a reference stop, a line's destinations, the line list —
+# reads its value from the files inside the test: on 2026-10-09 they were still
+# literals, and a clean update kept failing after the refresh as if the app had
+# broken.
+#
 # Setup:
 #   1. cp .env.example .env   and fill in the API_* variables
 #   2. Make sure `git push` works non-interactively (SSH key or token).
@@ -164,10 +170,13 @@ REFRESHED=()
 refresh_hint() {
     printf '%s\n' \
         "    Re-run with --refresh-expectations to update what the new data legitimately moved," \
-        "    or update it by hand:" \
+        "    or update it by hand — a feed change moves these three and nothing else:" \
         "      frozen counts    tests/js/route-invariants.test.js ($line_count lines, $variant_count variants, $stop_count stops)" \
         "      golden manifest  UPDATE_GOLDEN=1 npx playwright test render-sweep" \
-        "      pixel scenes     npx playwright test tests/e2e/visual.spec.js --update-snapshots=all"
+        "      pixel scenes     npx playwright test tests/e2e/visual.spec.js --update-snapshots=all" \
+        "    Every other expectation about the data reads it from the files, so a failure" \
+        "    beyond these three is not the feed moving — unless the feed retired a test's" \
+        "    fixture (the stop, line or headsign it is built around), which the test names."
 }
 
 log "Gate: unit suite"
@@ -195,8 +204,14 @@ else
         fi
 
         log "Refreshing the golden manifest and this platform's pixel baselines..."
-        UPDATE_GOLDEN=1 "$NPX" playwright test render-sweep
-        "$NPX" playwright test tests/e2e/visual.spec.js --update-snapshots=all
+        # Both run the specs' own assertions before they write anything, so they
+        # can fail — and under `set -e` that used to end the run mid-refresh
+        # without a word. Until 2026-10-09 the sweep froze the line count, so
+        # any feed that added or retired a line failed the golden refresh itself.
+        UPDATE_GOLDEN=1 "$NPX" playwright test render-sweep ||
+            die "the golden manifest could not be regenerated — render-sweep fails on the new data for a reason a refresh cannot fix."
+        "$NPX" playwright test tests/e2e/visual.spec.js --update-snapshots=all ||
+            die "the pixel baselines could not be refreshed — a visual scene fails on something other than its pixels."
         REFRESHED+=(tests/e2e/golden/render-manifest.json tests/e2e/__screenshots__)
 
         # Baselines are committed per platform, and this refreshes only the

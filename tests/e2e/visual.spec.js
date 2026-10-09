@@ -49,7 +49,7 @@ const scenes = [
     { name: 'corridor-zoom-12', theme: 'dark', line: '100', view: { zoom: 12 } },
     { name: 'corridor-zoom-15', theme: 'dark', line: '100', view: { zoom: 15 } },
     { name: 'corridor-zoom-17', theme: 'dark', line: '100', view: { zoom: 17 } },
-    // Busiest-popup reference: 33 line chips with inner scroll (brainstorm-003)
+    // Busiest-popup reference: every line chip at 4772, with inner scroll (brainstorm-003)
     { name: 'popup-4772-dark', theme: 'dark', popup: 4772 },
     { name: 'popup-4772-light', theme: 'light', popup: 4772 },
     // Section-boundary joints (brainstorm-005): the Artigas→Ellauri corner
