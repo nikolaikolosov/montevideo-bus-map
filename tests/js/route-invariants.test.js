@@ -158,15 +158,15 @@ beforeAll(() => {
 
 describe('dataset shape (frozen)', () => {
     it('has the expected cardinalities', () => {
-        expect(routesByLine.size).toBe(140);
-        expect(routesData.features).toHaveLength(1088);
-        expect(uniqueStopsData).toHaveLength(4938);
+        expect(routesByLine.size).toBe(138);
+        expect(routesData.features).toHaveLength(1084);
+        expect(uniqueStopsData).toHaveLength(4930);
     });
 });
 
 // --- Construction invariants ------------------------------------------------------
 
-describe('corridor construction (all 140 lines, real data)', () => {
+describe('corridor construction (all 138 lines, real data)', () => {
     it('every line produces corridors that carry the line', () => {
         const empty = [];
         for (const [line, { sections }] of artifacts) {
@@ -323,12 +323,12 @@ describe('deadhead trim (all 1,083 variants)', () => {
 // --- Frozen edge cases (from the manual-verification playbook) -----------------------
 
 describe('frozen edge cases', () => {
-    it('stop 4018 (18 de Julio y Convención) serves 15 lines / 37 variants', () => {
-        expect(stopLinesMap.get(4018)?.size).toBe(15);
+    it('stop 4018 (18 de Julio y Convención) serves 14 lines / 36 variants', () => {
+        expect(stopLinesMap.get(4018)?.size).toBe(14);
         const variants = [...(stopsByVariant.keys() ?? [])].filter((v) =>
             stopsByVariant.get(v).some((e) => e.feature.properties.COD_UBIC_P === 4018),
         );
-        expect(variants).toHaveLength(37);
+        expect(variants).toHaveLength(36);
     });
 
     it('stop 4967 is terminal-only: no downstream geometry from it', () => {

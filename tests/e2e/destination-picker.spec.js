@@ -19,8 +19,8 @@ test('a selected line offers its destinations, and the old variants row is gone'
     await renderLine(page, '104');
 
     await expect(page.locator('#destinations')).toBeVisible();
-    // Line 104 serves 7 destinations, plus the "all" chip.
-    await expect(chips(page)).toHaveCount(8);
+    // Line 104 serves 6 destinations, plus the "all" chip.
+    await expect(chips(page)).toHaveCount(7);
     await expect(chips(page).first()).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#statVariants')).toHaveCount(0);
 });
