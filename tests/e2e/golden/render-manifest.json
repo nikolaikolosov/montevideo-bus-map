@@ -263,7 +263,7 @@
    -56.0208
   ],
   "stops": 148,
-  "labels": 11
+  "labels": 8
  },
  "106": {
   "sections": 3,
@@ -301,7 +301,7 @@
    -56.0233
   ],
   "stops": 122,
-  "labels": 9
+  "labels": 6
  },
  "110": {
   "sections": 10,
@@ -358,7 +358,7 @@
    -56.066
   ],
   "stops": 146,
-  "labels": 7
+  "labels": 5
  },
  "113": {
   "sections": 17,
@@ -377,7 +377,7 @@
    -56.1048
   ],
   "stops": 99,
-  "labels": 5
+  "labels": 4
  },
  "115": {
   "sections": 27,
@@ -415,7 +415,7 @@
    -56.135
   ],
   "stops": 72,
-  "labels": 4
+  "labels": 2
  },
  "117": {
   "sections": 11,
@@ -529,7 +529,7 @@
    -56.135
   ],
   "stops": 140,
-  "labels": 6
+  "labels": 5
  },
  "130": {
   "sections": 13,
@@ -1080,7 +1080,7 @@
    -56.135
   ],
   "stops": 158,
-  "labels": 4
+  "labels": 3
  },
  "187": {
   "sections": 23,
@@ -1175,7 +1175,7 @@
    -56.1159
   ],
   "stops": 232,
-  "labels": 6
+  "labels": 5
  },
  "199": {
   "sections": 18,
@@ -1327,7 +1327,7 @@
    -56.0832
   ],
   "stops": 200,
-  "labels": 7
+  "labels": 6
  },
  "396": {
   "sections": 24,
@@ -1745,7 +1745,7 @@
    -56.1635
   ],
   "stops": 33,
-  "labels": 4
+  "labels": 3
  },
  "D1": {
   "sections": 13,
@@ -1878,7 +1878,7 @@
    -56.135
   ],
   "stops": 59,
-  "labels": 3
+  "labels": 2
  },
  "G3": {
   "sections": 6,
