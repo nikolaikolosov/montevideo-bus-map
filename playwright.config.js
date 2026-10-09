@@ -33,10 +33,10 @@ export default defineConfig({
     // Screenshot baselines are platform-specific (fonts/AA differ per OS).
     snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}/{arg}-{platform}{ext}',
     webServer: {
-        command:
-            process.platform === 'win32'
-                ? 'python -m http.server 8788 --bind 127.0.0.1'
-                : 'python3 -m http.server 8788 --bind 127.0.0.1',
+        // A Node server rather than `python -m http.server`, though the pages
+        // barely touch it: openMap serves the app's files from disk. Why both:
+        // tests/e2e/static-server.js and openMap in tests/e2e/helpers.js.
+        command: 'node tests/e2e/static-server.js 8788',
         port: 8788,
         reuseExistingServer: true,
     },
