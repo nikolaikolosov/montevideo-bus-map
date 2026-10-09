@@ -333,7 +333,7 @@ const report = `# Geometry Scale Ladder — Derivation Report
 > Dataset: committed routes.json / stops.json. Method: prepared traces
 > (trimToStops applied), same-line variant pairs sampled every ${SAMPLE_STEP_M} m,
 > parallel = axis angle ≤ ${PARALLEL_MAX_AXIS_DEG}°, near cap ${NEAR_CAP_M} m.
-> Representativeness: full network (140 lines), no cache, deterministic.
+> Representativeness: full network (${new Set(routes.features.map((f) => f.properties.DESC_LINEA)).size} lines), no cache, deterministic.
 
 ## Constants under test (src/config.js)
 
