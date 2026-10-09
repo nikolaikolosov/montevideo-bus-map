@@ -114,5 +114,8 @@ lives in `tests/js/popup.test.js`.
   layer-2 golden + reviewing layer-3 diffs. Since the freshness label is masked,
   a data update no longer moves layer-3 pixels for the date alone — only real
   geometry changes show up.
-- External CDN (unpkg Leaflet) still loads in e2e — SRI-pinned; tiles/fonts do not.
+- e2e pages touch no network: tiles and fonts are blocked, the app's files and
+  Leaflet are served from disk (Leaflet from the `leaflet` devDependency — the
+  files unpkg serves, still SRI-checked by the page). The one deliberate
+  exception is the basemap canary in `basemap.spec.js`.
 - Not covered: touch interactions, geolocation flows, mobile layout pixels.
