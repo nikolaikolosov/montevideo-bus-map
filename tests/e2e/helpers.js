@@ -1,10 +1,17 @@
 /** Shared fixtures for the render e2e suites. */
-import { expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** The repo root, which the app's URL paths map onto. */
+const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 /**
  * Opens the map with a pinned theme and language, external network stubbed
- * out (CARTO tiles + Google Fonts aborted → deterministic canvas, no flake),
- * and waits until data + initial render are done.
+ * out (Esri tiles + Google Fonts aborted → deterministic canvas, no flake),
+ * the app's own files served from disk, and waits until data + initial render
+ * are done.
  */
 export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
     await page.addInitScript(
@@ -26,6 +33,15 @@ export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
     await page.route('https://services.arcgisonline.com/**', (r) => r.abort());
     await page.route('https://fonts.googleapis.com/**', (r) => r.abort());
     await page.route('https://fonts.gstatic.com/**', (r) => r.abort());
+    // The app's own files come from disk, not over loopback TCP. On Windows
+    // Chromium now and then fails to open a loopback connection at all
+    // (net::ERR_NO_BUFFER_SPACE; the request never reaches the server): a lost
+    // module kept the loader up until the wait below timed out, a lost data
+    // fetch showed the error overlay. It is not the server — measured against
+    // python's http.server and against a keep-alive Node server alike — so the
+    // fix is to need no connection. The route lives as long as the page, which
+    // covers a test's own reload() and goBack() too.
+    await page.route(`${test.info().project.use.baseURL}/**`, serveFromDisk);
 
     await page.goto('/');
     await page.waitForFunction(
@@ -45,6 +61,15 @@ export async function openMap(page, { theme = 'dark', lang = 'es' } = {}) {
     await page.evaluate(() => {
         window.__mvdMap._zoomAnimated = false;
     });
+}
+
+/** Answers a same-origin request with the repo file its path names. */
+function serveFromDisk(route) {
+    const { pathname } = new URL(route.request().url());
+    const file = join(ROOT, pathname.endsWith('/') ? `${pathname}index.html` : pathname);
+    return statSync(file, { throwIfNoEntry: false })?.isFile()
+        ? route.fulfill({ path: file })
+        : route.fulfill({ status: 404 });
 }
 
 /** Renders a line exactly as the dropdown would and waits for its corridors. */
